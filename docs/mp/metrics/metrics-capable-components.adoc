@@ -17,15 +17,12 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 = Metrics-Capable Modules
-:h1-prefix: MP
 :description: Helidon MP metrics-capable modules
 :keywords: helidon, metrics, metrics-capable, microprofile, guide
-:intro-project-name: {h1-prefix}
-:chk: icon:check[]
-:x: icon:times[]
 :rootdir: {docdir}/../..
-
 include::{rootdir}/includes/mp.adoc[]
+:tjq-h1-prefix-after-mp-include: {h1-prefix}
+:h1-prefix: MP // This seems to make the title rendering work
 
 // Overview and usage
 include::{rootdir}/includes/metrics/metrics-capable-components.adoc[tags=preamble;all-beginning-text]

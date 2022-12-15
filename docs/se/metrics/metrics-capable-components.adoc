@@ -19,9 +19,6 @@
 = Metrics-Capable Modules
 :description: Helidon SE metrics-capable components
 :keywords: helidon, metrics, metrics-capable, microprofile, guide
-:intro-project-name: {h1-prefix}
-:chk: icon:check[]
-:x: icon:times[]
 :rootdir: {docdir}/../..
 
 include::{rootdir}/includes/se.adoc[]

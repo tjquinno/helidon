@@ -16,22 +16,28 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
+// tag::preamble[]
 ifndef::rootdir[:rootdir: {docdir}/../..]
 ifndef::flavor-lc[:flavor-lc: se]
 ifndef::flavor-uc[:flavor-lc: SE]
-ifndef::se-flavor[:se-flavor: true]
+ifdef::se-flavor[:tjq-se: se-flavor was assigned]
+ifdef::mp-flavor[:tjq-mp: mp-flavor was assigned]
+ifndef::se-flavor,mp-flavor[:se-flavor: true]
 ifndef::h1-prefix[:h1-prefix: SE]
 :feature-name: metrics-capable components
 :intro-project-name: {h1-prefix}
 :chk: icon:check[]
 :x: icon:times[]
-
-// tag::preamble[]
 == Contents
 
 - <<Overview, Overview>>
 - <<Usage, Usage>>
 - <<Examples, Examples>>
+
+* tjq-se is {tjq-se}
+* tjq-mp is {tjq-mp}
+* h1-prefix is {h1-prefix}
+* intro-project-name is {intro-project-name}
 
 == Overview
 This document explains Helidon {h1-prefix} metrics-capable components and applications and describes how to create and control them.
