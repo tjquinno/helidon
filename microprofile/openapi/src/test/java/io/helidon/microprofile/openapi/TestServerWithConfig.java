@@ -53,6 +53,7 @@ class TestServerWithConfig {
                 "GET",
                 ALTERNATE_OPENAPI_PATH,
                 HttpMediaType.create(MediaTypes.APPLICATION_OPENAPI_YAML));
+        assertThat("Alternate OpenAPI path status", cnx.getResponseCode(), is(200));
         yaml = TestUtil.yamlFromResponse(cnx);
     }
 

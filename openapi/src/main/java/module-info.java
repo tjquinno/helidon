@@ -18,11 +18,11 @@ import io.helidon.common.features.api.Feature;
 import io.helidon.common.features.api.HelidonFlavor;
 
 /**
- * Helidon SE OpenAPI Support.
+ * Helidon Nima OpenAPI Support.
  */
 @Feature(value = "OpenAPI",
         description = "Open API support",
-        in = HelidonFlavor.SE,
+        in = HelidonFlavor.NIMA,
         path = "OpenAPI"
 )
 module io.helidon.openapi {
@@ -43,5 +43,4 @@ module io.helidon.openapi {
     requires static io.helidon.config.metadata;
 
     exports io.helidon.openapi;
-    exports io.helidon.openapi.internal to io.helidon.microprofile.openapi, io.helidon.reactive.openapi, io.helidon.nima.openapi;
 }

@@ -26,10 +26,12 @@ module io.helidon.reactive.openapi {
     requires io.helidon.reactive.media.common;
     requires io.helidon.reactive.webserver;
     requires io.helidon.reactive.media.jsonp;
+    requires io.helidon.reactive.servicecommon;
     requires io.helidon.reactive.webserver.cors;
     requires smallrye.open.api.core;
     requires org.jboss.jandex;
     requires org.yaml.snakeyaml;
+    requires java.logging;
 
     requires static io.helidon.config.metadata;
 

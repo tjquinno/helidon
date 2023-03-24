@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022 Oracle and/or its affiliates.
+ * Copyright (c) 2020, 2023 Oracle and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,15 +22,14 @@ import io.helidon.common.media.type.MediaTypes;
 import io.helidon.config.Config;
 import io.helidon.nima.webserver.WebServer;
 
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static io.helidon.nima.openapi.ServerTest.GREETING_OPENAPI_SUPPORT_BUILDER;
 import static io.helidon.nima.openapi.ServerTest.TIME_OPENAPI_SUPPORT_BUILDER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@Disabled
 class TestCors {
 
     private static WebServer greetingWebServer;
@@ -38,11 +37,18 @@ class TestCors {
 
     private static final String GREETING_PATH = "/openapi-greeting";
     private static final String TIME_PATH = "/openapi-time";
+    private static String originalAllowRestrictedHeaders = System.setProperty("sun.net.http.allowRestrictedHeaders", "true");
 
     @BeforeAll
     public static void startup() {
         greetingWebServer = TestUtil.startServer(GREETING_OPENAPI_SUPPORT_BUILDER);
         timeWebServer = TestUtil.startServer(TIME_OPENAPI_SUPPORT_BUILDER);
+    }
+
+    @AfterAll
+    static void finish() {
+        System.setProperty("sun.net.http.allowRestrictedHeaders",
+                           originalAllowRestrictedHeaders != null ? originalAllowRestrictedHeaders : "false");
     }
     @Test
     public void testCrossOriginGreetingWithoutCors() throws Exception {

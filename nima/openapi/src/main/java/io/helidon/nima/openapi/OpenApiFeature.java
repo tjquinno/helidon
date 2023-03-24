@@ -21,6 +21,8 @@ import java.io.InputStream;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.lang.System.Logger.Level;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -46,18 +48,17 @@ import io.helidon.common.media.type.MediaTypes;
 import io.helidon.config.Config;
 import io.helidon.config.metadata.Configured;
 import io.helidon.config.metadata.ConfiguredOption;
-import io.helidon.cors.CrossOriginConfig;
-import io.helidon.nima.webserver.cors.CorsEnabledServiceHelper;
+import io.helidon.nima.servicecommon.HelidonFeatureSupport;
 import io.helidon.nima.webserver.http.HttpRules;
 import io.helidon.nima.webserver.http.HttpService;
 import io.helidon.nima.webserver.http.ServerRequest;
 import io.helidon.nima.webserver.http.ServerResponse;
 import io.helidon.openapi.ExpandedTypeDescription;
+import io.helidon.openapi.HelidonOpenApiConfig;
 import io.helidon.openapi.OpenAPIMediaType;
 import io.helidon.openapi.OpenAPIParser;
 import io.helidon.openapi.ParserHelper;
 import io.helidon.openapi.Serializer;
-import io.helidon.openapi.internal.OpenAPIConfigImpl;
 
 import io.smallrye.openapi.api.OpenApiConfig;
 import io.smallrye.openapi.api.OpenApiDocument;
@@ -79,18 +80,16 @@ import jakarta.json.JsonValue;
 import org.eclipse.microprofile.openapi.models.OpenAPI;
 import org.jboss.jandex.IndexView;
 
-import static io.helidon.nima.webserver.cors.CorsEnabledServiceHelper.CORS_CONFIG_KEY;
-
 /**
  * Provides an endpoint and supporting logic for returning an OpenAPI document
  * that describes the endpoints handled by the server.
  * <p>
- * The server can use the {@link OpenApiService.Builder} to set OpenAPI-related attributes. If
+ * The server can use the {@link OpenApiFeature.Builder} to set OpenAPI-related attributes. If
  * the server uses none of these builder methods and does not provide a static
  * {@code openapi} file, then the {@code /openapi} endpoint responds with a
  * nearly-empty OpenAPI document.
  */
-public class OpenApiService implements HttpService {
+public class OpenApiFeature extends HelidonFeatureSupport {
 
     /**
      * Default path for serving the OpenAPI document.
@@ -103,63 +102,60 @@ public class OpenApiService implements HttpService {
      */
     public static final MediaType DEFAULT_RESPONSE_MEDIA_TYPE = MediaTypes.APPLICATION_OPENAPI_YAML;
     private static final String OPENAPI_ENDPOINT_FORMAT_QUERY_PARAMETER = "format";
-    private static final System.Logger LOGGER = System.getLogger(OpenApiService.class.getName());
+    private static final System.Logger LOGGER = System.getLogger(OpenApiFeature.class.getName());
     private static final String DEFAULT_STATIC_FILE_PATH_PREFIX = "META-INF/openapi.";
     private static final String OPENAPI_EXPLICIT_STATIC_FILE_LOG_MESSAGE_FORMAT = "Using specified OpenAPI static file %s";
     private static final String OPENAPI_DEFAULTED_STATIC_FILE_LOG_MESSAGE_FORMAT = "Using default OpenAPI static file %s";
     private static final String FEATURE_NAME = "OpenAPI";
     private static final JsonReaderFactory JSON_READER_FACTORY = Json.createReaderFactory(Collections.emptyMap());
-    private static final LazyValue<ParserHelper> HELPER = LazyValue.create(ParserHelper::create);
+    private static final LazyValue<ParserHelper> PARSER_HELPER = LazyValue.create(ParserHelper::create);
 
-    private final String webContext;
     private final ConcurrentMap<Format, String> cachedDocuments = new ConcurrentHashMap<>();
     private final Map<Class<?>, ExpandedTypeDescription> implsToTypes;
-    private final CorsEnabledServiceHelper corsEnabledServiceHelper;
     /*
      * To handle the MP case, we must defer constructing the OpenAPI in-memory model until after the server has instantiated
-     * the Application instances. By then the builder has already been used to build the OpenAPISupport object. So save the
+     * the Application instances. By then the builder has already been used to build the OpenAPIFeature object. So save the
      * following raw materials so we can construct the model at that later time.
      */
-    private final OpenApiConfig openApiConfig;
+    private final HelidonOpenApiConfig helidonOpenApiConfig;
     private final OpenApiStaticFile openApiStaticFile;
-    private final Supplier<List<? extends IndexView>> indexViewsSupplier;
     private final Lock modelAccess = new ReentrantLock(true);
+    private final boolean enabled;
     private OpenAPI model = null;
 
     /**
-     * Creates a new instance of {@code OpenAPISupport}.
+     * Creates a new instance of {@code OpenApiFeature}.
      *
      * @param builder the builder to use in constructing the instance
      */
-    protected OpenApiService(AbstractBuilder<?, ?> builder) {
-        implsToTypes = ExpandedTypeDescription.buildImplsToTypes(HELPER.get());
-        webContext = builder.webContext();
-        corsEnabledServiceHelper = CorsEnabledServiceHelper.create(FEATURE_NAME, builder.crossOriginConfig());
-        openApiConfig = builder.openAPIConfig();
+    protected OpenApiFeature(Builder<?, ?> builder) {
+        super(LOGGER, builder, FEATURE_NAME);
+        enabled = builder.enabled;
+        implsToTypes = ExpandedTypeDescription.buildImplsToTypes(PARSER_HELPER.get());
+        helidonOpenApiConfig = builder.openApiConfig();
         openApiStaticFile = builder.staticFile();
-        indexViewsSupplier = builder.indexViewsSupplier();
     }
 
     /**
-     * Creates a new {@link OpenApiService.Builder} for {@code OpenAPISupport} using defaults.
+     * Creates a new {@link OpenApiFeature.Builder} for {@code OpenAPISupport} using defaults.
      *
      * @return new Builder
      */
-    public static Builder builder() {
-        return new Builder();
+    public static Builder<?, ?> builder() {
+        return new Builder<>();
     }
 
     /**
-     * Creates a new {@link OpenApiService} instance using defaults.
+     * Creates a new {@link OpenApiFeature} instance using defaults.
      *
      * @return new OpenAPISUpport
      */
-    public static OpenApiService create() {
+    public static OpenApiFeature create() {
         return builder().build();
     }
 
     /**
-     * Creates a new {@link OpenApiService} instance using the
+     * Creates a new {@link OpenApiFeature} instance using the
      * 'openapi' portion of the provided
      * {@link io.helidon.config.Config} object.
      *
@@ -167,25 +163,22 @@ public class OpenApiService implements HttpService {
      * @return new {@code OpenAPISupport} instance created using the
      *         helidonConfig settings
      */
-    public static OpenApiService create(Config config) {
+    public static OpenApiFeature create(Config config) {
         return builder().config(config).build();
     }
 
     @Override
-    public void routing(HttpRules rules) {
-        configureEndpoint(rules);
+    public Optional<HttpService> service() {
+        return enabled ? Optional.of(this::configureRoutes) : Optional.empty();
     }
 
     /**
-     * Sets up the OpenAPI endpoint by adding routing to the specified rules
-     * set.
+     * Returns the {@code HelidonOpenApiConfig} instance for the feature.
      *
-     * @param rules routing rules to be augmented with OpenAPI endpoint
+     * @return the Helidon OpenAPI config
      */
-    public void configureEndpoint(HttpRules rules) {
-
-        rules.any(webContext, corsEnabledServiceHelper.processor())
-                .get(webContext, this::prepareResponse);
+    protected HelidonOpenApiConfig helidonOpenApiConfig() {
+        return helidonOpenApiConfig;
     }
 
     /**
@@ -196,11 +189,20 @@ public class OpenApiService implements HttpService {
     }
 
     /**
+     * Returns a list of {@link org.jboss.jandex.IndexView} instances, one per application, typically derived from annotation
+     * scanning (so empty for non-MP impls).
+     *
+     * @return {@code List} of {@code IndexView}s, one per application
+     */
+    protected List<? extends IndexView> indexViews() {
+        return List.of();
+    }
+
+    /**
      * Returns the OpenAPI document in the requested format.
      *
      * @param resultMediaType requested media type
      * @return String containing the formatted OpenAPI document
-     * @throws java.io.IOException in case of errors serializing the OpenAPI document
      *                             from its underlying data
      */
     String prepareDocument(MediaType resultMediaType) {
@@ -216,7 +218,7 @@ public class OpenApiService implements HttpService {
 
         Format resultFormat = matchingOpenAPIMediaType.format();
 
-        String result = cachedDocuments.computeIfAbsent(resultFormat,
+        return cachedDocuments.computeIfAbsent(resultFormat,
                                                         fmt -> {
                                                             String r = formatDocument(fmt);
                                                             LOGGER.log(Level.TRACE,
@@ -224,7 +226,10 @@ public class OpenApiService implements HttpService {
                                                                        fmt.toString());
                                                             return r;
                                                         });
-        return result;
+    }
+
+    private void configureRoutes(HttpRules rules) {
+        rules.get("/", this::prepareResponse);
     }
 
     private static ClassLoader getContextClassLoader() {
@@ -239,8 +244,7 @@ public class OpenApiService implements HttpService {
                                                        + " does not seem to have a file name value but one is expected");
         }
         String pathText = staticFileNamePath.toString();
-        String specifiedFileType = pathText.substring(pathText.lastIndexOf(".") + 1);
-        return specifiedFileType;
+        return pathText.substring(pathText.lastIndexOf(".") + 1);
     }
 
     private static <T> T access(Lock guard, Supplier<T> operation) {
@@ -255,7 +259,7 @@ public class OpenApiService implements HttpService {
     private OpenAPI model() {
         return access(modelAccess, () -> {
             if (model == null) {
-                model = prepareModel(openApiConfig, openApiStaticFile, indexViewsSupplier.get());
+                model = prepareModel(helidonOpenApiConfig.openApiConfig(), openApiStaticFile, indexViews());
             }
             return model;
         });
@@ -265,37 +269,36 @@ public class OpenApiService implements HttpService {
      * Prepares the OpenAPI model that later will be used to create the OpenAPI
      * document for endpoints in this application.
      *
-     * @param config             {@code OpenApiConfig} object describing paths, servers, etc.
-     * @param staticFile         the static file, if any, to be included in the resulting model
-     * @param filteredIndexViews possibly empty list of FilteredIndexViews to use in harvesting definitions from the code
+     * @param openApiConfig       {@code OpenApiConfig} object describing paths, servers, etc.
+     * @param staticFile          the static file, if any, to be included in the resulting model
+     * @param filteredIndexViews  possibly empty list of FilteredIndexViews to use in harvesting definitions from the code
      * @return the OpenAPI model
-     * @throws RuntimeException in case of errors reading any existing static
-     *                          OpenAPI document
+     * @throws RuntimeException in case of errors reading any existing static OpenAPI document
      */
-    private OpenAPI prepareModel(OpenApiConfig config, OpenApiStaticFile staticFile,
+    private OpenAPI prepareModel(OpenApiConfig openApiConfig,
+                                 OpenApiStaticFile staticFile,
                                  List<? extends IndexView> filteredIndexViews) {
         try {
             // The write lock guarding the model has already been acquired.
             OpenApiDocument.INSTANCE.reset();
-            OpenApiDocument.INSTANCE.config(config);
-            OpenApiDocument.INSTANCE.modelFromReader(OpenApiProcessor.modelFromReader(config, getContextClassLoader()));
+            OpenApiDocument.INSTANCE.config(openApiConfig);
+            OpenApiDocument.INSTANCE.modelFromReader(OpenApiProcessor.modelFromReader(openApiConfig, getContextClassLoader()));
             if (staticFile != null) {
-                OpenApiDocument.INSTANCE.modelFromStaticFile(OpenAPIParser.parse(HELPER.get().types(),
+                OpenApiDocument.INSTANCE.modelFromStaticFile(OpenAPIParser.parse(PARSER_HELPER.get().types(),
                                                                                  staticFile.getContent()));
             }
-            if (isAnnotationProcessingEnabled(config)) {
-                expandModelUsingAnnotations(config, filteredIndexViews);
+            if (isAnnotationProcessingEnabled(openApiConfig)) {
+                expandModelUsingAnnotations(openApiConfig, filteredIndexViews);
             } else {
                 LOGGER.log(Level.DEBUG, "OpenAPI Annotation processing is disabled");
             }
-            OpenApiDocument.INSTANCE.filter(OpenApiProcessor.getFilter(config, getContextClassLoader()));
+            OpenApiDocument.INSTANCE.filter(OpenApiProcessor.getFilter(openApiConfig, getContextClassLoader()));
             OpenApiDocument.INSTANCE.initialize();
-            OpenAPIImpl instance = OpenAPIImpl.class.cast(OpenApiDocument.INSTANCE.get());
 
             // Create a copy, primarily to avoid problems during unit testing.
             // The SmallRye MergeUtil omits the openapi value, so we need to set it explicitly.
-            return MergeUtil.merge(new OpenAPIImpl(), instance)
-                    .openapi(instance.getOpenapi());
+            return MergeUtil.merge(new OpenAPIImpl(), OpenApiDocument.INSTANCE.get())
+                    .openapi(OpenApiDocument.INSTANCE.get().getOpenapi());
         } catch (IOException ex) {
             throw new RuntimeException("Error initializing OpenAPI information", ex);
         }
@@ -354,7 +357,7 @@ public class OpenApiService implements HttpService {
 
     private String formatDocument(Format fmt, OpenAPI model) {
         StringWriter sw = new StringWriter();
-        Serializer.serialize(HELPER.get().types(), implsToTypes, model, fmt, sw);
+        Serializer.serialize(PARSER_HELPER.get().types(), implsToTypes, model, fmt, sw);
         return sw.toString();
 
     }
@@ -381,7 +384,7 @@ public class OpenApiService implements HttpService {
         Optional<MediaType> requestedMediaType = req.headers()
                 .bestAccepted(OpenAPIMediaType.preferredOrdering());
 
-        MediaType resultMediaType = requestedMediaType
+        return requestedMediaType
                 .orElseGet(() -> {
                     LOGGER.log(Level.TRACE,
                                () -> String.format("Did not recognize requested media type %s; responding with default %s",
@@ -389,7 +392,6 @@ public class OpenApiService implements HttpService {
                                                    DEFAULT_RESPONSE_MEDIA_TYPE.text()));
                     return DEFAULT_RESPONSE_MEDIA_TYPE;
                 });
-        return resultMediaType;
     }
 
     private enum QueryParameterRequestedFormat {
@@ -417,44 +419,65 @@ public class OpenApiService implements HttpService {
 
         @Override
         public Object parseExtension(String key, String value) {
+            try {
+                return doParseValue(value);
+            } catch (Exception ex) {
+                LOGGER.log(Level.ERROR, String.format("Error parsing extension key: %s, value: %s", key, value), ex);
+                return value;
+            }
+        }
+        @Override
+        public Object parseValue(String value) {
+            try {
+                return doParseValue(value);
+            } catch (Exception ex) {
+                LOGGER.log(Level.ERROR, String.format("Error parsing value: %s", value), ex);
+                return value;
+            }
+        }
 
+        private Object doParseValue(String value) {
             // Inspired by SmallRye's JsonUtil#parseValue method.
-            if (value == null) {
+            if (value == null || value.isEmpty()) {
                 return null;
             }
 
             value = value.trim();
 
+            // Try as a boolean.
             if ("true".equalsIgnoreCase(value) || "false".equalsIgnoreCase(value)) {
                 return Boolean.valueOf(value);
             }
 
-            // See if we should parse the value fully.
+            // Try as an integer.
+            try {
+                return new BigInteger(value);
+            } catch (NumberFormatException ex) {
+                // Intentionally ignore.
+            }
+
+            // Try as a decimal.
+            try {
+                return new BigDecimal(value);
+            } catch (NumberFormatException ex) {
+                // Intentionally ignore.
+            }
+
+            // See if we should parse the value as JSON (structure or array).
+
             switch (value.charAt(0)) {
-            case '{':
-            case '[':
-            case '-':
-            case '0':
-            case '1':
-            case '2':
-            case '3':
-            case '4':
-            case '5':
-            case '6':
-            case '7':
-            case '8':
-            case '9':
+            case '{', '[' -> {
                 try {
                     JsonReader reader = JSON_READER_FACTORY.createReader(new StringReader(value));
                     JsonValue jsonValue = reader.readValue();
                     return convertJsonValue(jsonValue);
                 } catch (Exception ex) {
-                    LOGGER.log(Level.ERROR, String.format("Error parsing extension key: %s, value: %s", key, value), ex);
+                    throw new IllegalArgumentException(ex);
                 }
-                break;
+            }
 
-            default:
-                break;
+            default -> {
+            }
             }
 
             // Treat as JSON string.
@@ -463,131 +486,127 @@ public class OpenApiService implements HttpService {
 
         private static Object convertJsonValue(JsonValue jsonValue) {
             switch (jsonValue.getValueType()) {
-            case ARRAY:
+            case ARRAY -> {
                 JsonArray jsonArray = jsonValue.asJsonArray();
                 return jsonArray.stream()
                         .map(HelidonAnnotationScannerExtension::convertJsonValue)
                         .collect(Collectors.toList());
-
-            case FALSE:
+            }
+            case FALSE -> {
                 return Boolean.FALSE;
-
-            case TRUE:
+            }
+            case TRUE -> {
                 return Boolean.TRUE;
-
-            case NULL:
+            }
+            case NULL -> {
                 return null;
-
-            case STRING:
+            }
+            case STRING -> {
                 return JsonString.class.cast(jsonValue).getString();
-
-            case NUMBER:
+            }
+            case NUMBER -> {
                 JsonNumber jsonNumber = JsonNumber.class.cast(jsonValue);
                 return jsonNumber.numberValue();
-
-            case OBJECT:
+            }
+            case OBJECT -> {
                 JsonObject jsonObject = jsonValue.asJsonObject();
                 return jsonObject.entrySet().stream()
                         .collect(Collectors.toMap(Map.Entry::getKey, entry -> convertJsonValue(entry.getValue())));
-
-            default:
+            }
+            default -> {
                 return jsonValue.toString();
+            }
             }
         }
     }
 
-    /**
-     * Fluent API builder for {@link OpenApiService}.
-     */
-    @Configured(description = "OpenAPI support configuration")
-    public static class Builder extends AbstractBuilder<Builder, OpenApiService> {
-        private Builder() {
-        }
+//    /**
+//     * Fluent API builder for {@link OpenApiFeature}.
+//     */
+//    @Configured(description = "OpenAPI feature configuration")
+//    public static class Builder extends AbstractBuilder<Builder, OpenApiFeature> {
+//        private Builder() {
+//        }
+//
+//        @Override
+//        @ConfiguredOption(type = HelidonOpenApiConfig.class,
+//                          mergeWithParent = true)
+//        public OpenApiFeature build() {
+//            OpenApiFeature openAPIFeature = new OpenApiFeature(this);
+//            openAPIFeature.prepareModel();
+//            return openAPIFeature;
+//        }
+//    }
 
-        @Override
-        public OpenApiService build() {
-            OpenApiService openAPISupport = new OpenApiService(this);
-            openAPISupport.prepareModel();
-            return openAPISupport;
-        }
-    }
-
     /**
-     * Base builder for OpenAPI service builders, extended by {@link io.helidon.nima.openapi.OpenApiService.Builder}
+     * Base builder for OpenAPI service builders, extended by {@link OpenApiFeature.Builder}
      * and MicroProfile implementation.
      *
      * @param <B> type of the builder (subclass)
      * @param <T> type of the built target
      */
-    public abstract static class AbstractBuilder<B extends AbstractBuilder<B, T>, T extends OpenApiService>
-            implements io.helidon.common.Builder<B, T> {
+//    public abstract static class AbstractBuilder<B extends AbstractBuilder<B, T>, T extends OpenApiFeature>
+    @Configured
+    public static class Builder<B extends Builder<B, T>, T extends OpenApiFeature>
+            extends HelidonFeatureSupport.Builder<B, OpenApiFeature> {
 
         /**
          * Config key to select the openapi node from Helidon config.
          */
         public static final String CONFIG_KEY = "openapi";
 
-        private final OpenAPIConfigImpl.Builder apiConfigBuilder = OpenAPIConfigImpl.builder();
-        private String webContext;
+        private HelidonOpenApiConfig.Builder<?, ?> openApiConfigBuilder = HelidonNimaOpenApiConfig.builder();
         private String staticFilePath;
-        private CrossOriginConfig crossOriginConfig = null;
+        private boolean enabled = true;
 
-        protected AbstractBuilder() {
+        /**
+         * Creates a new builder for an {@code OpenApiFeature}.
+         */
+        protected Builder() {
+            super(DEFAULT_WEB_CONTEXT);
         }
 
         /**
          * Set various builder attributes from the specified {@code Config} object.
          * <p>
          * The {@code Config} object can specify web-context and static-file in addition to settings
-         * supported by {@link io.helidon.openapi.internal.OpenAPIConfigImpl.Builder}.
+         * supported by {@link io.helidon.openapi.HelidonOpenApiConfig.Builder}.
          *
          * @param config the openapi {@code Config} object possibly containing settings
          * @return updated builder instance
          * @throws NullPointerException if the provided {@code Config} is null
          */
-        @ConfiguredOption(type = OpenApiConfig.class)
+        @ConfiguredOption(type = HelidonOpenApiConfig.class,
+                          mergeWithParent = true)
         public B config(Config config) {
-            config.get("web-context")
-                    .asString()
-                    .ifPresent(this::webContext);
+            super.config(config);
+//            config.get("enabled").asBoolean().ifPresent(this::enabled);
             config.get("static-file")
                     .asString()
                     .ifPresent(this::staticFile);
-            config.get(CORS_CONFIG_KEY)
-                    .as(CrossOriginConfig::create)
-                    .ifPresent(this::crossOriginConfig);
+            openApiConfigBuilder.config(config);
             return identity();
         }
 
-        /**
-         * Makes sure the set-up for OpenAPI is consistent, internally and with
-         * the current Helidon runtime environment (SE or MP).
-         *
-         * @return this builder
-         * @throws IllegalStateException if validation fails
-         */
-        protected B validate() throws IllegalStateException {
-            return identity();
+        @Override
+        public OpenApiFeature build() {
+            return new OpenApiFeature(this);
         }
 
-        /**
-         * Sets the web context path for the OpenAPI endpoint.
-         *
-         * @param path webContext to use, defaults to
-         *             {@value DEFAULT_WEB_CONTEXT}
-         * @return updated builder instance
-         */
-        @ConfiguredOption(DEFAULT_WEB_CONTEXT)
-        public B webContext(String path) {
-            if (!path.startsWith("/")) {
-                path = "/" + path;
-            }
-            this.webContext = path;
-            return identity();
-        }
+//        /**
+//         * Whether OpenAPI is enabled.
+//         *
+//         * @param value true/false
+//         * @return updated builder
+//         */
+//        @ConfiguredOption("true")
+//        public B enabled(boolean value){
+//            enabled = value;
+//            return identity();
+//        }
 
         /**
-         * Sets the file system path of the static OpenAPI document file. Default types are `json`, `yaml`, and `yml`.
+         * File system path of the static OpenAPI document file. Default types are `json`, `yaml`, and `yml`.
          *
          * @param path non-null location of the static OpenAPI document file
          * @return updated builder instance
@@ -600,122 +619,45 @@ public class OpenApiService implements HttpService {
         }
 
         /**
-         * Assigns the CORS settings for the OpenAPI endpoint.
+         * Sets the builder to use for the characteristics of OpenAPI processing.
          *
-         * @param crossOriginConfig {@code CrossOriginConfig} containing CORS set-up
-         * @return updated builder instance
+         * @param openApiConfigBuilder {@code HelidonOpenApiConfig} builder
+         * @return updated builder
          */
-        @ConfiguredOption(key = CORS_CONFIG_KEY)
-        public B crossOriginConfig(CrossOriginConfig crossOriginConfig) {
-            Objects.requireNonNull(crossOriginConfig, "CrossOriginConfig must be non-null");
-            this.crossOriginConfig = crossOriginConfig;
+        public B openApiConfig(HelidonOpenApiConfig.Builder<?, ?> openApiConfigBuilder) {
+            this.openApiConfigBuilder = openApiConfigBuilder;
             return identity();
         }
 
         /**
-         * Sets the app-provided model reader class.
+         * Makes sure the set-up for OpenAPI is consistent, internally and with
+         * the current Helidon runtime environment (MP or non-MP).
          *
-         * @param className name of the model reader class
-         * @return updated builder instance
+         * @return this builder
+         * @throws IllegalStateException if validation fails
          */
-        public B modelReader(String className) {
-            Objects.requireNonNull(className, "modelReader class name must be non-null");
-            apiConfigBuilder.modelReader(className);
+        protected B validate() throws IllegalStateException {
             return identity();
         }
 
-        /**
-         * Set the app-provided OpenAPI model filter class.
-         *
-         * @param className name of the filter class
-         * @return updated builder instance
-         */
-        public B filter(String className) {
-            Objects.requireNonNull(className, "filter class name must be non-null");
-            apiConfigBuilder.filter(className);
-            return identity();
-        }
+//        /**
+//         * Returns the supplier of index views.
+//         *
+//         * @return index views supplier
+//         */
+//        protected Supplier<List<? extends IndexView>> indexViewsSupplier() {
+//            // Only in MP can we have possibly multiple index views, one per app, from scanning classes (or the Jandex index).
+//            return List::of;
+//        }
 
         /**
-         * Sets the servers which offer the endpoints in the OpenAPI document.
+         * Returns the HelidonOpenApiConfig instance describing the set-up
+         * that will govern the SmallRye OpenAPI behavior.
          *
-         * @param serverList comma-separated list of servers
-         * @return updated builder instance
+         * @return {@code HelidonOpenApiConfig} conveying how OpenAPI should behave
          */
-        public B servers(String serverList) {
-            Objects.requireNonNull(serverList, "serverList must be non-null");
-            apiConfigBuilder.servers(serverList);
-            return identity();
-        }
-
-        /**
-         * Adds an operation server for a given operation ID.
-         *
-         * @param operationID     operation ID to which the server corresponds
-         * @param operationServer name of the server to add for this operation
-         * @return updated builder instance
-         */
-        public B addOperationServer(String operationID, String operationServer) {
-            Objects.requireNonNull(operationID, "operationID must be non-null");
-            Objects.requireNonNull(operationServer, "operationServer must be non-null");
-            apiConfigBuilder.addOperationServer(operationID, operationServer);
-            return identity();
-        }
-
-        /**
-         * Adds a path server for a given path.
-         *
-         * @param path       path to which the server corresponds
-         * @param pathServer name of the server to add for this path
-         * @return updated builder instance
-         */
-        public B addPathServer(String path, String pathServer) {
-            Objects.requireNonNull(path, "path must be non-null");
-            Objects.requireNonNull(pathServer, "pathServer must be non-null");
-            apiConfigBuilder.addPathServer(path, pathServer);
-            return identity();
-        }
-
-        /**
-         * Returns the supplier of index views.
-         *
-         * @return index views supplier
-         */
-        protected Supplier<List<? extends IndexView>> indexViewsSupplier() {
-            // Only in MP can we have possibly multiple index views, one per app, from scanning classes (or the Jandex index).
-            return List::of;
-        }
-
-        /**
-         * Returns the smallrye OpenApiConfig instance describing the set-up
-         * that will govern the smallrye OpenAPI behavior.
-         *
-         * @return {@code OpenApiConfig} conveying how OpenAPI should behave
-         */
-        protected OpenApiConfig openAPIConfig() {
-            return apiConfigBuilder.build();
-        }
-
-        /**
-         * Returns the web context (path) at which the OpenAPI endpoint should
-         * be exposed, either the most recent explicitly-set value via
-         * {@link #webContext(String)} or the default
-         * {@value #DEFAULT_WEB_CONTEXT}.
-         *
-         * @return path the web context path for the OpenAPI endpoint
-         */
-        String webContext() {
-            String webContextPath = webContext == null ? DEFAULT_WEB_CONTEXT : webContext;
-            if (webContext == null) {
-                LOGGER.log(Level.DEBUG, "OpenAPI path defaulting to {0}", webContextPath);
-            } else {
-                LOGGER.log(Level.DEBUG, "OpenAPI path set to {0}", webContextPath);
-            }
-            return webContextPath;
-        }
-
-        CrossOriginConfig crossOriginConfig() {
-            return crossOriginConfig;
+        protected HelidonOpenApiConfig openApiConfig() {
+            return openApiConfigBuilder.get();
         }
 
         /**
@@ -738,8 +680,10 @@ public class OpenApiService implements HttpService {
                                                                             + path.toAbsolutePath()
                                                                             + " is not one of recognized types: "
                                                                             + OpenAPIMediaType.recognizedFileTypes()));
-
-            try (InputStream is = new BufferedInputStream(Files.newInputStream(path))) {
+            InputStream is;
+            // The SmallRye OpenApiStaticFile needs an *open* InputStream. That code reads and closes the stream.
+            try {
+                is = new BufferedInputStream(Files.newInputStream(path));
                 LOGGER.log(Level.DEBUG,
                            () -> String.format(
                                    OPENAPI_EXPLICIT_STATIC_FILE_LOG_MESSAGE_FORMAT,
@@ -765,6 +709,7 @@ public class OpenApiService implements HttpService {
                             LOGGER.log(Level.DEBUG, () -> String.format(
                                     OPENAPI_DEFAULTED_STATIC_FILE_LOG_MESSAGE_FORMAT,
                                     path.toAbsolutePath()));
+                            // The SmallRye OpenApiStaticFile needs an *open* InputStream. That code reads and closes the stream.
                             return new OpenApiStaticFile(is, candidate.format());
                         }
                         if (candidatePaths != null) {

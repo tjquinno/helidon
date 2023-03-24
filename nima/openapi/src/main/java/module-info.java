@@ -43,7 +43,7 @@ module io.helidon.nima.openapi {
     requires static io.helidon.config.metadata;
     requires io.helidon.nima.webserver;
     requires jakarta.json;
-    requires io.helidon.nima.webserver.cors;
+    requires io.helidon.nima.servicecommon;
 
     exports io.helidon.nima .openapi;
 }

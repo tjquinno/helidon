@@ -1,0 +1,59 @@
+#
+# Copyright (c) 2023 Oracle and/or its affiliates.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+# The nested openapi elements below are intended. The top-level openapi indicates the component name,
+# and the inner openapi corresponds to the name nesting convention exposed by the SmallRye interface.
+openapi:
+  model:
+    reader: io.helidon.openapi.MyTestReader
+  filter: io.helidon.openapi.MyFilter
+  servers: server1,server2
+  array-references.enabled: false
+  application-path.enabled: false
+  private-properties.enabled: false
+  sorted-properties.enabled: true
+  openapi:
+    version: 1.2.3.4
+  info:
+    title: My API
+    version: 1.0.0-SNAPSHOT
+    description: My API for a REST service
+    terms-of-service: Generous
+    contact:
+      email: joe.smith@helidon.io
+      name: Joe Smith
+      url: https://helidon.io/people/Joe
+    license:
+      name: Apache 2.0
+      url: https://www.apache.org/licenses/LICENSE-2.0
+  operation-id-strategy: METHOD
+  duplicate-operation-id-behavior: FAIL
+  default-produces: application/json
+  default-consumes: text/plain,text/html
+  allow-naked-path-parameter: false
+  scan.enabled: false
+  scan.packages: com.my.stuff,com.their.stuff
+  scan.classes: com.this.stuff.A,com.that.stuff.B
+  scan.exclude.packages: com.ignored.types
+  scan.exclude.classes: com.ignored.stuff.Nothing
+  scan.bean-validation: false
+  scan-depenencies.enabled: false
+  scan-dependencies.jars: some.jar,another.jar
+  scan.profiles: sp1,sp2
+  scan.profiles.exclude: sp3
+
+
+

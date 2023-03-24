@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2022 Oracle and/or its affiliates.
+ * Copyright (c) 2019, 2023 Oracle and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,19 +15,22 @@
  */
 package io.helidon.openapi;
 
+import java.io.StringReader;
 import java.nio.file.Paths;
-import java.util.List;
 import java.util.Map;
-import java.util.StringJoiner;
 
 import io.helidon.config.Config;
 import io.helidon.config.ConfigSources;
-import io.helidon.openapi.internal.OpenAPIConfigImpl;
 
 import io.smallrye.openapi.api.OpenApiConfig;
+import jakarta.json.Json;
+import jakarta.json.JsonObject;
 import org.junit.jupiter.api.Test;
 
+import static io.helidon.common.testing.junit5.OptionalMatcher.optionalValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.arrayContaining;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.is;
@@ -36,34 +39,17 @@ class OpenAPIConfigTest {
 
     private final static String TEST_CONFIG_DIR = "src/test/resources";
 
-    private static final List<String> SCHEMA_OVERRIDE_CONTENTS = List.of(
-            "\"name\": \"EpochMillis\"",
-            "\"type\": \"number\",",
-            "\"format\": \"int64\",",
-            "\"description\": \"Milliseconds since January 1, 1970, 00:00:00 GMT\"");
-
-    private static final Map<String, String> SCHEMA_OVERRIDE_VALUES = Map.of(
-            "name", "EpochMillis",
-            "type", "number",
-            "format", "int64",
-            "description", "Milliseconds since January 1, 1970, 00:00:00 GMT");
-
-    private static final String SCHEMA_OVERRIDE_JSON = prepareSchemaOverrideJSON();
+    private static final JsonObject JSON_SCHEMA_OVERRIDE = Json.createObjectBuilder(Map.of())
+            .add("name", "EpochMillis")
+            .add("type", "number")
+            .add("format", "int64")
+            .add("description", "Milliseconds since January 1, 1970, 00:00:00 GMT")
+            .build();
 
     private static final String SCHEMA_OVERRIDE_CONFIG_FQCN = "java.util.Date";
 
-    private static final Map<String, String> SCHEMA_OVERRIDE_CONFIG = Map.of(
-                 "openapi."
-                    + OpenAPIConfigImpl.Builder.SCHEMA
-                    + "."
-                    + SCHEMA_OVERRIDE_CONFIG_FQCN,
-            SCHEMA_OVERRIDE_JSON);
-
-    private static String prepareSchemaOverrideJSON() {
-        StringJoiner sj = new StringJoiner(",\n", "{\n", "\n}");
-        SCHEMA_OVERRIDE_VALUES.forEach((key, value) -> sj.add("\"" + key + "\": \"" + value + "\""));
-        return sj.toString();
-    }
+    // must escape dots in config keys
+    private static final String SCHEMA_OVERRIDE_CONFIG_KEY = Config.Key.escapeName(SCHEMA_OVERRIDE_CONFIG_FQCN);
 
     @Test
     void simpleConfigTest() {
@@ -72,15 +58,15 @@ class OpenAPIConfigTest {
                 .disableSystemPropertiesSource()
                 .sources(ConfigSources.file(Paths.get(TEST_CONFIG_DIR, "simple.properties").toString()))
                 .build();
-        OpenApiConfig openAPIConfig = OpenAPIConfigImpl.builder()
+        HelidonOpenApiConfig helidonOpenAPIConfig = HelidonOpenApiConfig.builder()
                 .config(config.get("openapi"))
                 .build();
 
-        assertThat("reader mismatch", openAPIConfig.modelReader(), is("io.helidon.openapi.test.MyModelReader"));
-        assertThat("filter mismatch", openAPIConfig.filter(), is("io.helidon.openapi.test.MySimpleFilter"));
-        assertThat("servers mismatch", openAPIConfig.servers(), containsInAnyOrder("s1","s2"));
-        assertThat("path1 servers mismatch", openAPIConfig.pathServers("path1"), containsInAnyOrder("p1s1","p1s2"));
-        assertThat("path2 servers mismatch", openAPIConfig.pathServers("path2"), containsInAnyOrder("p2s1","p2s2"));
+        assertThat("model reader", helidonOpenAPIConfig.modelReader(), is("io.helidon.openapi.test.MyModelReader"));
+        assertThat("filter", helidonOpenAPIConfig.filter(), is("io.helidon.openapi.test.MySimpleFilter"));
+        assertThat("servers", helidonOpenAPIConfig.servers(), containsInAnyOrder("s1", "s2"));
+        assertThat("path1 servers", helidonOpenAPIConfig.pathServers("path1"), containsInAnyOrder("p1s1", "p1s2"));
+        assertThat("path2 servers", helidonOpenAPIConfig.pathServers("path2"), containsInAnyOrder("p2s1", "p2s2"));
     }
 
     @Test
@@ -90,24 +76,88 @@ class OpenAPIConfigTest {
                 .disableSystemPropertiesSource()
                 .sources(ConfigSources.file(Paths.get(TEST_CONFIG_DIR, "simple.properties").toString()))
                 .build();
-        OpenApiConfig openAPIConfig = OpenAPIConfigImpl.builder()
+        HelidonOpenApiConfig helidonOpenAPIConfig = HelidonOpenApiConfig.builder()
                 .config(config.get("openapi"))
                 .build();
 
-        assertThat("scan disable mismatch", openAPIConfig.scanDisable(), is(true));
+        OpenApiConfig openApiConfig = (HelidonOpenApiConfig.Builder.ConfigImpl) helidonOpenAPIConfig;
+        assertThat("scan disable mismatch", openApiConfig.scanDisable(), is(true));
     }
 
     @Test
     void checkSchemaConfig() {
         Config config = Config.just(ConfigSources.file(Paths.get(TEST_CONFIG_DIR, "simple.properties").toString()),
-                                    ConfigSources.create(SCHEMA_OVERRIDE_CONFIG));
-        OpenApiConfig openAPIConfig = OpenAPIConfigImpl.builder()
+                                    ConfigSources.file(Paths.get(TEST_CONFIG_DIR, "configWithJsonSchemaOverrides.yaml")
+                                                               .toString()));
+        HelidonOpenApiConfig helidonOpenAPIConfig = HelidonOpenApiConfig.builder()
                 .config(config.get("openapi"))
                 .build();
 
-        assertThat("Schema override", openAPIConfig.getSchemas(), hasKey(SCHEMA_OVERRIDE_CONFIG_FQCN));
+        assertThat("Schema override", helidonOpenAPIConfig.schemas(), hasKey(SCHEMA_OVERRIDE_CONFIG_FQCN));
         assertThat("Schema override value for " + SCHEMA_OVERRIDE_CONFIG_FQCN,
-                   openAPIConfig.getSchemas().get(SCHEMA_OVERRIDE_CONFIG_FQCN),
-                   is(SCHEMA_OVERRIDE_JSON));
+                   Json.createReader(new StringReader(helidonOpenAPIConfig
+                                                              .schemas()
+                                                              .get(SCHEMA_OVERRIDE_CONFIG_FQCN))).readObject(),
+                   is(JSON_SCHEMA_OVERRIDE));
+    }
+
+    @Test
+    void checkSchemaConfigInProperties() {
+        Config config = Config.just(ConfigSources.file(Paths.get(TEST_CONFIG_DIR, "simple.properties")
+                                                               .toString()),
+                                    ConfigSources.file(Paths.get(TEST_CONFIG_DIR, "configWithSchemaOverrides.properties")
+                                                               .toString()));
+        HelidonOpenApiConfig helidonOpenAPIConfig = HelidonOpenApiConfig.builder()
+                .config(config.get("openapi"))
+                .build();
+
+        assertThat("Schema override", helidonOpenAPIConfig.schemas(), hasKey(SCHEMA_OVERRIDE_CONFIG_FQCN));
+        assertThat("Schema override value for " + SCHEMA_OVERRIDE_CONFIG_FQCN,
+                   Json.createReader(new StringReader(helidonOpenAPIConfig
+                                                              .schemas()
+                                                              .get(SCHEMA_OVERRIDE_CONFIG_FQCN))).readObject(),
+                   is(JSON_SCHEMA_OVERRIDE));
+    }
+
+    @Test
+    void testAdapter() {
+        Config config = Config.just(ConfigSources.file(Paths.get(TEST_CONFIG_DIR, "configWithVariousSettings.yaml").toString()));
+        HelidonOpenApiConfig helidonOpenApiConfig = HelidonOpenApiConfig.builder()
+                .config(config.get("openapi"))
+                .build();
+        OpenApiConfig openApiConfig = (HelidonOpenApiConfig.Builder.ConfigImpl) helidonOpenApiConfig;
+
+        assertThat("scan disable", openApiConfig.scanDisable(), is(true));
+        assertThat("model reader", openApiConfig.modelReader(), is("io.helidon.openapi.MyTestReader"));
+        assertThat("filter", openApiConfig.filter(), is("io.helidon.openapi.MyFilter"));
+        assertThat("servers", openApiConfig.servers(), containsInAnyOrder("server1", "server2"));
+        assertThat("array references enabled", openApiConfig.arrayReferencesEnable(), is(false));
+        assertThat("application path disabled", openApiConfig.applicationPathDisable(), is(false));
+        assertThat("private properties enabled", openApiConfig.privatePropertiesEnable(), is(false));
+        assertThat("sorted properties enabled", openApiConfig.sortedPropertiesEnable(), is(true));
+        assertThat("OpenAPI version", openApiConfig.getOpenApiVersion(), is("1.2.3.4"));
+        assertThat("info title", openApiConfig.getInfoTitle(), is("My API"));
+        assertThat("info version", openApiConfig.getInfoVersion(), is("1.0.0-SNAPSHOT"));
+        assertThat("info description", openApiConfig.getInfoDescription(), is("My API for a REST service"));
+        assertThat("info terms of service", openApiConfig.getInfoTermsOfService(), is("Generous"));
+        assertThat("info conatct name", openApiConfig.getInfoContactName(), is("Joe Smith"));
+        assertThat("info contact email", openApiConfig.getInfoContactEmail(), is("joe.smith@helidon.io"));
+        assertThat("info contact url", openApiConfig.getInfoContactUrl(), is("https://helidon.io/people/Joe"));
+        assertThat("info license name", openApiConfig.getInfoLicenseName(), is("Apache 2.0"));
+        assertThat("info license url",
+                   openApiConfig.getInfoLicenseUrl(),
+                   is("https://www.apache.org/licenses/LICENSE-2.0"));
+        assertThat("operation ID strategy",
+                   openApiConfig.getOperationIdStrategy(),
+                   is(OpenApiConfig.OperationIdStrategy.METHOD));
+        assertThat("duplicate operation ID behavior",
+                   openApiConfig.getDuplicateOperationIdBehavior(),
+                   is(OpenApiConfig.DuplicateOperationIdBehavior.FAIL));
+        assertThat("default produces",
+                   openApiConfig.getDefaultProduces(),
+                   optionalValue(arrayContaining("application/json")));
+        assertThat("default consumes",
+                   openApiConfig.getDefaultConsumes(),
+                   optionalValue(arrayContaining("text/plain", "text/html")));
     }
 }

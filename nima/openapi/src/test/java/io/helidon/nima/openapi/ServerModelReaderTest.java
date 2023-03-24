@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2022 Oracle and/or its affiliates.
+ * Copyright (c) 2019, 2023 Oracle and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,6 @@ import jakarta.json.JsonStructure;
 import jakarta.json.JsonValue;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -44,9 +43,10 @@ public class ServerModelReaderTest {
 
     private static final String SIMPLE_PROPS_PATH = "/openapi";
 
-    private static final OpenApiService.Builder OPENAPI_SUPPORT_BUILDER =
-            OpenApiService.builder()
-                    .config(Config.create(ConfigSources.classpath("simple.properties")).get(OpenApiService.Builder.CONFIG_KEY));
+    private static final OpenApiFeature.Builder<?, ?> OPENAPI_SUPPORT_BUILDER =
+            OpenApiFeature.builder()
+                    .config(Config.create(ConfigSources.classpath("simple.properties"))
+                                    .get(OpenApiFeature.Builder.CONFIG_KEY));
 
     private static WebServer webServer;
 
@@ -61,7 +61,6 @@ public class ServerModelReaderTest {
     }
 
     @Test
-    @Disabled
     public void checkCustomModelReader() throws Exception {
         HttpURLConnection cnx = TestUtil.getURLConnection(
                 webServer.port(),

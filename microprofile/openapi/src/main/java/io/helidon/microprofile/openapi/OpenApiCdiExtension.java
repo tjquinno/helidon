@@ -28,26 +28,29 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 
 import io.helidon.config.Config;
-import io.helidon.microprofile.cdi.RuntimeStart;
+import io.helidon.config.mp.MpConfig;
 import io.helidon.microprofile.server.JaxRsApplication;
-import io.helidon.microprofile.server.RoutingBuilders;
-import io.helidon.nima.openapi.OpenApiService;
+import io.helidon.microprofile.servicecommon.HelidonRestCdiExtension;
+import io.helidon.nima.openapi.OpenApiFeature;
 
 import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.context.Initialized;
 import jakarta.enterprise.event.Observes;
-import jakarta.enterprise.inject.spi.Extension;
+import jakarta.enterprise.inject.spi.BeanManager;
+import jakarta.enterprise.inject.spi.CDI;
 import jakarta.enterprise.inject.spi.ProcessAnnotatedType;
+import jakarta.enterprise.inject.spi.ProcessManagedBean;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.Index;
 import org.jboss.jandex.IndexReader;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
 
-import static jakarta.interceptor.Interceptor.Priority.LIBRARY_BEFORE;
 import static jakarta.interceptor.Interceptor.Priority.PLATFORM_AFTER;
 
 /**
@@ -55,20 +58,25 @@ import static jakarta.interceptor.Interceptor.Priority.PLATFORM_AFTER;
  * SmallRye OpenAPI) from CDI if no {@code META-INF/jandex.idx} file exists on
  * the class path.
  */
-public class OpenApiCdiExtension implements Extension {
+public class OpenApiCdiExtension extends HelidonRestCdiExtension<OpenApiFeature> {
 
     private static final String INDEX_PATH = "META-INF/jandex.idx";
 
     private static final System.Logger LOGGER = System.getLogger(OpenApiCdiExtension.class.getName());
+
+    private static final Function<Config, OpenApiFeature> OPENAPI_FEATURE_FACTORY = (Config config) -> {
+        BeanManager beanManager = CDI.current().getBeanManager();
+        OpenApiCdiExtension ext = beanManager.getExtension(OpenApiCdiExtension.class);
+        org.eclipse.microprofile.config.Config mpConfig = ConfigProvider.getConfig();
+        return ext.createFeature(config, MpConfig.toHelidonConfig(mpConfig).get("mp").get("openapi").detach());
+    };
 
     private final String[] indexPaths;
     private final int indexURLCount;
 
     private final Set<Class<?>> annotatedTypes = new HashSet<>();
 
-    private org.eclipse.microprofile.config.Config mpConfig;
-    private Config config;
-    private MPOpenAPISupport openApiSupport;
+    private MpOpenApiFeature mpOpenApiFeature;
 
     /**
      * Creates a new instance of the index builder.
@@ -80,6 +88,7 @@ public class OpenApiCdiExtension implements Extension {
     }
 
     OpenApiCdiExtension(String... indexPaths) throws IOException {
+        super(LOGGER, OPENAPI_FEATURE_FACTORY, "openapi");
         this.indexPaths = indexPaths;
         List<URL> indexURLs = findIndexFiles(indexPaths);
         indexURLCount = indexURLs.size();
@@ -95,26 +104,23 @@ public class OpenApiCdiExtension implements Extension {
         }
     }
 
-    private void configure(@Observes @RuntimeStart Config config) {
-        this.mpConfig = (org.eclipse.microprofile.config.Config) config;
-        this.config = config;
+    @Override
+    protected void processManagedBean(ProcessManagedBean<?> processManagedBean) {
+        // We delegate annotation processing to SmallRye.
     }
 
-    void registerOpenApi(@Observes @Priority(LIBRARY_BEFORE + 10) @Initialized(ApplicationScoped.class) Object event) {
-        Config openapiNode = config.get(OpenApiService.Builder.CONFIG_KEY);
-        openApiSupport = new MPOpenAPIBuilder()
+    private MpOpenApiFeature createFeature(Config config, Config mpConfig) {
+        mpOpenApiFeature = MpOpenApiFeature.mpBuilder()
+                .config(config)
                 .config(mpConfig)
                 .singleIndexViewSupplier(this::indexView)
-                .config(openapiNode)
                 .build();
-
-        openApiSupport
-                .configureEndpoint(RoutingBuilders.create(openapiNode).routingBuilder());
+        return mpOpenApiFeature;
     }
 
     // Must run after the server has created the Application instances.
     void buildModel(@Observes @Priority(PLATFORM_AFTER + 100 + 10) @Initialized(ApplicationScoped.class) Object event) {
-        openApiSupport.prepareModel();
+        mpOpenApiFeature.prepareModel();
     }
 
     /**
@@ -178,7 +184,7 @@ public class OpenApiCdiExtension implements Extension {
          * Some apps might be added dynamically, not via annotation processing. Add those classes to the index if they are not
          * already present.
          */
-        MPOpenAPIBuilder.jaxRsApplicationsToRun().stream()
+        MpOpenApiFeature.jaxRsApplicationsToRun().stream()
                 .map(JaxRsApplication::applicationClass)
                 .filter(Optional::isPresent)
                 .forEach(appClassOpt -> addClassToIndexer(indexer, appClassOpt.get()));

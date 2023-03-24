@@ -34,7 +34,9 @@ module io.helidon.microprofile.openapi {
     requires smallrye.open.api.core;
 
     requires microprofile.config.api;
+    requires io.helidon.config.mp;
     requires io.helidon.microprofile.server;
+    requires io.helidon.microprofile.servicecommon;
     requires io.helidon.openapi;
     requires io.helidon.nima.openapi;
     requires transitive microprofile.openapi.api;
