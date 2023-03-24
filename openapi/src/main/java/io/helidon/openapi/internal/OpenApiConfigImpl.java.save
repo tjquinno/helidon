@@ -1,0 +1,420 @@
+/*
+ * Copyright (c) 2019, 2023 Oracle and/or its affiliates.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.helidon.openapi.internal;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
+
+import io.helidon.config.Config;
+import io.helidon.openapi.HelidonOpenApiConfig;
+
+/**¡
+ * Helidon-specific implementation of the SmallRye {@link io.smallrye.openapi.api.OpenApiConfig} interface,
+ * loadable from a Helidon {@link io.helidon.config.Config} object as well as individual items
+ * settable programmatically.
+ * <p>
+ *     The full SmallRye config includes settings for annotation processing, which only Helidon MP supports, so several of those
+ *     methods are not implemented here, deferring to the default method implementations declared on the interface.
+ * </p>
+ */
+public class OpenApiConfigImpl implements OpenApiConfig {
+
+    private final String modelReader;
+    private final String filter;
+    private final Map<String, List<String>> operationServers;
+    private final Map<String, List<String>> pathServers;
+
+    private final List<String> servers;
+    private final Boolean arrayReferencesEnable;
+    private final String customSchemaRegistryClass;
+    private final Boolean applicationPathDisable;
+    private final Boolean privatePropertiesEnable;
+    private final String propertyNamingStrategy;
+    private final Boolean sortedPropertiesEnable;
+    private final Boolean removeUnusedSchemasEnable;
+    private final Map<String, String> schemas;
+
+    /**
+     * Creates a new instance of the config impl using the values set on the provided builder.
+     *
+     * @param builder {@code Builder} instance from which to get the values
+     */
+    protected OpenApiConfigImpl(Builder builder) {
+        modelReader = builder.modelReader;
+        filter = builder.filter;
+        operationServers = builder.operationServers;
+        pathServers = builder.pathServers;
+        servers = new ArrayList<>(builder.servers);
+
+        arrayReferencesEnable = builder.arrayReferencesEnable;
+        customSchemaRegistryClass = builder.customSchemaRegistryClass;
+        applicationPathDisable = builder.applicationPathDisable;
+        privatePropertiesEnable = builder.privatePropertiesEnable;
+        propertyNamingStrategy = builder.propertyNamingStrategy;
+        sortedPropertiesEnable = builder.sortedPropertiesEnable;
+        removeUnusedSchemasEnable = builder.removeUnusedSchemasEnable;
+        schemas = Collections.unmodifiableMap(builder.schemas);
+    }
+
+    /**
+     * Creates a new builder for composing an OpenAPI config instance.
+     *
+     * @return the new {@code Builder}
+     */
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    @Override
+    public String modelReader() {
+        return modelReader;
+    }
+
+    @Override
+    public String filter() {
+        return filter;
+    }
+
+    @Override
+    public boolean scanDisable() {
+        return true;
+    }
+
+    @Override
+    public List<String> servers() {
+        return servers;
+    }
+
+    @Override
+    public List<String> pathServers(String path) {
+        return chooseEntry(pathServers, path);
+    }
+
+    @Override
+    public List<String> operationServers(String operationID) {
+        return chooseEntry(operationServers, operationID);
+    }
+
+    @Override
+    public boolean arrayReferencesEnable() {
+        return arrayReferencesEnable;
+    }
+
+    @Override
+    public String customSchemaRegistryClass() {
+        return customSchemaRegistryClass;
+    }
+
+    @Override
+    public boolean applicationPathDisable() {
+        return applicationPathDisable;
+    }
+
+    @Override
+    public boolean privatePropertiesEnable() {
+        return privatePropertiesEnable;
+    }
+
+    @Override
+    public String propertyNamingStrategy() {
+        return propertyNamingStrategy;
+    }
+
+    @Override
+    public boolean sortedPropertiesEnable() {
+        return sortedPropertiesEnable;
+    }
+
+    @Override
+    public boolean removeUnusedSchemas() {
+        return removeUnusedSchemasEnable;
+    }
+
+    @Override
+    public Map<String, String> getSchemas() {
+        return schemas;
+    }
+
+    private static <T, U> List<U> chooseEntry(Map<T, List<U>> map, T key) {
+        if (map.containsKey(key)) {
+            return map.get(key);
+        }
+        return List.of();
+    }
+
+    /**
+     * Fluent builder for {@link OpenApiConfigImpl}.
+     */
+    public static class Builder extends OpenApiConfig.Builder<Builder, OpenApiConfigImpl> {
+
+        private String modelReader;
+        private String filter;
+        private final Map<String, List<String>> operationServers = new HashMap<>();
+        private final Map<String, List<String>> pathServers = new HashMap<>();
+        private final Set<String> servers = new HashSet<>();
+        private Boolean arrayReferencesEnable = Boolean.valueOf(ARRAY_REFERENCES_ENABLE_DEFAULT);
+        private String customSchemaRegistryClass;
+        private Boolean applicationPathDisable = Boolean.valueOf(APPLICATION_PATH_DISABLE_DEFAULT);
+        private Boolean privatePropertiesEnable = Boolean.valueOf(PRIVATE_PROPERTIES_ENABLE_DEFAULT);
+        private String propertyNamingStrategy = PROPERTY_NAMING_STRATEGY_DEFAULT;
+        private Boolean sortedPropertiesEnable = Boolean.FALSE;
+        private Boolean removeUnusedSchemasEnable = Boolean.valueOf(REMOVE_UNUSED_SCHEMAS_DEFAULT);
+        private Map<String, String> schemas = new HashMap<>();
+
+        /**
+         * Constructor for the builder.
+         */
+        protected Builder() {
+        }
+
+        @Override
+        public OpenApiConfigImpl build() {
+            return new OpenApiConfigImpl(this);
+        }
+
+        @Override
+        public Builder config(Config config) {
+            config.get(MODEL_READER).asString().ifPresent(this::modelReader);
+            config.get(FILTER).asString().ifPresent(this::filter);
+            listFromCommaSeparatedString(config.get(SERVERS)).ifPresent(this::servers);
+            namedlistFromConfig(config.get(SERVERS_PATH), this::pathServers);
+            namedlistFromConfig(config.get(SERVERS_OPERATION), this::operationServers);
+            config.get(ARRAY_REFERENCES_ENABLE).asBoolean().ifPresent(this::arrayReferencesEnable);
+            config.get(CUSTOM_SCHEMA_REGISTRY_CLASS).asString().ifPresent(this::customSchemaRegistryClass);
+            config.get(APPLICATION_PATH_DISABLE).asBoolean().ifPresent(this::applicationPathDisable);
+            config.get(PRIVATE_PROPERTIES_ENABLE).asBoolean().ifPresent(this::privatePropertiesEnable);
+            config.get(PROPERTY_NAMING_STRATEGY).asString().ifPresent(this::propertyNamingStrategy);
+            config.get(SORTED_PROPERTIES_ENABLE).asBoolean().ifPresent(this::sortedPropertiesEnable);
+            config.get(REMOVE_UNUSED_SCHEMAS_ENABLE).asBoolean().ifPresent(this::removeUnusedSchemasEnable);
+            mapFromConfig(config, SCHEMA, this::schemas);
+
+            return this;
+        }
+
+        @Override
+        public Builder modelReader(String modelReader) {
+            this.modelReader = modelReader;
+            return this;
+        }
+
+        @Override
+        public Builder filter(String filter) {
+            this.filter = filter;
+            return this;
+        }
+
+        @Override
+        public Builder operationServers(String operationID, String operationServers) {
+            this.operationServers.clear();
+            setEntry(this.operationServers, operationID, operationServers);
+            return this;
+        }
+
+        @Override
+        public Builder addOperationServer(String operationID, String operationServer) {
+            addToEntry(operationServers, operationID, operationServer);
+            return this;
+        }
+
+        @Override
+        public Builder pathServers(String path, String pathServers) {
+            setEntry(this.pathServers, path, pathServers);
+            return this;
+        }
+
+        @Override
+        public Builder addPathServer(String path, String pathServer) {
+            addToEntry(pathServers, path, pathServer);
+            return this;
+        }
+
+        @Override
+        public Builder servers(List<String> servers) {
+            this.servers.clear();
+            this.servers.addAll(servers);
+            return this;
+        }
+
+        @Override
+        public Builder addServer(String server) {
+            servers.add(server);
+            return this;
+        }
+
+        @Override
+        public Builder schemas(Map<String, String> schemas) {
+            this.schemas = new HashMap<>(schemas);
+            return this;
+        }
+
+        @Override
+        public Builder addSchema(String fullyQualifiedClassName, String schema) {
+            schemas.put(fullyQualifiedClassName, schema);
+            return this;
+        }
+
+        @Override
+        public Builder arrayReferencesEnable(Boolean value) {
+            arrayReferencesEnable = value;
+            return this;
+        }
+
+        @Override
+        public Builder customSchemaRegistryClass(String className) {
+            customSchemaRegistryClass = className;
+            return this;
+        }
+
+        @Override
+        public Builder applicationPathDisable(Boolean value) {
+            applicationPathDisable = value;
+            return this;
+        }
+
+        @Override
+        public Builder privatePropertiesEnable(Boolean value) {
+            privatePropertiesEnable = value;
+            return this;
+        }
+
+        @Override
+        public Builder propertyNamingStrategy(String value) {
+            propertyNamingStrategy = value;
+            return this;
+        }
+
+        @Override
+        public Builder sortedPropertiesEnable(Boolean value) {
+            sortedPropertiesEnable = value;
+            return this;
+        }
+
+        @Override
+        public Builder removeUnusedSchemasEnable(Boolean value) {
+            removeUnusedSchemasEnable = value;
+            return this;
+        }
+
+        /**
+         * Converts the string value (comma-separated sequence) of a config node to a {@code List<String>}.
+
+         * @param config the config node potentially containing a comma-list string
+         * @return {@code Optional} of a {@code List<String>} from parsing the comma-list
+         */
+        protected Optional<List<String>> listFromCommaSeparatedString(Config config) {
+            return config
+                    .asString()
+                    .map(s -> Arrays.stream(s.split(",")).toList());
+        }
+
+        /**
+         * Invokes the specified function with each key/value pair with a key matching the prefix.
+         *
+         * @param config config node potentially containing children to extract
+         * @param assignment {@code BiConsumer} accepting the key and value (presumably for storage)
+         */
+        protected void namedlistFromConfig(Config config,
+                                           BiConsumer<String, String> assignment) {
+            config.asNodeList()
+                    .ifPresent(cf -> cf.forEach(c -> assignment.accept(c.key().name(),
+                                                                       c.asString().get())));
+        }
+
+       /**
+         * Invokes the specified function with a set of values derived from the children of the given
+         * node which share the specified prefix.
+         *
+         * @param config config node potentially containing children to extract
+         * @return {@code Optional<Set<String>>} }
+         */
+        protected Optional<Set<String>> simpleSetFromConfig(Config config) {
+            return config
+                    .asList(String.class)
+                    .map(HashSet::new);
+        }
+
+        /**
+         * Invokes the specified function with a {@code Map} constructed from children of the specified
+         * config node sharing the indicated key prefix.
+         *
+         * @param config config node potentially containing children of interest
+         * @param keyPrefix common prefix shared by children of interest
+         * @param assignment {@code Consumer} acting on a {@code Map} of child key name to {@code String}
+         */
+        protected void mapFromConfig(Config config,
+                                          String keyPrefix,
+                                          Consumer<Map<String, String>> assignment) {
+            AtomicReference<Map<String, String>> schemas = new AtomicReference<>(new HashMap<>());
+            config.get(keyPrefix)
+                    .detach()
+                    .ifExists(configNode -> schemas.set(configNode.asMap().get()));
+
+            assignment.accept(schemas.get());
+        }
+
+        /**
+         * Given a Map<T,Set<U>>, adds an entry to the set for a given key
+         * value, creating the entry in the map if none already exists.
+         *
+         * @param <T> key type of the Map
+         * @param <U> value type of the Map
+         * @param map Map<T,U>
+         * @param key key for which a value is to be added
+         * @param value value to add to the Map entry for the given key
+         */
+        private static <T, U> void addToEntry(Map<T, List<U>> map, T key, U value) {
+            List<U> list = map.computeIfAbsent(key, k -> new ArrayList<>());
+            list.add(value);
+        }
+
+        /**
+         * Sets the entry for a key in Map<T,String> by parsing a
+         * comma-separated list of values.
+         *
+         * @param <T> type of the map's key
+         * @param map Map<T,String>
+         * @param key key value for which to assign its associated values
+         * @param values comma-separated list of String values to convert to a
+         * list
+         */
+        private static <T> void setEntry(
+                Map<T, List<String>> map,
+                T key,
+                String values) {
+            List<String> list = commaListToList(values);
+            map.put(key, list);
+        }
+
+        private static List<String> commaListToList(String items) {
+            /*
+             * Do not special-case an empty comma-list to an empty list because a
+             * list created here might be added to later.
+             */
+            return Arrays.stream(items.split(",")).collect(Collectors.toList());
+        }
+    }
+}

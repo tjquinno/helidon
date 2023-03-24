@@ -28,7 +28,6 @@ import io.helidon.nima.webserver.WebServer;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -39,7 +38,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Starts a server with the default OpenAPI endpoint to test a static OpenAPI
  * document file in various ways.
  */
-@Disabled
 class ServerTest {
 
     private static WebServer greetingWebServer;
@@ -49,19 +47,19 @@ class ServerTest {
     private static final String TIME_PATH = "/openapi-time";
 
     private static final Config OPENAPI_CONFIG_DISABLED_CORS = Config.create(
-            ConfigSources.classpath("serverNoCORS.properties").build()).get(OpenApiService.Builder.CONFIG_KEY);
+            ConfigSources.classpath("serverNoCORS.properties").build()).get(OpenApiFeature.Builder.CONFIG_KEY);
 
     private static final Config OPENAPI_CONFIG_RESTRICTED_CORS = Config.create(
-            ConfigSources.classpath("serverCORSRestricted.yaml").build()).get(OpenApiService.Builder.CONFIG_KEY);
+            ConfigSources.classpath("serverCORSRestricted.yaml").build()).get(OpenApiFeature.Builder.CONFIG_KEY);
 
-    static final OpenApiService.Builder GREETING_OPENAPI_SUPPORT_BUILDER
-            = OpenApiService.builder()
+    static final OpenApiFeature.Builder<?, ?> GREETING_OPENAPI_SUPPORT_BUILDER
+            = OpenApiFeature.builder()
                     .staticFile("src/test/resources/openapi-greeting.yml")
                     .webContext(GREETING_PATH)
                     .config(OPENAPI_CONFIG_DISABLED_CORS);
 
-    static final OpenApiService.Builder TIME_OPENAPI_SUPPORT_BUILDER
-            = OpenApiService.builder()
+    static final OpenApiFeature.Builder<?, ?> TIME_OPENAPI_SUPPORT_BUILDER
+            = OpenApiFeature.builder()
                     .staticFile("src/test/resources/openapi-time-server.yml")
                     .webContext(TIME_PATH)
                     .config(OPENAPI_CONFIG_RESTRICTED_CORS);

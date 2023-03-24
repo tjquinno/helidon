@@ -62,7 +62,7 @@ public class TestUtil {
      *                server.
      * @return the {@code WebServer} set up with OpenAPI support
      */
-    public static WebServer startServer(OpenApiService.Builder builder) {
+    public static WebServer startServer(OpenApiFeature.Builder builder) {
         try {
             return startServer(0, builder);
         } catch (InterruptedException | ExecutionException | TimeoutException ex) {
@@ -243,7 +243,7 @@ public class TestUtil {
                      "Unexpected response code");
         MediaType expectedMT = expectedMediaType != null
                 ? expectedMediaType
-                : OpenApiService.DEFAULT_RESPONSE_MEDIA_TYPE;
+                : OpenApiFeature.DEFAULT_RESPONSE_MEDIA_TYPE;
         HttpMediaType actualMT = mediaTypeFromResponse(cnx);
         assertTrue(HttpMediaType.create(expectedMT).test(actualMT),
                    "Expected response media type "
@@ -308,11 +308,13 @@ public class TestUtil {
      */
     public static WebServer startServer(
             int port,
-            OpenApiService.Builder... openAPIBuilders) throws
+            OpenApiFeature.Builder... openAPIBuilders) throws
             InterruptedException, ExecutionException, TimeoutException {
-        WebServer result = WebServer.builder()
-                .routing(it -> it.register(openAPIBuilders)
-                        .build())
+        WebServer.Builder webServerBuilder = WebServer.builder();
+        for (OpenApiFeature.Builder b : openAPIBuilders) {
+            webServerBuilder.routing(it -> it.addFeature(b));
+        }
+        WebServer result = webServerBuilder
                 .port(port)
                 .build()
                 .start();

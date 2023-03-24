@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -131,6 +132,15 @@ public class Serializer {
         }
 
         @Override
+        protected Node representMapping(Tag tag, Map<?, ?> mapping, DumperOptions.FlowStyle flowStyle) {
+            Node result = super.representMapping(tag, mapping, flowStyle);
+            if (result instanceof MappingNode mappingNode) {
+                processExtensions(mappingNode, mapping);
+            }
+            return result;
+        }
+
+        @Override
         protected Node representScalar(Tag tag, String value, DumperOptions.ScalarStyle style) {
             return super.representScalar(tag, value, isExemptedFromQuotes(tag) ? DumperOptions.ScalarStyle.PLAIN : style);
         }
@@ -224,21 +234,24 @@ public class Serializer {
 
             List<NodeTuple> tuples = new ArrayList<>(node.getValue());
 
-            if (tuples.isEmpty()) {
-                return;
-            }
             List<NodeTuple> updatedTuples = new ArrayList<>();
 
+            // If the mappingNode is a JavaBean, then it will have extension tuples already, just
+            // one level too low so we elevate them. Otherwise, there might not be any extension tuples
+            // yet so we create them and add them to the correct level.
+            AtomicBoolean handledExtensionNodes = new AtomicBoolean(false);
             tuples.forEach(tuple -> {
                 Node keyNode = tuple.getKeyNode();
                 if (keyNode.getTag().equals(Tag.STR)) {
                     String key = ((ScalarNode) keyNode).getValue();
                     if (key.equals(EXTENSIONS)) {
+
                         Node valueNode = tuple.getValueNode();
                         if (valueNode.getNodeId().equals(NodeId.mapping)) {
                             MappingNode extensions = MappingNode.class.cast(valueNode);
                             updatedTuples.addAll(extensions.getValue());
                         }
+                        handledExtensionNodes.set(true);
                     } else {
                         updatedTuples.add(tuple);
                     }
@@ -246,6 +259,20 @@ public class Serializer {
                     updatedTuples.add(tuple);
                 }
             });
+            if (!handledExtensionNodes.get()) {
+                Map<String, Object> extensions = ((Extensible<?>) javaBean).getExtensions();
+                if (extensions != null) {
+                    extensions.forEach((name, value) -> {
+                        Node keyNode = representScalar(Tag.STR,
+                                                       name,
+                                                       CustomRepresenter.this.stringStyle);
+                        Node valueNode = representScalar(Tag.STR,
+                                                         value.toString(),
+                                                         CustomRepresenter.this.stringStyle);
+                        updatedTuples.add(new NodeTuple(keyNode, valueNode));
+                    });
+                }
+            }
             node.setValue(updatedTuples);
         }
 

@@ -23,14 +23,13 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import io.helidon.config.metadata.Configured;
 import io.helidon.config.metadata.ConfiguredOption;
 import io.helidon.microprofile.server.JaxRsApplication;
 import io.helidon.microprofile.server.JaxRsCdiExtension;
-import io.helidon.nima.openapi.OpenApiService;
+import io.helidon.nima.openapi.OpenApiFeature;
+import io.helidon.openapi.HelidonOpenApiConfig;
 
 import io.smallrye.openapi.api.OpenApiConfig;
 import io.smallrye.openapi.api.OpenApiConfigImpl;
@@ -48,23 +47,22 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 
 /**
- * Fluent builder for OpenAPISupport in Helidon MP.
+ * Fluent builder for {@link io.helidon.nima.openapi.OpenApiFeature} in Helidon MP.
  */
-@Configured(prefix = MPOpenAPIBuilder.MP_OPENAPI_CONFIG_PREFIX)
-public final class MPOpenAPIBuilder extends OpenApiService.AbstractBuilder<MPOpenAPIBuilder, MPOpenAPISupport> {
+final class MpOpenApiFeatureBuilder extends OpenApiFeature.AbstractBuilder<MpOpenApiFeatureBuilder, MpOpenApiFeature> {
 
     // This is the prefix users will use in the config file.
-    static final String MP_OPENAPI_CONFIG_PREFIX = "mp." + OpenApiService.Builder.CONFIG_KEY;
+    static final String MP_OPENAPI_CONFIG_PREFIX = "mp." + OpenApiFeature.Builder.CONFIG_KEY;
 
     private static final String USE_JAXRS_SEMANTICS_CONFIG_KEY = "use-jaxrs-semantics";
 
     private static final String USE_JAXRS_SEMANTICS_FULL_CONFIG_KEY =
-            "mp.openapi.extensions.helidon." + USE_JAXRS_SEMANTICS_CONFIG_KEY;
+            MP_OPENAPI_CONFIG_PREFIX + ".extensions.helidon." + USE_JAXRS_SEMANTICS_CONFIG_KEY;
     private static final boolean USE_JAXRS_SEMANTICS_DEFAULT = true;
 
-    private static final System.Logger LOGGER = System.getLogger(MPOpenAPIBuilder.class.getName());
+    private static final System.Logger LOGGER = System.getLogger(MpOpenApiFeatureBuilder.class.getName());
 
-    private OpenApiConfig openAPIConfig;
+    private HelidonOpenApiConfig openAPIConfig;
 
     private boolean useJaxRsSemantics = USE_JAXRS_SEMANTICS_DEFAULT;
 
@@ -77,13 +75,16 @@ public final class MPOpenAPIBuilder extends OpenApiService.AbstractBuilder<MPOpe
     private Config mpConfig;
 
     @Override
-    protected OpenApiConfig openAPIConfig() {
+    protected HelidonOpenApiConfig openApiConfig() {
         return openAPIConfig;
     }
 
     @Override
-    public MPOpenAPISupport build() {
-        MPOpenAPISupport result = new MPOpenAPISupport(this);
+    public MpOpenApiFeature build() {
+        // Do not invoke super.build() because that method prepares the model. In MP we must defer building
+        // the model until later (from the OpenAPI CDI extension).
+        MpOpenApiFeature result = new MpOpenApiFeature(this);
+        openAPIConfig(new HelidonOpenApiConfig(mpConfig));
         validate();
         return result;
     }
@@ -177,7 +178,7 @@ public final class MPOpenAPIBuilder extends OpenApiService.AbstractBuilder<MPOpe
         // Partially inspired by the SmallRye code.
         return !Modifier.isInterface(classInfo.flags())
                 || indexView.getAllKnownImplementors(classInfo.name()).stream()
-                       .anyMatch(MPOpenAPIBuilder::isConcrete);
+                       .anyMatch(MpOpenApiFeatureBuilder::isConcrete);
     }
 
     private static boolean isConcrete(ClassInfo classInfo) {
@@ -256,26 +257,16 @@ public final class MPOpenAPIBuilder extends OpenApiService.AbstractBuilder<MPOpe
             return viewFilteredByConfig;
         }
 
-        /*
-         * If the classes to be ignored are A and B, the exclusion regex expression we want for filtering is
-         *
-         * ^(A|B)$
-         *
-         * The ^ and $ avoid incorrect prefix/suffix matches.
-         */
-        Pattern excludePattern = Pattern.compile(
+        Set<String> excludeClasses =
                 classNamesToIgnore(jaxRsApplications,
                                    jaxRsApp,
                                    ancillaryClassNames,
-                                   classesExplicitlyReferenced)
-                        .stream()
-                        .map(Pattern::quote)
-                        .collect(Collectors.joining("|", "^(", ")$")));
+                                   classesExplicitlyReferenced);
 
         // Create a new filtered index view for this application which excludes the irrelevant classes we just identified. Its
         // delegate is the previously-created view based only on the MP configuration.
         FilteredIndexView result = new FilteredIndexView(viewFilteredByConfig,
-                                                         new FilteringOpenApiConfigImpl(mpConfig, excludePattern));
+                                                         new FilteringOpenApiConfigImpl(mpConfig, excludeClasses));
         if (LOGGER.isLoggable(Level.DEBUG)) {
             String knownClassNames = result
                     .getKnownClasses()
@@ -291,7 +282,7 @@ public final class MPOpenAPIBuilder extends OpenApiService.AbstractBuilder<MPOpe
                                              + "  and known classes: %n  %s",
                                      appClassName,
                                      classesExplicitlyReferenced,
-                                     excludePattern,
+                                     excludeClasses,
                                      knownClassNames));
         }
 
@@ -313,7 +304,7 @@ public final class MPOpenAPIBuilder extends OpenApiService.AbstractBuilder<MPOpe
 
         Set<String> result = // Start with all other JAX-RS app names.
                 jaxRsApplications.stream()
-                        .map(MPOpenAPIBuilder::toClassName)
+                        .map(MpOpenApiFeatureBuilder::toClassName)
                         .filter(candidateName -> !candidateName.equals("<unknown>") && !candidateName.equals(appClassName))
                         .collect(Collectors.toSet());
 
@@ -329,15 +320,15 @@ public final class MPOpenAPIBuilder extends OpenApiService.AbstractBuilder<MPOpe
 
     private static class FilteringOpenApiConfigImpl extends OpenApiConfigImpl {
 
-        private final Pattern classesToExclude;
+        private final Set<String> classesToExclude;
 
-        FilteringOpenApiConfigImpl(Config config, Pattern classesToExclude) {
+        FilteringOpenApiConfigImpl(Config config, Set<String> classesToExclude) {
             super(config);
             this.classesToExclude = classesToExclude;
         }
 
         @Override
-        public Pattern scanExcludeClasses() {
+        public Set<String> scanExcludeClasses() {
             return classesToExclude;
         }
     }
@@ -346,10 +337,10 @@ public final class MPOpenAPIBuilder extends OpenApiService.AbstractBuilder<MPOpe
      * Sets the OpenApiConfig instance to use in governing the behavior of the
      * smallrye OpenApi implementation.
      *
-     * @param config {@link OpenApiConfig} instance to control OpenAPI behavior
+     * @param config {@link HelidonOpenApiConfig} instance to control OpenAPI behavior
      * @return updated builder instance
      */
-    private MPOpenAPIBuilder openAPIConfig(OpenApiConfig config) {
+    private MpOpenApiFeatureBuilder openAPIConfig(HelidonOpenApiConfig config) {
         this.openAPIConfig = config;
         return this;
     }
@@ -381,7 +372,9 @@ public final class MPOpenAPIBuilder extends OpenApiService.AbstractBuilder<MPOpe
                       type = String.class,
                       kind = ConfiguredOption.Kind.LIST,
                       description = "Specify the list of classes to exclude from scans.")
-    public MPOpenAPIBuilder config(Config mpConfig) {
+    public MpOpenApiFeatureBuilder config(Config mpConfig) {
+
+        super.config((io.helidon.config.Config) mpConfig);
         this.mpConfig = mpConfig;
 
         // use-jaxrs-semantics is intended for Helidon's private use in running the TCKs to work around a problem there.
@@ -389,10 +382,10 @@ public final class MPOpenAPIBuilder extends OpenApiService.AbstractBuilder<MPOpe
         useJaxRsSemantics = mpConfig
                 .getOptionalValue(USE_JAXRS_SEMANTICS_FULL_CONFIG_KEY, Boolean.class)
                 .orElse(USE_JAXRS_SEMANTICS_DEFAULT);
-        return openAPIConfig(new OpenApiConfigImpl(mpConfig));
+        return this;
     }
 
-    MPOpenAPIBuilder singleIndexViewSupplier(Supplier<? extends IndexView> singleIndexViewSupplier) {
+    MpOpenApiFeatureBuilder singleIndexViewSupplier(Supplier<? extends IndexView> singleIndexViewSupplier) {
         this.singleIndexViewSupplier = singleIndexViewSupplier;
         return this;
     }
@@ -403,7 +396,7 @@ public final class MPOpenAPIBuilder extends OpenApiService.AbstractBuilder<MPOpe
     }
 
     @Override
-    public MPOpenAPIBuilder validate() throws IllegalStateException {
+    public MpOpenApiFeatureBuilder validate() throws IllegalStateException {
         super.validate();
         if (openAPIConfig == null) {
             throw new IllegalStateException("OpenApiConfig has not been set in MPBuilder");

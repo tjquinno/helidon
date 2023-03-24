@@ -49,12 +49,8 @@
             <artifactId>helidon-nima-http-media-jsonp</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.helidon.cors</groupId>
-            <artifactId>helidon-cors</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.helidon.nima.webserver</groupId>
-            <artifactId>helidon-nima-webserver-cors</artifactId>
+            <groupId>io.helidon.nima.service-common</groupId>
+            <artifactId>helidon-nima-service-common</artifactId>
         </dependency>
         <dependency>
             <groupId>io.helidon.config</groupId>
@@ -63,16 +59,15 @@
             <optional>true</optional>
         </dependency>
         <dependency>
-            <groupId>io.helidon.config</groupId>
-            <artifactId>helidon-config-metadata-processor</artifactId>
-            <scope>provided</scope>
-            <optional>true</optional>
-        </dependency>
-        <dependency>
             <groupId>io.helidon.common.features</groupId>
             <artifactId>helidon-common-features-api</artifactId>
             <scope>provided</scope>
             <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>io.helidon.config</groupId>
+            <artifactId>helidon-config-yaml</artifactId>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -96,6 +91,11 @@
                         <path>
                             <groupId>io.helidon.common.features</groupId>
                             <artifactId>helidon-common-features-processor</artifactId>
+                            <version>${helidon.version}</version>
+                        </path>
+                        <path>
+                            <groupId>io.helidon.config</groupId>
+                            <artifactId>helidon-config-metadata-processor</artifactId>
                             <version>${helidon.version}</version>
                         </path>
                     </annotationProcessorPaths>
