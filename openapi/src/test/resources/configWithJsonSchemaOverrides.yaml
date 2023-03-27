@@ -30,3 +30,11 @@ openapi:
         "title": "Epoch Seconds",
         "description": "Number of seconds from the epoch of 1970-01-01T00:00:00Z"
       }
+    "java~1time~1Duration": >
+      {
+        "name": "DurationNanoseconds",
+        "type": "number",
+        "format": "int64",
+        "title" : "Duration Nanoseconds",
+        "description": "Number of nanoseconds represented by the duration"
+      }

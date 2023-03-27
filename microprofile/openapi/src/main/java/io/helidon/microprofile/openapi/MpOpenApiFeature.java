@@ -15,13 +15,8 @@
  */
 package io.helidon.microprofile.openapi;
 
-import java.lang.reflect.Modifier;
-import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import io.helidon.config.Config;
 import io.helidon.config.metadata.Configured;
@@ -32,15 +27,7 @@ import io.helidon.nima.openapi.OpenApiFeature;
 import io.helidon.openapi.HelidonOpenApiConfig;
 
 import io.smallrye.openapi.api.OpenApiConfig;
-import io.smallrye.openapi.runtime.scanner.FilteredIndexView;
 import jakarta.enterprise.inject.spi.CDI;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.core.Feature;
-import jakarta.ws.rs.ext.Provider;
-import org.jboss.jandex.AnnotationInstance;
-import org.jboss.jandex.AnnotationTarget;
-import org.jboss.jandex.ClassInfo;
-import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 
 /**
@@ -93,204 +80,6 @@ class MpOpenApiFeature extends OpenApiFeature {
         return ext.applicationsToRun();
     }
 
-    /**
-     * Builds a list of filtered index views, one for each JAX-RS application, sorted by the Application class name to help
-     * keep the list of endpoints in the OpenAPI document in a stable order.
-     * <p>
-     * First, we find all resource, provider, and feature classes present in the index. This is the same for all
-     * applications.
-     * </p>
-     * <p>
-     * Each filtered index view is tuned to one JAX-RS application.
-     * </p>
-     *
-     * @return list of {@code FilteredIndexView}s, one per JAX-RS application
-     */
-    private List<FilteredIndexView> buildPerAppFilteredIndexViews() {
-
-        List<JaxRsApplication> jaxRsApplications = jaxRsApplicationsToRun().stream()
-                .filter(jaxRsApp -> jaxRsApp.applicationClass().isPresent())
-                .sorted(Comparator.comparing(jaxRsApplication -> jaxRsApplication.applicationClass()
-                        .get()
-                        .getName()))
-                .collect(Collectors.toList());
-
-        // TODO - fix this
-        IndexView indexView = null; // = singleIndexViewSupplier.get();
-
-        FilteredIndexView viewFilteredByConfig = new FilteredIndexView(indexView, helidonOpenApiConfig().openApiConfig());
-        Set<String> ancillaryClassNames = ancillaryClassNames(viewFilteredByConfig);
-
-        /*
-         * Filter even for a single-application class in case it implements getClasses or getSingletons.
-         */
-        return jaxRsApplications.stream()
-                .map(jaxRsApp -> indexViewHelper.filteredIndexView(viewFilteredByConfig,
-                                                                   jaxRsApplications,
-                                                                   jaxRsApp,
-                                                                   ancillaryClassNames))
-                .collect(Collectors.toList());
-    }
-
-    private static Set<String> ancillaryClassNames(IndexView indexView) {
-        Set<String> result = new HashSet<>(resourceClassNames(indexView));
-        result.addAll(providerClassNames(indexView));
-        result.addAll(featureClassNames(indexView));
-        if (LOGGER.isLoggable(System.Logger.Level.TRACE)) {
-            LOGGER.log(System.Logger.Level.TRACE, "Ancillary classes: {0}", result);
-        }
-        return result;
-    }
-
-    private static Set<String> resourceClassNames(IndexView indexView) {
-        return annotatedClassNames(indexView, Path.class);
-    }
-
-    private static Set<String> providerClassNames(IndexView indexView) {
-        return annotatedClassNames(indexView, Provider.class);
-    }
-
-    private static Set<String> featureClassNames(IndexView indexView) {
-        return annotatedClassNames(indexView, Feature.class);
-    }
-
-    private static Set<String> annotatedClassNames(IndexView indexView, Class<?> annotationClass) {
-        // Partially inspired by the SmallRye code.
-        return indexView
-                .getAnnotations(DotName.createSimple(annotationClass.getName()))
-                .stream()
-                .map(AnnotationInstance::target)
-                .filter(target -> target.kind() == AnnotationTarget.Kind.CLASS)
-                .map(AnnotationTarget::asClass)
-                .filter(classInfo -> hasImplementationOrIsIncluded(indexView, classInfo))
-                .map(ClassInfo::toString)
-                .collect(Collectors.toSet());
-    }
-
-    private static boolean hasImplementationOrIsIncluded(IndexView indexView, ClassInfo classInfo) {
-        // Partially inspired by the SmallRye code.
-        return !Modifier.isInterface(classInfo.flags())
-                || indexView.getAllKnownImplementors(classInfo.name()).stream()
-                .anyMatch(MpOpenApiFeature::isConcrete);
-    }
-
-    private static boolean isConcrete(ClassInfo classInfo) {
-        return !Modifier.isAbstract(classInfo.flags());
-    }
-
-//    /**
-//     * Builds a list of filtered index views, one for each JAX-RS application, sorted by the Application class name to help
-//     * keep the list of endpoints in the OpenAPI document in a stable order.
-//     * <p>
-//     * First, we find all resource, provider, and feature classes present in the index. This is the same for all
-//     * applications.
-//     * </p>
-//     * <p>
-//     * Each filtered index view is tuned to one JAX-RS application.
-//     *
-//     * @return list of {@code FilteredIndexView}s, one per JAX-RS application
-//     */
-//    private List<FilteredIndexView> buildPerAppFilteredIndexViews() {
-//
-//        List<JaxRsApplication> jaxRsApplications = jaxRsApplicationsToRun().stream()
-//                .filter(jaxRsApp -> jaxRsApp.applicationClass().isPresent())
-//                .sorted(Comparator.comparing(jaxRsApplication -> jaxRsApplication.applicationClass()
-//                        .get()
-//                        .getName()))
-//                .collect(Collectors.toList());
-//
-//        IndexView indexView = singleIndexViewSupplier.get();
-//
-//        FilteredIndexView viewFilteredByConfig = new FilteredIndexView(indexView, OpenApiConfigImpl.fromConfig(mpConfig));
-//        Set<String> ancillaryClassNames = ancillaryClassNames(viewFilteredByConfig);
-//
-//        /*
-//         * Filter even for a single-application class in case it implements getClasses or getSingletons.
-//         */
-//        return jaxRsApplications.stream()
-//                .map(jaxRsApp -> filteredIndexView(viewFilteredByConfig,
-//                                                   jaxRsApplications,
-//                                                   jaxRsApp,
-//                                                   ancillaryClassNames))
-//                .collect(Collectors.toList());
-//    }
-//
-//    private static String toClassName(JaxRsApplication jaxRsApplication) {
-//        return jaxRsApplication.applicationClass()
-//                .map(Class::getName)
-//                .orElse("<unknown>");
-//    }
-//
-//    private static Set<String> classNamesToIgnore(List<JaxRsApplication> jaxRsApplications,
-//                                                  JaxRsApplication jaxRsApp,
-//                                                  Set<String> ancillaryClassNames,
-//                                                  Set<String> classesExplicitlyReferenced) {
-//
-//        String appClassName = toClassName(jaxRsApp);
-//
-//        Set<String> result = // Start with all other JAX-RS app names.
-//                jaxRsApplications.stream()
-//                        .map(Builder::toClassName)
-//                        .filter(candidateName -> !candidateName.equals("<unknown>") && !candidateName.equals(appClassName))
-//                        .collect(Collectors.toSet());
-//
-//        if (!classesExplicitlyReferenced.isEmpty()) {
-//            // This class identified resource, provider, or feature classes it uses. Ignore all ancillary classes that this app
-//            // does not explicitly reference.
-//            result.addAll(ancillaryClassNames);
-//            result.removeAll(classesExplicitlyReferenced);
-//        }
-//
-//        return result;
-//    }
-//
-//    private static Set<String> ancillaryClassNames(IndexView indexView) {
-//        Set<String> result = new HashSet<>(resourceClassNames(indexView));
-//        result.addAll(providerClassNames(indexView));
-//        result.addAll(featureClassNames(indexView));
-//        if (LOGGER.isLoggable(System.Logger.Level.TRACE)) {
-//            LOGGER.log(System.Logger.Level.TRACE, "Ancillary classes: {0}", result);
-//        }
-//        return result;
-//    }
-//
-//    private static Set<String> resourceClassNames(IndexView indexView) {
-//        return annotatedClassNames(indexView, Path.class);
-//    }
-//
-//    private static Set<String> providerClassNames(IndexView indexView) {
-//        return annotatedClassNames(indexView, Provider.class);
-//    }
-//
-//    private static Set<String> featureClassNames(IndexView indexView) {
-//        return annotatedClassNames(indexView, Feature.class);
-//    }
-//
-//    private static Set<String> annotatedClassNames(IndexView indexView, Class<?> annotationClass) {
-//        // Partially inspired by the SmallRye code.
-//        return indexView
-//                .getAnnotations(DotName.createSimple(annotationClass.getName()))
-//                .stream()
-//                .map(AnnotationInstance::target)
-//                .filter(target -> target.kind() == AnnotationTarget.Kind.CLASS)
-//                .map(AnnotationTarget::asClass)
-//                .filter(classInfo -> hasImplementationOrIsIncluded(indexView, classInfo))
-//                .map(ClassInfo::toString)
-//                .collect(Collectors.toSet());
-//    }
-//
-//    private static boolean hasImplementationOrIsIncluded(IndexView indexView, ClassInfo classInfo) {
-//        // Partially inspired by the SmallRye code.
-//        return !Modifier.isInterface(classInfo.flags())
-//                || indexView.getAllKnownImplementors(classInfo.name()).stream()
-//                .anyMatch(Builder::isConcrete);
-//    }
-//
-//    private static boolean isConcrete(ClassInfo classInfo) {
-//        return !Modifier.isAbstract(classInfo.flags());
-//    }
-
-
     @Configured
     static final class Builder extends OpenApiFeature.Builder<Builder, MpOpenApiFeature> {
 
@@ -323,13 +112,13 @@ class MpOpenApiFeature extends OpenApiFeature {
         }
 
         @Override
-        @ConfiguredOption(type = OpenApiFeature.class, mergeWithParent = true)
         public MpOpenApiFeature build() {
             // We need to defer some work until later when the server has started the applications.
             return new MpOpenApiFeature(this);
         }
 
         @Override
+        @ConfiguredOption(type = HelidonMpOpenApiConfig.class, mergeWithParent = true)
         public Builder openApiConfig(HelidonOpenApiConfig.Builder<?, ?> openApiConfigBuilder) {
             super.openApiConfig(openApiConfigBuilder);
             return this;
@@ -341,27 +130,7 @@ class MpOpenApiFeature extends OpenApiFeature {
          * @param config the OpenAPI {@code Config} object possibly containing settings
          * @return updated builder instance
          */
-        @ConfiguredOption(type = OpenApiConfig.class, mergeWithParent = true)
-        @ConfiguredOption(key = "scan.disable",
-                          type = Boolean.class,
-                          value = "false",
-                          description = "Disable annotation scanning.")
-        @ConfiguredOption(key = "scan.packages",
-                          type = String.class,
-                          kind = ConfiguredOption.Kind.LIST,
-                          description = "Specify the list of packages to scan.")
-        @ConfiguredOption(key = "scan.classes",
-                          type = String.class,
-                          kind = ConfiguredOption.Kind.LIST,
-                          description = "Specify the list of classes to scan.")
-        @ConfiguredOption(key = "scan.exclude.packages",
-                          type = String.class,
-                          kind = ConfiguredOption.Kind.LIST,
-                          description = "Specify the list of packages to exclude from scans.")
-        @ConfiguredOption(key = "scan.exclude.classes",
-                          type = String.class,
-                          kind = ConfiguredOption.Kind.LIST,
-                          description = "Specify the list of classes to exclude from scans.")
+        @ConfiguredOption(type = HelidonMpOpenApiConfig.class, mergeWithParent = true)
         public Builder config(Config config) {
 
             super.config(config);

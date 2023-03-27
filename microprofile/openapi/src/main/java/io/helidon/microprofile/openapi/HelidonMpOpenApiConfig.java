@@ -32,7 +32,7 @@ import org.eclipse.microprofile.openapi.OASConfig;
 /**
  * Helidon MP expression of the {@link io.smallrye.openapi.api.OpenApiConfig} interface.
  * <p>
- *     To its parent interface {@link io.helidon.openapi.HelidonOpenApiConfig} this interface adds elements, config keys,
+ *     To its super-interface {@link io.helidon.openapi.HelidonOpenApiConfig} this interface adds elements, config keys,
  *     and default values related to annotation scanning. As with the super-interface, this interface follows these
  *     Helidon config naming conventions:
  *     <ul>
@@ -128,11 +128,6 @@ public interface HelidonMpOpenApiConfig extends HelidonOpenApiConfig {
     class Builder extends HelidonOpenApiConfig.Builder<Builder, HelidonMpOpenApiConfig> {
 
         /**
-         * Config key prefix for MP-related settings.
-         */
-        public static final String MP_OPENAPI_CONFIG_PREFIX = "mp." + OpenApiFeature.Builder.CONFIG_KEY + ".";
-
-        /**
          * Config key for enabling annotation scanning.
          */
         public static final String SCAN_ENABLED = "scan.enabled";
@@ -182,6 +177,13 @@ public interface HelidonMpOpenApiConfig extends HelidonOpenApiConfig {
          */
         public static final String SCAN_EXCLUDE_PROFILES = "scan.profiles.exclude";
 
+        /**
+         * MicroProfile OpenAPI config key suffix specifying whether scanning is disabled.
+         *
+         * @see #SCAN_ENABLED
+         */
+        public static final String SCAN_DISABLE = "scan.disable";
+
         static final String SCAN_ENABLED_DEFAULT = "true";
         static final String SCAN_DEPENDENCIES_ENABLED_DEFAULT = "true";
         static final String SCAN_BEAN_VALIDATION_DEFAULT = "true";
@@ -203,8 +205,8 @@ public interface HelidonMpOpenApiConfig extends HelidonOpenApiConfig {
         private boolean scanBeanValidation = Boolean.parseBoolean(SCAN_BEAN_VALIDATION_DEFAULT);
         private Boolean scanDependenciesEnabled = Boolean.parseBoolean(SCAN_DEPENDENCIES_ENABLED_DEFAULT);
         private final Set<String> scanDependenciesJars = new HashSet<>();
-        private Set<String> scanProfiles = new HashSet<>();
-        private Set<String> scanExcludeProfiles = new HashSet<>();
+        private final Set<String> scanProfiles = new HashSet<>();
+        private final Set<String> scanExcludeProfiles = new HashSet<>();
 
         /**
          * Creates a new instance of the builder.
@@ -212,6 +214,7 @@ public interface HelidonMpOpenApiConfig extends HelidonOpenApiConfig {
         protected Builder() {
         }
 
+        @ConfiguredOption(key = SCAN_DISABLE, type = Boolean.class)
         @Override
         public Builder config(Config openApiConfigNode) {
             super.config(openApiConfigNode);
@@ -233,7 +236,7 @@ public interface HelidonMpOpenApiConfig extends HelidonOpenApiConfig {
             //
             // The "mp.openapi." prefix is already stripped from the config keys in the openApiConfigNode passed to this method
             // so we use the stripped key to look for the value.
-            openApiConfigNode.get(OASConfig.SCAN_DISABLE.substring(MP_OPENAPI_CONFIG_PREFIX.length()))
+            openApiConfigNode.get(SCAN_DISABLE)
                     .asBoolean()
                     .ifPresent(this::scanDisable);
 
