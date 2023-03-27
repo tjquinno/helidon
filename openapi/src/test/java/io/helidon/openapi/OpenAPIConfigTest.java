@@ -39,17 +39,26 @@ class OpenAPIConfigTest {
 
     private final static String TEST_CONFIG_DIR = "src/test/resources";
 
-    private static final JsonObject JSON_SCHEMA_OVERRIDE = Json.createObjectBuilder(Map.of())
+    private static final JsonObject JSON_SCHEMA_OVERRIDE_DATE = Json.createObjectBuilder(Map.of())
             .add("name", "EpochMillis")
             .add("type", "number")
             .add("format", "int64")
             .add("description", "Milliseconds since January 1, 1970, 00:00:00 GMT")
             .build();
 
-    private static final String SCHEMA_OVERRIDE_CONFIG_FQCN = "java.util.Date";
+    private static final JsonObject JSON_SCHEMA_OVERRIDE_DURATION = Json.createObjectBuilder(Map.of())
+            .add("name", "DurationNanoseconds")
+            .add("type", "number")
+            .add("format", "int64")
+            .add("title", "Duration Nanoseconds")
+            .add("description", "Number of nanoseconds represented by the duration")
+            .build();
+
+    private static final String SCHEMA_OVERRIDE_CONFIG_FQCN_DATE = "java.util.Date";
+    private static final String SCHEMA_OVERRIDE_CONFIG_FQCN_DURATION = "java.time.Duration";
 
     // must escape dots in config keys
-    private static final String SCHEMA_OVERRIDE_CONFIG_KEY = Config.Key.escapeName(SCHEMA_OVERRIDE_CONFIG_FQCN);
+    private static final String SCHEMA_OVERRIDE_ESCAPED_CONFIG_KEY = Config.Key.escapeName(SCHEMA_OVERRIDE_CONFIG_FQCN_DURATION);
 
     @Test
     void simpleConfigTest() {
@@ -93,12 +102,19 @@ class OpenAPIConfigTest {
                 .config(config.get("openapi"))
                 .build();
 
-        assertThat("Schema override", helidonOpenAPIConfig.schemas(), hasKey(SCHEMA_OVERRIDE_CONFIG_FQCN));
-        assertThat("Schema override value for " + SCHEMA_OVERRIDE_CONFIG_FQCN,
+        assertThat("Schema override", helidonOpenAPIConfig.schemas(), hasKey(SCHEMA_OVERRIDE_CONFIG_FQCN_DATE));
+        assertThat("Schema override value for " + SCHEMA_OVERRIDE_CONFIG_FQCN_DATE,
                    Json.createReader(new StringReader(helidonOpenAPIConfig
                                                               .schemas()
-                                                              .get(SCHEMA_OVERRIDE_CONFIG_FQCN))).readObject(),
-                   is(JSON_SCHEMA_OVERRIDE));
+                                                              .get(SCHEMA_OVERRIDE_CONFIG_FQCN_DATE))).readObject(),
+                   is(JSON_SCHEMA_OVERRIDE_DATE));
+
+        assertThat("Schema override", helidonOpenAPIConfig.schemas(), hasKey(SCHEMA_OVERRIDE_CONFIG_FQCN_DURATION));
+        assertThat("Schema override value for " + SCHEMA_OVERRIDE_ESCAPED_CONFIG_KEY,
+                   Json.createReader(new StringReader(helidonOpenAPIConfig
+                                                              .schemas()
+                                                              .get(SCHEMA_OVERRIDE_CONFIG_FQCN_DURATION))).readObject(),
+                   is(JSON_SCHEMA_OVERRIDE_DURATION));
     }
 
     @Test
@@ -111,12 +127,12 @@ class OpenAPIConfigTest {
                 .config(config.get("openapi"))
                 .build();
 
-        assertThat("Schema override", helidonOpenAPIConfig.schemas(), hasKey(SCHEMA_OVERRIDE_CONFIG_FQCN));
-        assertThat("Schema override value for " + SCHEMA_OVERRIDE_CONFIG_FQCN,
+        assertThat("Schema override", helidonOpenAPIConfig.schemas(), hasKey(SCHEMA_OVERRIDE_CONFIG_FQCN_DATE));
+        assertThat("Schema override value for " + SCHEMA_OVERRIDE_CONFIG_FQCN_DATE,
                    Json.createReader(new StringReader(helidonOpenAPIConfig
                                                               .schemas()
-                                                              .get(SCHEMA_OVERRIDE_CONFIG_FQCN))).readObject(),
-                   is(JSON_SCHEMA_OVERRIDE));
+                                                              .get(SCHEMA_OVERRIDE_CONFIG_FQCN_DATE))).readObject(),
+                   is(JSON_SCHEMA_OVERRIDE_DATE));
     }
 
     @Test

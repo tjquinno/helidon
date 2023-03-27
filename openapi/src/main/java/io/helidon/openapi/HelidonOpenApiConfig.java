@@ -88,13 +88,6 @@ public interface HelidonOpenApiConfig {
         OperationIdStrategy(OpenApiConfig.OperationIdStrategy operationIdStrategy) {
             nativeOperationIdStrategy = operationIdStrategy;
         }
-
-        /**
-         * @return the native strategy
-         */
-        OpenApiConfig.OperationIdStrategy operationIdStrategy() {
-            return nativeOperationIdStrategy;
-        }
     }
 
     /**
@@ -120,10 +113,6 @@ public interface HelidonOpenApiConfig {
          */
         DuplicateOperationIdBehavior(OpenApiConfig.DuplicateOperationIdBehavior duplicateOperationIdBehavior) {
             nativeDuplicateOperationIdBehavior = duplicateOperationIdBehavior;
-        }
-
-        OpenApiConfig.DuplicateOperationIdBehavior duplicateOperationIdBehavior() {
-            return nativeDuplicateOperationIdBehavior;
         }
     }
 
@@ -332,8 +321,6 @@ public interface HelidonOpenApiConfig {
      */
     OpenApiConfig openApiConfig();
 
-    //    void doAllowNakedPathParameter();
-
     /**
      * Creates a new builder for a {@code HelidonOpenApiConfig} instance.
      *
@@ -514,20 +501,18 @@ public interface HelidonOpenApiConfig {
         static final String SORTED_PROPERTIES_ENABLED_DEFAULT = "false";
         static final DuplicateOperationIdBehavior DUPLICATE_OPERATION_ID_BEHAVIOR_DEFAULT = DuplicateOperationIdBehavior.WARN;
         static final OperationIdStrategy OPERATION_ID_STRATEGY_DEFAULT = null;
-        static final Optional<String[]> DEFAULT_PRODUCES_DEFAULT = java.util.Optional.empty();
-        static final Optional<String[]> DEFAULT_CONSUMES_DEFAULT = java.util.Optional.empty();
         private String modelReader;
         private String filter;
         private final Map<String, List<String>> operationServers = new HashMap<>();
         private final Map<String, List<String>> pathServers = new HashMap<>();
         private final Set<String> servers = new HashSet<>();
-        private boolean arrayReferencesEnabled = Boolean.valueOf(ARRAY_REFERENCES_ENABLED_DEFAULT);
+        private boolean arrayReferencesEnabled = Boolean.parseBoolean(ARRAY_REFERENCES_ENABLED_DEFAULT);
         private String customSchemaRegistryClass;
-        private boolean applicationPathEnabled = Boolean.valueOf(APPLICATION_PATH_ENABLED_DEFAULT);
-        private boolean privatePropertiesEnabled = Boolean.valueOf(PRIVATE_PROPERTIES_ENABLED_DEFAULT);
+        private boolean applicationPathEnabled = Boolean.parseBoolean(APPLICATION_PATH_ENABLED_DEFAULT);
+        private boolean privatePropertiesEnabled = Boolean.parseBoolean(PRIVATE_PROPERTIES_ENABLED_DEFAULT);
         private String propertyNamingStrategy = PROPERTY_NAMING_STRATEGY_DEFAULT;
         private boolean sortedPropertiesEnabled = Boolean.FALSE;
-        private boolean removeUnusedSchemasEnabled = Boolean.valueOf(REMOVE_UNUSED_SCHEMAS_DEFAULT);
+        private boolean removeUnusedSchemasEnabled = Boolean.parseBoolean(REMOVE_UNUSED_SCHEMAS_DEFAULT);
         private final Map<String, String> schemas = new HashMap<>();
         private String openApiVersion;
         private String infoTitle;
@@ -583,7 +568,8 @@ public interface HelidonOpenApiConfig {
             openApiConfigNode.get(INFO_LICENSE_NAME).asString().ifPresent(this::infoLicenseName);
             openApiConfigNode.get(INFO_LICENSE_URL).asString().ifPresent(this::infoLicenseUrl);
             openApiConfigNode.get(OPERATION_ID_STRATEGY).as(OperationIdStrategy.class).ifPresent(this::operationIdStrategy);
-            openApiConfigNode.get(DUPLICATE_OPERATION_ID_BEHAVIOR).as(DuplicateOperationIdBehavior.class)
+            openApiConfigNode.get(DUPLICATE_OPERATION_ID_BEHAVIOR)
+                    .as(DuplicateOperationIdBehavior.class)
                     .ifPresent(this::duplicateOperationIdBehavior);
             openApiConfigNode.get(DEFAULT_PRODUCES).asList(String.class).ifPresent(this::defaultProduces);
             openApiConfigNode.get(DEFAULT_CONSUMES).asList(String.class).ifPresent(this::defaultConsumes);
@@ -999,58 +985,6 @@ public interface HelidonOpenApiConfig {
             }
         }
 
-        //        protected String modelReader() {
-        //            return modelReader;
-        //        }
-        //
-        //        protected String filter() {
-        //            return filter();
-        //        }
-        //
-        //        protected Map<String, List<String>> operationServers() {
-        //            return operationServers;
-        //        }
-        //
-        //        protected Map<String, List<String>> pathServers() {
-        //            return pathServers;
-        //        }
-        //
-        //        protected Set<String> servers() {
-        //            return servers;
-        //        }
-        //
-        //        protected boolean arrayReferencesEnabled() {
-        //            return arrayReferencesEnabled;
-        //        }
-        //
-        //        protected String customSchemaRegistryClass() {
-        //            return customSchemaRegistryClass;
-        //        }
-        //
-        //        protected boolean applicationPathEnabled() {
-        //            return applicationPathEnabled;
-        //        }
-        //
-        //        protected boolean privatePropertiesEnabled() {
-        //            return privatePropertiesEnabled;
-        //        }
-        //
-        //        protected String propertyNamingStrategy() {
-        //            return propertyNamingStrategy;
-        //        }
-        //
-        //        protected boolean sortedPropertiesEnabled() {
-        //            return sortedPropertiesEnabled;
-        //        }
-        //
-        //        protected boolean removeUnusedSchemasEnabled() {
-        //            return removeUnusedSchemasEnabled;
-        //        }
-        //
-        //        protected Map<String, String> schemas() {
-        //            return schemas;
-        //        }
-
         /**
          * Interprets a config node as a container of named list nodes: each child config node's name is the name to apply to the
          * list, and each child's value is a list of strings.
@@ -1085,7 +1019,7 @@ public interface HelidonOpenApiConfig {
          * @return {@code Map} from names to their {@code String} values
          */
         protected static Map<String, String> namedSubtreeMap(Config node) {
-//            LinkedHashMap<String, String> result = new LinkedHashMap<>();
+            //            LinkedHashMap<String, String> result = new LinkedHashMap<>();
             // To suppress token resolution within the subnode (OpenAPI uses $ref and we do not want
             // config trying to resolve "ref" as a token) create a new node with token resolution off
             // and process that copy.
@@ -1098,65 +1032,7 @@ public interface HelidonOpenApiConfig {
                     .build();
 
             return nodeCopy.asMap().get();
-//            List<Config> listFromCopy =
-//                    nodeCopy.asNodeList()
-//                            .get();
-//
-//            listFromCopy.forEach(item -> processNamedMapNode(result, item));
-//
-////            listFromCopy.forEach(item -> {
-////                Map.Entry<String, Config> processedSubtree = namedMapEntry(node);
-////                result.put(processedSubtree.getKey(), JsonConverter.toJsonText(processedSubtree.getValue()));
-////            });
-//
-////            listFromCopy.forEach(item -> result.put(item.name(),
-////                                                    item.isLeaf() ? item.asString().get() : JsonConverter.toJsonText(item)));
-//            return result;
         }
-
-//        private static void processNamedMapNode(Map<String, String> result, Config item) {
-//            if (item.isLeaf()) {
-//                result.put(item.key().toString(), item.asString().get());
-//            } else {
-//                item.asNodeList()
-//                        .get()
-//                        .forEach(subItem -> processNamedMapNode(result, subItem));
-//            }
-//        }
-//        private static void processNamedMapNode(Map<String, String> result, Config node) {
-//            processNamedMapNode(result, new StringBuilder(), node);
-//        }
-//
-//        private static void processNamedMapNode(Map<String, String> result, StringBuilder key, Config node) {
-//            key.append(node.name());
-//            if (node.isLeaf()) {
-//                result.put(key.toString(), )
-//            } else {
-//                node.asNodeList()
-//                        .get()
-//                        .forEach(c -> processNamedMapNode(result, key, c));
-//            }
-//        }
-
-//        private static Map.Entry<String, Config> namedMapEntry(Config node) {
-//            StringBuilder overallKey = new StringBuilder();
-//
-//            while (!node.isLeaf()) {
-//                overallKey.append(node.key());
-//                node = node.asNodeList().get().get(0);
-//            }
-//            return new AbstractMap.SimpleImmutableEntry<>(overallKey.toString(), node);
-////            Config candidateLeaf = namedMapEntry(sb, node);
-////            return new AbstractMap.SimpleImmutableEntry<>(sb.toString(), candidateLeaf);
-//        }
-//
-//        private static Config namedMapEntry(StringBuilder overallKey, Config node) {
-//            if (!node.isLeaf()) {
-//                overallKey.append(node.key());
-//                return namedMapEntry(overallKey, node.asNodeList().get().get(0));
-//            }
-//            return node;
-//        }
 
         /**
          * Converts the string value (comma-separated sequence) of a config node to a {@code List<String>}.
@@ -1175,98 +1051,6 @@ public interface HelidonOpenApiConfig {
             return Arrays.stream(csv.split(","))
                     .toList();
         }
-
-//        /**
-//         * Invocation handler for the non-MP adapter.
-//         * <p>
-//         *     The handler:
-//         *     <ul>
-//         *         <li>Delegates most scanning-related method invocations to the proxy, which </li>
-//         *     </ul>
-//         * </p>
-//         */
-//        protected static class Handler implements InvocationHandler {
-//
-//            private final HelidonOpenApiConfig.Builder.ConfigImpl helidonOpenApiConfig;
-//            private final Object scanRelatedInvocationTarget;
-//
-//            /**
-//             * Creates a new handler instance.
-//             *
-//             * @param helidonOpenApiConfig the {@code HelidonOpenApiConfig} instance to delegate most methods to
-//             * @param scanRelatedInvocationTarget the object to delegate most scan-related methods to
-//             */
-//            protected Handler(HelidonOpenApiConfig.Builder.ConfigImpl helidonOpenApiConfig,
-        //            Object scanRelatedInvocationTarget) {
-//                this.helidonOpenApiConfig = helidonOpenApiConfig;
-//                this.scanRelatedInvocationTarget = scanRelatedInvocationTarget;
-//            }
-//
-//            @Override
-//            public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-//                String methodName = method.getName();
-//                // Delegate this one scan-related method to the related Helidon method so the non-MP implementation can suppress
-//                // annotation scanning and the MP implementation can use its actual setting.
-//                if (methodName.equals("scanDisable")) {
-//                    return !helidonOpenApiConfig.scanEnabled();
-//                }
-//
-//                if (isScanRelatedMethod(methodName)) {
-//                    return method.invoke(scanRelatedInvocationTarget, args);
-//                }
-//
-//                // Convert enum values from Helidon's to SmallRye's.
-//                if (methodName.equals("getOperationIdStrategy")) {
-//                    return helidonOpenApiConfig.operationIdStrategy().nativeOperationIdStrategy;
-//                } else if (methodName.equals("getDuplicateOperationIdBehavior")) {
-//                    return helidonOpenApiConfig.duplicateOperationIdBehavior().nativeDuplicateOperationIdBehavior;
-//                }
-//
-//                // Delegate other method invocations to the Helidon implementation, as needed converting any
-//                // {@code OpenApiConfig} method name starting with "get" to the Helidon-style "get-free" name.
-//                return convertMethod(method).invoke(helidonOpenApiConfig, args);
-//            }
-//
-//            /**
-//             * Converts a requested method invocation of a method on {@link OpenApiConfig} to its counterpart method on
-//             * {@code HelidonOpenApiConfig}.
-//             *
-//             * @param originalMethod method invocation on {@code OpenApiConfig}
-//             * @return result of invoking the method on the Helidon counterpart
-//             * @throws NoSuchMethodException if the Helidon implementation lacks a corresponding method for the invocation
-//             */
-//            protected static Method convertMethod(Method originalMethod) throws NoSuchMethodException {
-//                String helidonOpenApiConfigMethodName = convertMethodName(originalMethod.getName());
-//                for (Method candidateMethod : HelidonOpenApiConfig.Builder.ConfigImpl.class.getDeclaredMethods()) {
-//                    if (candidateMethod.getName().equals(helidonOpenApiConfigMethodName)
-//                            && Arrays.equals(candidateMethod.getParameterTypes(), originalMethod.getParameterTypes())) {
-//                        return HelidonOpenApiConfig.Builder.ConfigImpl.class.getDeclaredMethod(helidonOpenApiConfigMethodName,
-//                                                                            originalMethod.getParameterTypes());
-//                    }
-//                }
-//                throw new NoSuchMethodException("Unable to locate "
-//                                                        + HelidonOpenApiConfig.Builder.ConfigImpl.class.getName()
-//                                                        + " method for OpenApiConfig method "
-//                                                        + originalMethod);
-//            }
-//
-//            private static boolean isScanRelatedMethod(String methodName) {
-//                return methodName.contains("scan") || methodName.contains("Scan");
-//            }
-//
-//            /**
-//             * Converts an {@code OpenApiConfig} method name to the {@code HelidonOpenApiConfig} counterpart by changing
-//             * {@code getXyzAbc} to {@code xyzAbc}.
-//             *
-//             * @param originalMethodName {@code OpenApiConfig} method name
-//             * @return {@code HelidonOpenApiConfig} method name
-//             */
-//            private static String convertMethodName(String originalMethodName) {
-//                return originalMethodName.startsWith("get")
-//                        ? originalMethodName.substring(3, 4).toLowerCase(Locale.ROOT) + originalMethodName.substring(4)
-//                        : originalMethodName;
-//            }
-//        }
 
         /**
          * Implementation of {@link HelidonOpenApiConfig} without annotation-related behavior.
