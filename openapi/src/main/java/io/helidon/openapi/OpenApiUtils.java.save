@@ -1,0 +1,70 @@
+/*
+ * Copyright (c) 2023 Oracle and/or its affiliates.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.helidon.openapi;
+
+import java.beans.IntrospectionException;
+import java.beans.PropertyDescriptor;
+import java.lang.reflect.Proxy;
+import java.util.Locale;
+
+import org.yaml.snakeyaml.nodes.Node;
+
+/**
+ * Utilities which depend on which group of model classes we are using, Swagger or MicroProfile OpenAPI.
+ */
+public interface OpenApiUtils {
+
+    default boolean isExt(Class<?> c) {
+        try {
+            new ExpandedTypeDescription.ExtensionProperty.ExtensibleMethods(c);
+            return true;
+        } catch (NoSuchMethodException ex) {
+            return false;
+        }
+    }
+
+    default <T> ModelFactory.Extensible<T> asExt(Object candidate) {
+        try {
+            return (ModelFactory.Extensible<T>)
+                    Proxy.newProxyInstance(ExpandedTypeDescription.ExtensionProperty.class.getClassLoader(),
+                                           new Class<?>[] {ModelFactory.Extensible.class},
+                                           new ExpandedTypeDescription.ExtensionProperty.ExtensibleHandler(candidate));
+
+        } catch (NoSuchMethodException ex) {
+            throw new IllegalArgumentException(String.format(
+                    "Cannot treat %s as %s", candidate.getClass().getName(), ModelFactory.Extensible.class.getName()));
+        }
+    }
+
+    default String pathHttMethodName(String httpMethodName) {
+        return httpMethodName.substring(0, 1).toUpperCase(Locale.ROOT)
+                + httpMethodName.substring(1).toLowerCase(Locale.ROOT);
+    }
+
+    void setSchemaAdditionalProperties(Object schema, Object value);
+
+    Object schemaAdditionalProperties(Object schema);
+
+    PropertyDescriptor schemaAdditionalPropertiesDescriptor() throws NoSuchMethodException, IntrospectionException;
+
+    Class<?> schemaAdditionalPropertiesType(Node valueNode);
+
+    Class<?> schemaType();
+
+    Class<?> apiResponsesType();
+
+     String refFieldName();
+}

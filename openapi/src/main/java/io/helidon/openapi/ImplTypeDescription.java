@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021 Oracle and/or its affiliates.
+ * Copyright (c) 2020, 2023 Oracle and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ class ImplTypeDescription extends TypeDescription {
     private final ExpandedTypeDescription delegate;
 
     ImplTypeDescription(ExpandedTypeDescription td) {
-        super(td.getType(), td.impl());
+        super(td.getType(), td.implementation());
         delegate = td;
     }
 
@@ -52,8 +52,8 @@ class ImplTypeDescription extends TypeDescription {
         return delegate.setupPropertyType(key, valueNode);
     }
 
-    public Class<?> impl() {
-        return delegate.impl();
+    public Class<?> implementation() {
+        return delegate.implementation();
     }
 
     @Override
@@ -158,6 +158,6 @@ class ImplTypeDescription extends TypeDescription {
 
     @Override
     public Class<? extends Object> getType() {
-        return delegate.impl();
+        return delegate.implementation();
     }
 }

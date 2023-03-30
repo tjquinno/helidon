@@ -30,30 +30,11 @@ import io.helidon.config.ConfigSources;
 import io.helidon.config.metadata.Configured;
 import io.helidon.config.metadata.ConfiguredOption;
 
-import io.smallrye.openapi.api.OpenApiConfig;
-
 /**
- * Helidon-specific expression of the SmallRye {@link io.smallrye.openapi.api.OpenApiConfig} interface,
- * loadable from a Helidon {@link io.helidon.config.Config} object as well as individual items
- * settable programmatically.
- * <p>
- * Helidon's use of SmallRye is an implementation decision, one that should not be reflected directly in the public API
- * Helidon exposes. As a result, Helidon declares this interface (which extends SmallRye's) so Helidon developers deal
- * with Helidon types and not directly with SmallRye types.
- * </p>
- * <p>
- * Further, the SmallRye config includes settings that govern annotation processing, which only Helidon MP supports. This
- * interface's fluid builder, which developers use in non-MP situations, does not expose settings related to annotations and
- * disables SmallRye's annotation scanning.
- * </p>
- * <p>
- * Lastly, SmallRye's implementation of their {@code OpenApiConfig} interface has a single public constructor which requires a
- * MicroProfile Config parameter. Non-MP Helidon components do not depend on anything in MP and so this component could not use
- * the SmallRye {@code OpenApiConfig} implementation.
- * </p>
+ * Helidon OpenAPI settings.
  * <p>
  * The Helidon MP OpenAPI component extends this interface, its implementation, and the interface's builder to reflect
- * the annotation-related behavior which it supports that this interface/impl/builder do not. Developers of Helidon MP apps
+ * the annotation-related behavior which it supports that this interface/implementation/builder do not. Developers of Helidon MP apps
  * with OpenAPI use that interface and builder, if necessary, not these non-MP ones.
  * </p>
  */
@@ -66,28 +47,17 @@ public interface HelidonOpenApiConfig {
         /**
          * Derive operation ID from the method.
          */
-        METHOD(OpenApiConfig.OperationIdStrategy.METHOD),
+        METHOD,
 
         /**
          * Derive operation ID from the class and method.
          */
-        CLASS_METHOD(OpenApiConfig.OperationIdStrategy.CLASS_METHOD),
+        CLASS_METHOD,
 
         /**
          * Derive operation ID from the package, class, and method.
          */
-        PACKAGE_CLASS_METHOD(OpenApiConfig.OperationIdStrategy.PACKAGE_CLASS_METHOD);
-
-        private final OpenApiConfig.OperationIdStrategy nativeOperationIdStrategy;
-
-        /**
-         * Declares an enum value.
-         *
-         * @param operationIdStrategy the native strategy this value represents
-         */
-        OperationIdStrategy(OpenApiConfig.OperationIdStrategy operationIdStrategy) {
-            nativeOperationIdStrategy = operationIdStrategy;
-        }
+        PACKAGE_CLASS_METHOD;
     }
 
     /**
@@ -97,23 +67,12 @@ public interface HelidonOpenApiConfig {
         /**
          * Fail on duplicate operation IDs.
          */
-        FAIL(OpenApiConfig.DuplicateOperationIdBehavior.FAIL),
+        FAIL,
 
         /**
          * Warn on duplicate operationIDs.
          */
-        WARN(OpenApiConfig.DuplicateOperationIdBehavior.WARN);
-
-        private final OpenApiConfig.DuplicateOperationIdBehavior nativeDuplicateOperationIdBehavior;
-
-        /**
-         * Declares an enum value.
-         *
-         * @param duplicateOperationIdBehavior the native behavior this value represents
-         */
-        DuplicateOperationIdBehavior(OpenApiConfig.DuplicateOperationIdBehavior duplicateOperationIdBehavior) {
-            nativeDuplicateOperationIdBehavior = duplicateOperationIdBehavior;
-        }
+        WARN
     }
 
     /**
@@ -315,13 +274,6 @@ public interface HelidonOpenApiConfig {
     boolean removeUnusedSchemas();
 
     /**
-     * Returns an {@link OpenApiConfig} instance functionally equivalent to the current instance.
-     *
-     * @return equivalent {@code OpenApiConfig}
-     */
-    OpenApiConfig openApiConfig();
-
-    /**
      * Creates a new builder for a {@code HelidonOpenApiConfig} instance.
      *
      * @return new builder
@@ -334,22 +286,8 @@ public interface HelidonOpenApiConfig {
      * Fluid builder for creating instances of {@link HelidonOpenApiConfig}.
      *
      * <p>
-     *     The config keys follow the Helidon conventions:
-     *     <ul>
-     *         <li>we express multiple words in a single key element in lower case and separate them by hyphens (not expressed
-     *         in camel case), and</li>
-     *         <li>for keys identifying a state we use the descriptive form (e.g., {@code enabled}) rather than the action form
-     *         (e.g., {@code enable}).</li>
-     *     </ul>
-     *     Our conventions differ from those which SmallRye's code uses (see the
-     *     {@linkplain io.smallrye.openapi.api.constants.OpenApiConstants constants} definitions), but this interface itself
-     *     exists to present a <em>Helidon</em> interface for the OpenAPI settings to our developers.
-     *     We do not expose the SmallRye constants so using our conventions instead of SmallRye's for config key naming
-     *     should not confuse developers.
-     * <p>
      *     The Helidon MP OpenAPI component has its own interface and builder (which support annotation processing settings)
      *     and they extend their counterparts declared here, so we parameterize the types.
-     * </p>
      *
      * @param <B> builder type
      * @param <T> specific type of {@code HelidonOpenApiConfig} created by the builder
@@ -1020,7 +958,7 @@ public interface HelidonOpenApiConfig {
          */
         protected static Map<String, String> namedSubtreeMap(Config node) {
             //            LinkedHashMap<String, String> result = new LinkedHashMap<>();
-            // To suppress token resolution within the subnode (OpenAPI uses $ref and we do not want
+            // To suppress token resolution within the subnode (OpenAPI uses $ref, and we do not want
             // config trying to resolve "ref" as a token) create a new node with token resolution off
             // and process that copy.
             Config nodeCopy = Config.builder()
@@ -1055,7 +993,7 @@ public interface HelidonOpenApiConfig {
         /**
          * Implementation of {@link HelidonOpenApiConfig} without annotation-related behavior.
          */
-        protected static class ConfigImpl implements HelidonOpenApiConfig, OpenApiConfig {
+        protected static class ConfigImpl implements HelidonOpenApiConfig {
 
             private final String modelReader;
             private final String filter;
@@ -1125,11 +1063,6 @@ public interface HelidonOpenApiConfig {
             }
 
             @Override
-            public OpenApiConfig openApiConfig() {
-                return this;
-            }
-
-            @Override
             public String modelReader() {
                 return modelReader;
             }
@@ -1137,11 +1070,6 @@ public interface HelidonOpenApiConfig {
             @Override
             public String filter() {
                 return filter;
-            }
-
-            @Override
-            public boolean scanDisable() {
-                return !scanEnabled();
             }
 
             @Override
@@ -1165,11 +1093,6 @@ public interface HelidonOpenApiConfig {
             }
 
             @Override
-            public boolean arrayReferencesEnable() {
-                return arrayReferencesEnabled();
-            }
-
-            @Override
             public String customSchemaRegistryClass() {
                 return customSchemaRegistryClass;
             }
@@ -1180,18 +1103,8 @@ public interface HelidonOpenApiConfig {
             }
 
             @Override
-            public boolean applicationPathDisable() {
-                return !applicationPathEnabled();
-            }
-
-            @Override
             public boolean privatePropertiesEnabled() {
                 return privatePropertiesEnabled;
-            }
-
-            @Override
-            public boolean privatePropertiesEnable() {
-                return privatePropertiesEnabled();
             }
 
             @Override
@@ -1205,11 +1118,6 @@ public interface HelidonOpenApiConfig {
             }
 
             @Override
-            public boolean sortedPropertiesEnable() {
-                return sortedPropertiesEnabled();
-            }
-
-            @Override
             public boolean removeUnusedSchemas() {
                 return removeUnusedSchemasEnabled;
             }
@@ -1220,27 +1128,12 @@ public interface HelidonOpenApiConfig {
             }
 
             @Override
-            public Map<String, String> getSchemas() {
-                return schemas();
-            }
-
-            @Override
             public String openApiVersion() {
                 return openApiVersion;
             }
 
-            @Override
-            public String getOpenApiVersion() {
-                return openApiVersion();
-            }
-
             public String infoTitle() {
                 return infoTitle;
-            }
-
-            @Override
-            public String getInfoTitle() {
-                return infoTitle();
             }
 
             @Override
@@ -1249,18 +1142,8 @@ public interface HelidonOpenApiConfig {
             }
 
             @Override
-            public String getInfoVersion() {
-                return infoVersion();
-            }
-
-            @Override
             public String infoDescription() {
                 return infoDescription;
-            }
-
-            @Override
-            public String getInfoDescription() {
-                return infoDescription();
             }
 
             @Override
@@ -1269,18 +1152,8 @@ public interface HelidonOpenApiConfig {
             }
 
             @Override
-            public String getInfoTermsOfService() {
-                return infoTermsOfService();
-            }
-
-            @Override
             public String infoContactEmail() {
                 return infoContactEmail;
-            }
-
-            @Override
-            public String getInfoContactEmail() {
-                return infoContactEmail();
             }
 
             @Override
@@ -1289,18 +1162,8 @@ public interface HelidonOpenApiConfig {
             }
 
             @Override
-            public String getInfoContactName() {
-                return infoContactName();
-            }
-
-            @Override
             public String infoContactUrl() {
                 return infoContactUrl;
-            }
-
-            @Override
-            public String getInfoContactUrl() {
-                return infoContactUrl();
             }
 
             @Override
@@ -1308,19 +1171,9 @@ public interface HelidonOpenApiConfig {
                 return infoLicenseName;
             }
 
-            @Override
-            public String getInfoLicenseName() {
-                return infoLicenseName();
-            }
-
-            @Override
+           @Override
             public String infoLicenseUrl() {
                 return infoLicenseUrl;
-            }
-
-            @Override
-            public String getInfoLicenseUrl() {
-                return infoLicenseUrl();
             }
 
             @Override
@@ -1329,22 +1182,8 @@ public interface HelidonOpenApiConfig {
             }
 
             @Override
-            public OpenApiConfig.OperationIdStrategy getOperationIdStrategy() {
-                return operationIdStrategy() == null
-                        ? null
-                        : operationIdStrategy().nativeOperationIdStrategy;
-            }
-
-           @Override
             public HelidonOpenApiConfig.DuplicateOperationIdBehavior duplicateOperationIdBehavior() {
                 return duplicateOperationIdBehavior;
-            }
-
-            @Override
-            public OpenApiConfig.DuplicateOperationIdBehavior getDuplicateOperationIdBehavior() {
-                return duplicateOperationIdBehavior() == null
-                        ? null
-                        : duplicateOperationIdBehavior().nativeDuplicateOperationIdBehavior;
             }
 
             @Override
@@ -1353,18 +1192,8 @@ public interface HelidonOpenApiConfig {
             }
 
             @Override
-            public Optional<String[]> getDefaultConsumes() {
-                return defaultConsumes();
-            }
-
-            @Override
             public Optional<String[]> defaultProduces() {
                 return defaultProduces;
-            }
-
-            @Override
-            public Optional<String[]> getDefaultProduces() {
-                return defaultProduces();
             }
 
             @Override

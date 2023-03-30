@@ -42,32 +42,6 @@
 
     <dependencies>
         <dependency>
-            <groupId>io.smallrye</groupId>
-            <artifactId>smallrye-open-api-core</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>jackson-core</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>jackson-databind</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.dataformat</groupId>
-                    <artifactId>jackson-dataformat-yaml</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>io.smallrye</groupId>
-            <artifactId>smallrye-open-api-jaxrs</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>jakarta.json</groupId>
-            <artifactId>jakarta.json-api</artifactId>
-        </dependency>
-        <dependency>
             <groupId>io.helidon.common.features</groupId>
             <artifactId>helidon-common-features-api</artifactId>
             <scope>provided</scope>
@@ -78,8 +52,8 @@
             <artifactId>helidon-common</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.helidon.common</groupId>
-            <artifactId>helidon-common-config</artifactId>
+            <groupId>io.helidon.config</groupId>
+            <artifactId>helidon-config</artifactId>
         </dependency>
         <dependency>
             <groupId>io.helidon.common</groupId>
@@ -90,6 +64,14 @@
             <artifactId>helidon-config-metadata</artifactId>
             <scope>provided</scope>
             <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>io.swagger.core.v3</groupId>
+            <artifactId>swagger-models</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>jakarta.json</groupId>
+            <artifactId>jakarta.json-api</artifactId>
         </dependency>
         <dependency>
             <groupId>org.eclipse</groupId>
@@ -147,9 +129,9 @@
                             <classifier>sources</classifier>
                             <failOnMissingClassifierArtifact>true</failOnMissingClassifierArtifact>
                             <outputDirectory>${openapi-interfaces-dir}</outputDirectory>
-                            <includeGroupIds>org.eclipse.microprofile.openapi</includeGroupIds>
-                            <includeArtifactIds>microprofile-openapi-api</includeArtifactIds>
-                            <includes>org/eclipse/microprofile/openapi/models/**/*.java</includes>
+                            <includeGroupIds>io.swagger.core.v3</includeGroupIds>
+                            <includeArtifactIds>swagger-models</includeArtifactIds>
+                            <includes>io/swagger/v3/oas/models/**/*.java</includes>
                         </configuration>
                     </execution>
                     <execution>
@@ -162,9 +144,9 @@
                             <classifier>sources</classifier>
                             <failOnMissingClassifierArtifact>true</failOnMissingClassifierArtifact>
                             <outputDirectory>${openapi-impls-dir}</outputDirectory>
-                            <includeGroupIds>io.smallrye</includeGroupIds>
-                            <includeArtifactIds>smallrye-open-api-core</includeArtifactIds>
-                            <includes>io/smallrye/openapi/api/models/**/*.java</includes>
+                            <includeGroupIds>io.swagger.core.v3</includeGroupIds>
+                            <includeArtifactIds>swagger-models</includeArtifactIds>
+                            <includes>io/swagger/v3/oas/models/**/*.java</includes>
                         </configuration>
                     </execution>
                 </executions>
@@ -187,8 +169,8 @@
                             <implementationsConfig>
                                 <inputDirectory>${openapi-impls-dir}</inputDirectory>
                             </implementationsConfig>
-                            <implementationPrefix>io.smallrye</implementationPrefix>
-                            <interfacePrefix>org.eclipse.microprofile.openapi</interfacePrefix>
+                            <implementationPrefix>io.swagger.v3.oas.models</implementationPrefix>
+                            <interfacePrefix>io.swagger.v3.oas.models</interfacePrefix>
                         </configuration>
                     </execution>
                 </executions>

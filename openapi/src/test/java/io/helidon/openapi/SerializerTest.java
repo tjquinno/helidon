@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022 Oracle and/or its affiliates.
+ * Copyright (c) 2020, 2023 Oracle and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import io.smallrye.openapi.runtime.io.Format;
+import io.swagger.v3.oas.models.OpenAPI;
 import jakarta.json.Json;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
@@ -35,7 +35,6 @@ import jakarta.json.JsonReader;
 import jakarta.json.JsonReaderFactory;
 import jakarta.json.JsonStructure;
 import jakarta.json.JsonValue;
-import org.eclipse.microprofile.openapi.models.OpenAPI;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -55,7 +54,7 @@ class SerializerTest {
 
     @BeforeAll
     static void prepareHelper() {
-        helper = ParserHelper.create();
+        helper = SwaggerParserHelper.create();
         implsToTypes = ExpandedTypeDescription.buildImplsToTypes(helper);
     }
 
@@ -154,11 +153,11 @@ class SerializerTest {
         Map<?, ?> ownerMap = (Map) candidateOwnerMap;
         assertThat(ownerMap.get("last"), is("Myself"));
 
-        List<String> required = openAPI.getPaths().getPathItem("/greet/greeting")
-                .getPUT()
+        List<String> required = openAPI.getPaths().get("/greet/greeting")
+                .getPut()
                 .getRequestBody()
                 .getContent()
-                .getMediaType("application/json")
+                .get("application/json")
                 .getSchema()
                 .getRequired();
         assertThat(required, hasItem("greeting"));
@@ -175,14 +174,14 @@ class SerializerTest {
         }
 
         String ref = openAPI.getPaths()
-                .getPathItem("/pets")
-                .getGET()
+                .get("/pets")
+                .getGet()
                 .getResponses()
-                .getDefaultValue()
+                .getDefault()
                 .getContent()
-                .getMediaType("application/json")
+                .get("application/json")
                 .getSchema()
-                .getRef();
+                .get$ref();
         assertThat("/pets.GET.responses.default.content.application/json.schema.ref", ref,
                 is(equalTo("#/components/schemas/Error")));
     }

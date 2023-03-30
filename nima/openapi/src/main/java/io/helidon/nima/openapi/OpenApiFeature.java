@@ -54,21 +54,15 @@ import io.helidon.nima.webserver.http.HttpService;
 import io.helidon.nima.webserver.http.ServerRequest;
 import io.helidon.nima.webserver.http.ServerResponse;
 import io.helidon.openapi.ExpandedTypeDescription;
+import io.helidon.openapi.Format;
 import io.helidon.openapi.HelidonOpenApiConfig;
-import io.helidon.openapi.OpenAPIMediaType;
+import io.helidon.openapi.OpenApiMediaType;
 import io.helidon.openapi.OpenAPIParser;
 import io.helidon.openapi.ParserHelper;
 import io.helidon.openapi.Serializer;
+import io.helidon.openapi.SwaggerParserHelper;
 
-import io.smallrye.openapi.api.OpenApiConfig;
-import io.smallrye.openapi.api.OpenApiDocument;
-import io.smallrye.openapi.api.models.OpenAPIImpl;
-import io.smallrye.openapi.api.util.MergeUtil;
-import io.smallrye.openapi.runtime.OpenApiProcessor;
-import io.smallrye.openapi.runtime.OpenApiStaticFile;
-import io.smallrye.openapi.runtime.io.Format;
-import io.smallrye.openapi.runtime.scanner.AnnotationScannerExtension;
-import io.smallrye.openapi.runtime.scanner.OpenApiAnnotationScanner;
+import io.swagger.v3.oas.models.OpenAPI;
 import jakarta.json.Json;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonNumber;
@@ -77,7 +71,6 @@ import jakarta.json.JsonReader;
 import jakarta.json.JsonReaderFactory;
 import jakarta.json.JsonString;
 import jakarta.json.JsonValue;
-import org.eclipse.microprofile.openapi.models.OpenAPI;
 import org.jboss.jandex.IndexView;
 
 /**
@@ -108,7 +101,7 @@ public class OpenApiFeature extends HelidonFeatureSupport {
     private static final String OPENAPI_DEFAULTED_STATIC_FILE_LOG_MESSAGE_FORMAT = "Using default OpenAPI static file %s";
     private static final String FEATURE_NAME = "OpenAPI";
     private static final JsonReaderFactory JSON_READER_FACTORY = Json.createReaderFactory(Collections.emptyMap());
-    private static final LazyValue<ParserHelper> PARSER_HELPER = LazyValue.create(ParserHelper::create);
+    private static final LazyValue<ParserHelper> PARSER_HELPER = LazyValue.create(SwaggerParserHelper::create);
 
     private final ConcurrentMap<Format, String> cachedDocuments = new ConcurrentHashMap<>();
     private final Map<Class<?>, ExpandedTypeDescription> implsToTypes;
@@ -206,17 +199,17 @@ public class OpenApiFeature extends HelidonFeatureSupport {
      *                             from its underlying data
      */
     String prepareDocument(MediaType resultMediaType) {
-        OpenAPIMediaType matchingOpenAPIMediaType
-                = OpenAPIMediaType.byMediaType(resultMediaType)
+        OpenApiMediaType matchingOpenApiMediaType
+                = OpenApiMediaType.byMediaType(resultMediaType)
                 .orElseGet(() -> {
                     LOGGER.log(Level.TRACE,
                                () -> String.format(
                                        "Requested media type %s not supported; using default",
                                        resultMediaType.text()));
-                    return OpenAPIMediaType.DEFAULT_TYPE;
+                    return OpenApiMediaType.DEFAULT_TYPE;
                 });
 
-        Format resultFormat = matchingOpenAPIMediaType.format();
+        Format resultFormat = matchingOpenApiMediaType.format();
 
         return cachedDocuments.computeIfAbsent(resultFormat,
                                                         fmt -> {
@@ -382,7 +375,7 @@ public class OpenApiFeature extends HelidonFeatureSupport {
         }
 
         Optional<MediaType> requestedMediaType = req.headers()
-                .bestAccepted(OpenAPIMediaType.preferredOrdering());
+                .bestAccepted(OpenApiMediaType.preferredOrdering());
 
         return requestedMediaType
                 .orElseGet(() -> {
@@ -675,11 +668,11 @@ public class OpenApiFeature extends HelidonFeatureSupport {
         private OpenApiStaticFile getExplicitStaticFile() {
             Path path = Paths.get(staticFilePath);
             String specifiedFileType = typeFromPath(path);
-            OpenAPIMediaType specifiedMediaType = OpenAPIMediaType.byFileType(specifiedFileType)
+            OpenApiMediaType specifiedMediaType = OpenApiMediaType.byFileType(specifiedFileType)
                     .orElseThrow(() -> new IllegalArgumentException("OpenAPI file path "
                                                                             + path.toAbsolutePath()
                                                                             + " is not one of recognized types: "
-                                                                            + OpenAPIMediaType.recognizedFileTypes()));
+                                                                            + OpenApiMediaType.recognizedFileTypes()));
             InputStream is;
             // The SmallRye OpenApiStaticFile needs an *open* InputStream. That code reads and closes the stream.
             try {
@@ -698,7 +691,7 @@ public class OpenApiFeature extends HelidonFeatureSupport {
 
         private OpenApiStaticFile getDefaultStaticFile() {
             List<String> candidatePaths = LOGGER.isLoggable(Level.TRACE) ? new ArrayList<>() : null;
-            for (OpenAPIMediaType candidate : OpenAPIMediaType.values()) {
+            for (OpenApiMediaType candidate : OpenApiMediaType.values()) {
                 for (String type : candidate.matchingTypes()) {
                     String candidatePath = DEFAULT_STATIC_FILE_PATH_PREFIX + type;
                     InputStream is = null;

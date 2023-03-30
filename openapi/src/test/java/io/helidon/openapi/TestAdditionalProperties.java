@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022 Oracle and/or its affiliates.
+ * Copyright (c) 2021, 2023 Oracle and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,9 +20,8 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.util.Map;
 
-import io.smallrye.openapi.runtime.io.Format;
-import org.eclipse.microprofile.openapi.models.OpenAPI;
-import org.eclipse.microprofile.openapi.models.media.Schema;
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.media.Schema;
 import org.junit.jupiter.api.Test;
 import org.yaml.snakeyaml.Yaml;
 
@@ -31,41 +30,34 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
 
 class TestAdditionalProperties {
 
-    private static ParserHelper helper = ParserHelper.create();
+    private static ParserHelper helper = SwaggerParserHelper.create();
 
 
     @Test
     void checkParsingBooleanAdditionalProperties() throws IOException {
         OpenAPI openAPI = ParserTest.parse(helper, "/withBooleanAddlProps.yml");
-        Schema itemSchema = openAPI.getComponents().getSchemas().get("item");
+        Schema<?> itemSchema = openAPI.getComponents().getSchemas().get("item");
 
-        Schema additionalPropertiesSchema = itemSchema.getAdditionalPropertiesSchema();
-        Boolean additionalPropertiesBoolean = itemSchema.getAdditionalPropertiesBoolean();
-
-        assertThat("Additional properties as schema", additionalPropertiesSchema, is(nullValue()));
-        assertThat("Additional properties as boolean", additionalPropertiesBoolean, is(notNullValue()));
-        assertThat("Additional properties value", additionalPropertiesBoolean.booleanValue(), is(false));
+        Object additionalProperties = itemSchema.getAdditionalProperties();
+        assertThat("Additional properties", additionalProperties, instanceOf(Boolean.class));
+        assertThat("Additional properties value", (Boolean) additionalProperties, is(false));
     }
 
     @Test
     void checkParsingSchemaAdditionalProperties() throws IOException {
         OpenAPI openAPI = ParserTest.parse(helper, "/withSchemaAddlProps.yml");
-        Schema itemSchema = openAPI.getComponents().getSchemas().get("item");
+        Schema<?> itemSchema = openAPI.getComponents().getSchemas().get("item");
 
-        Schema additionalPropertiesSchema = itemSchema.getAdditionalPropertiesSchema();
-        Boolean additionalPropertiesBoolean = itemSchema.getAdditionalPropertiesBoolean();
 
-        assertThat("Additional properties as boolean", additionalPropertiesBoolean, is(nullValue()));
-        assertThat("Additional properties as schema", additionalPropertiesSchema, is(notNullValue()));
+        Object additionalProperties = itemSchema.getAdditionalProperties();
+        assertThat("Additional properties", additionalProperties, instanceOf(Schema.class));
 
-        Map<String, Schema> additionalProperties = additionalPropertiesSchema.getProperties();
-        assertThat("Additional property 'code'", additionalProperties, hasKey("code"));
-        assertThat("Additional property 'text'", additionalProperties, hasKey("text"));
+        Map<String, Schema> additionalPropertiesSettings = ((Schema<?>) additionalProperties).getProperties();
+        assertThat("Additional property 'code'", additionalPropertiesSettings, hasKey("code"));
+        assertThat("Additional property 'text'", additionalPropertiesSettings, hasKey("text"));
     }
 
     @Test

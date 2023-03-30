@@ -29,6 +29,7 @@ module io.helidon.reactive.openapi {
     requires io.helidon.reactive.servicecommon;
     requires io.helidon.reactive.webserver.cors;
     requires smallrye.open.api.core;
+    requires microprofile.openapi.api;
     requires org.jboss.jandex;
     requires org.yaml.snakeyaml;
     requires java.logging;

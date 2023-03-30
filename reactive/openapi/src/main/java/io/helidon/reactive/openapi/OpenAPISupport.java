@@ -49,7 +49,7 @@ import io.helidon.config.metadata.Configured;
 import io.helidon.config.metadata.ConfiguredOption;
 import io.helidon.openapi.ExpandedTypeDescription;
 import io.helidon.openapi.HelidonOpenApiConfig;
-import io.helidon.openapi.OpenAPIMediaType;
+import io.helidon.openapi.OpenApiMediaType;
 import io.helidon.openapi.OpenAPIParser;
 import io.helidon.openapi.ParserHelper;
 import io.helidon.openapi.Serializer;
@@ -79,7 +79,6 @@ import jakarta.json.JsonReaderFactory;
 import jakarta.json.JsonString;
 import jakarta.json.JsonValue;
 import org.eclipse.microprofile.openapi.models.OpenAPI;
-import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.IndexView;
 
 /**
@@ -200,17 +199,17 @@ public class OpenAPISupport extends HelidonRestServiceSupport {
      *                             from its underlying data
      */
     String prepareDocument(MediaType resultMediaType) {
-        OpenAPIMediaType matchingOpenAPIMediaType
-                = OpenAPIMediaType.byMediaType(resultMediaType)
+        OpenApiMediaType matchingOpenApiMediaType
+                = OpenApiMediaType.byMediaType(resultMediaType)
                 .orElseGet(() -> {
                     LOGGER.log(Level.FINE,
                                () -> String.format(
                                        "Requested media type %s not supported; using default",
                                        resultMediaType.text()));
-                    return OpenAPIMediaType.DEFAULT_TYPE;
+                    return OpenApiMediaType.DEFAULT_TYPE;
                 });
 
-        Format resultFormat = matchingOpenAPIMediaType.format();
+        Format resultFormat = matchingOpenApiMediaType.format();
 
         String result = cachedDocuments.computeIfAbsent(resultFormat,
                                                         fmt -> {
@@ -381,7 +380,7 @@ public class OpenAPISupport extends HelidonRestServiceSupport {
         }
 
         Optional<MediaType> requestedMediaType = req.headers()
-                .bestAccepted(OpenAPIMediaType.preferredOrdering());
+                .bestAccepted(OpenApiMediaType.preferredOrdering());
 
         MediaType resultMediaType = requestedMediaType
                 .orElseGet(() -> {
@@ -634,11 +633,11 @@ public class OpenAPISupport extends HelidonRestServiceSupport {
         private OpenApiStaticFile getExplicitStaticFile() {
             Path path = Paths.get(staticFilePath);
             String specifiedFileType = typeFromPath(path);
-            OpenAPIMediaType specifiedMediaType = OpenAPIMediaType.byFileType(specifiedFileType)
+            OpenApiMediaType specifiedMediaType = OpenApiMediaType.byFileType(specifiedFileType)
                     .orElseThrow(() -> new IllegalArgumentException("OpenAPI file path "
                                                            + path.toAbsolutePath()
                                                            + " is not one of recognized types: "
-                                                           + OpenAPIMediaType.recognizedFileTypes()));
+                                                           + OpenApiMediaType.recognizedFileTypes()));
 
             try {
                 InputStream is = new BufferedInputStream(Files.newInputStream(path));
@@ -656,7 +655,7 @@ public class OpenAPISupport extends HelidonRestServiceSupport {
 
         private OpenApiStaticFile getDefaultStaticFile() {
             List<String> candidatePaths = LOGGER.isLoggable(Level.FINE) ? new ArrayList<>() : null;
-            for (OpenAPIMediaType candidate : OpenAPIMediaType.values()) {
+            for (OpenApiMediaType candidate : OpenApiMediaType.values()) {
                 for (String type : candidate.matchingTypes()) {
                     String candidatePath = DEFAULT_STATIC_FILE_PATH_PREFIX + type;
                     InputStream is = null;

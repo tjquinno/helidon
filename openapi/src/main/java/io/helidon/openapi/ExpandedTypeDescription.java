@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2022 Oracle and/or its affiliates.
+ * Copyright (c) 2019, 2023 Oracle and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,15 +18,18 @@ package io.helidon.openapi;
 import java.beans.IntrospectionException;
 import java.beans.PropertyDescriptor;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.ServiceLoader;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.eclipse.microprofile.openapi.models.Extensible;
-import org.eclipse.microprofile.openapi.models.media.Schema;
+import io.helidon.common.HelidonServiceLoader;
+import io.helidon.common.Weighted;
+
 import org.yaml.snakeyaml.TypeDescription;
 import org.yaml.snakeyaml.error.YAMLException;
 import org.yaml.snakeyaml.introspector.MethodProperty;
@@ -49,64 +52,48 @@ import org.yaml.snakeyaml.nodes.Tag;
  *     The OpenAPI document format uses lower-case enum names and values, while the SmallRye
  *     definitions use upper-case. This class simplifies adding the special handling for enums
  *     declared within a particular class.
- * </p>
  * <p>
- *     Some of the MP OpenAPI items are extensible, meaning they accept sub-item keys with the
+ *     Some of the OpenAPI items are extensible, meaning they accept sub-item keys with the
  *     "x-" prefix. This class supports extensions. For scalars it delegates to the normal
  *     SnakeYAML processing to correctly type and parse the scalar. For sequences it
  *     creates {@code List}s. For mappings it creates {@code Map}s. The subnodes of the lists and
  *     maps are handled by the normal SnakeYAML parsing, so the resulting elements in lists and
  *     maps are of the SnakeYAML-inferred types.
- * </p>
  * <p>
- *     A subnode {@code $ref} maps to the {@code ref} property on the MP OpenAPI types. This type
+ *     A subnode {@code $ref} maps to the {@code ref} property on the OpenAPI types. This type
  *     description simplifies defining the {@code $ref} property to those types that support it.
- * </p>
  * <p>
- *     In schemas, the {@code additionalProperties} value can be either a boolean or a schema. The MicroProfile
- *     {@link org.eclipse.microprofile.openapi.models.media.Schema} type exposes {@code getAdditionalPropertiesBoolean},
- *     {@code setAdditionalPropertiesBoolean}, {@code getAdditionalPropertiesSchema}, and {@code setAdditionalPropertiesSchema}
- *     methods. We do not know until runtime and the value is available for each {@code additionalProperties} instance which
+ *     In schemas, the {@code additionalProperties} value can be either a boolean or a schema. Different model
+ *     implementations expose the differently-typed {@code additionalProperties} in different ways. We do not know until runtime
+ *     and the value is available for each {@code additionalProperties} instance which
  *     type (Boolean or Schema) to use, so we cannot just prepare a smart SnakeYAML {@code Property} implementation. Instead
  *     we augment the schema-specific {@code TypeDescription} so it knows how to decide, at runtime, what to do.
- * </p>
  * <p>
  *     We use this expanded version of {@code TypeDescription} with the generated SnakeYAMLParserHelper class.
  * </p>
  */
 public class ExpandedTypeDescription extends TypeDescription {
 
-    static final PropertyUtils PROPERTY_UTILS = new PropertyUtils();
-
-    private static final String EXTENSION_PROPERTY_PREFIX = "x-";
-
-    private final Class<?> impl;
-
-    private ExpandedTypeDescription(Class<?> clazz, Class<?> impl) {
-        super(clazz, null, impl);
-        this.impl = impl;
-    }
-
     /**
      * Factory method for ease of chaining other method invocations.
      *
-     * @param clazz interface type to describe
-     * @param impl  implementation class for the interface
+     * @param typeClass interface type to describe
+     * @param implementationClass  implementation class for the interface
      * @return resulting TypeDescription
      */
-    public static ExpandedTypeDescription create(Class<?> clazz, Class<?> impl) {
+    public static ExpandedTypeDescription create(Class<?> typeClass, Class<?> implementationClass) {
 
         ExpandedTypeDescription result;
-        if (clazz.equals(Schema.class)) {
-            result = new SchemaTypeDescription(clazz, impl);
-        } else if (CustomConstructor.CHILD_MAP_TYPES.containsKey(clazz)) {
-            CustomConstructor.ChildMapType<?, ?> childMapType = CustomConstructor.CHILD_MAP_TYPES.get(clazz);
-            result = childMapType.typeDescriptionFactory().apply(impl);
-        } else if (CustomConstructor.CHILD_MAP_OF_LIST_TYPES.containsKey(clazz)) {
-            CustomConstructor.ChildMapListType<?, ?> childMapListType = CustomConstructor.CHILD_MAP_OF_LIST_TYPES.get(clazz);
-            result = childMapListType.typeDescriptionFunction().apply(impl);
+        if (MODEL_FACTORY.isSchema(typeClass)) {
+            result = new SchemaTypeDescription(typeClass, implementationClass);
+        } else if (CustomConstructor.CHILD_MAP_TYPES.containsKey(typeClass)) {
+            CustomConstructor.ChildMapType<?, ?> childMapType = CustomConstructor.CHILD_MAP_TYPES.get(typeClass);
+            result = childMapType.typeDescriptionFactory().apply(implementationClass);
+        } else if (CustomConstructor.CHILD_MAP_OF_LIST_TYPES.containsKey(typeClass)) {
+            CustomConstructor.ChildMapListType<?, ?> childMapListType = CustomConstructor.CHILD_MAP_OF_LIST_TYPES.get(typeClass);
+            result = childMapListType.typeDescriptionFunction().apply(implementationClass);
         } else {
-            result = new ExpandedTypeDescription(clazz, impl);
+            result = new ExpandedTypeDescription(typeClass, implementationClass);
         }
         result.setPropertyUtils(PROPERTY_UTILS);
         return result;
@@ -119,11 +106,41 @@ public class ExpandedTypeDescription extends TypeDescription {
      * @return map of implementation classes to descriptions
      */
     public static Map<Class<?>, ExpandedTypeDescription> buildImplsToTypes(ParserHelper helper) {
-        return Collections.unmodifiableMap(helper.entrySet()
+        return Collections.unmodifiableMap(helper.types()
+                                                   .values()
                                                    .stream()
-                                                   .map(Map.Entry::getValue)
-                                                   .collect(Collectors.toMap(ExpandedTypeDescription::impl,
+                                                   .collect(Collectors.toMap(ExpandedTypeDescription::implementation,
                                                                              Function.identity())));
+    }
+
+    /**
+     * Property utils implementation.
+     */
+    static final PropertyUtils PROPERTY_UTILS = new PropertyUtils();
+
+    /**
+     * Model factory instance to use, defaulting to the one supporting Swagger model types.
+     */
+    static final ModelFactory MODEL_FACTORY =
+            HelidonServiceLoader.builder(ServiceLoader.load(ModelFactory.class))
+                    .addService(new SwaggerModelFactory(), Weighted.DEFAULT_WEIGHT - 10)
+                    .build()
+                    .iterator()
+                    .next();
+
+    private static final String EXTENSION_PROPERTY_PREFIX = "x-";
+
+    private final Class<?> implementation;
+
+    /**
+     * Creates a new instance of the expanded type description for a given type and its implementation class.
+     *
+     * @param clazz the type of the interface (or class if there is no interface)
+     * @param implementation the type of the implementation
+     */
+    protected ExpandedTypeDescription(Class<?> clazz, Class<?> implementation) {
+        super(clazz, null, implementation);
+        this.implementation = implementation;
     }
 
     /**
@@ -132,8 +149,11 @@ public class ExpandedTypeDescription extends TypeDescription {
      * @return this type description
      */
     public ExpandedTypeDescription addRef() {
-        PropertySubstitute sub = new PropertySubstitute("ref", String.class, "getRef", "setRef");
-        sub.setTargetType(impl);
+        PropertySubstitute sub = new PropertySubstitute("ref",
+                                                        String.class,
+                                                        getRefMethodName(),
+                                                        setRefMethodName());
+        sub.setTargetType(implementation);
         substituteProperty(sub);
         return this;
     }
@@ -145,7 +165,7 @@ public class ExpandedTypeDescription extends TypeDescription {
      */
     public ExpandedTypeDescription addExtensions() {
         PropertySubstitute sub = new PropertySubstitute("extensions", Map.class, "getExtensions", "setExtensions");
-        sub.setTargetType(impl);
+        sub.setTargetType(implementation);
         substituteProperty(sub);
         return this;
     }
@@ -156,7 +176,7 @@ public class ExpandedTypeDescription extends TypeDescription {
             return new ExtensionProperty(name);
         }
         if (isRef(name)) {
-            return new RenamedProperty(this.getType(), "ref");
+            return new RenamedProperty(getType(), refFieldName(), getRefMethodName(), setRefMethodName());
         }
         return super.getProperty(name);
     }
@@ -201,8 +221,8 @@ public class ExpandedTypeDescription extends TypeDescription {
      *
      * @return implementation class
      */
-    public Class<?> impl() {
-        return impl;
+    public Class<?> implementation() {
+        return implementation;
     }
 
     /**
@@ -224,6 +244,33 @@ public class ExpandedTypeDescription extends TypeDescription {
             }
             throw ex;
         }
+    }
+
+    /**
+     * Indicates whether the type description represents a referenceable type.
+     *
+     * @return true/false
+     */
+    protected boolean isRef() {
+        try {
+            return String.class.isAssignableFrom(
+                    getType().getMethod(getRefMethodName())
+                            .getReturnType());
+        } catch (NoSuchMethodException ex) {
+            return false;
+        }
+    }
+
+    private String getRefMethodName() {
+        return MODEL_FACTORY.getRefMethodName();
+    }
+
+    private String setRefMethodName() {
+        return MODEL_FACTORY.setRefMethodName();
+    }
+
+    private String refFieldName() {
+        return MODEL_FACTORY.refFieldName();
     }
 
     private static boolean setupExtensionType(String key, Node valueNode) {
@@ -274,7 +321,7 @@ public class ExpandedTypeDescription extends TypeDescription {
      * @see io.helidon.openapi.Serializer (specifically doRepresentJavaBeanProperty) for output handling for
      *         additionalProperties
      */
-    static final class SchemaTypeDescription extends ExpandedTypeDescription {
+    static class SchemaTypeDescription extends ExpandedTypeDescription {
 
         private static final PropertyDescriptor ADDL_PROPS_PROP_DESCRIPTOR = preparePropertyDescriptor();
 
@@ -283,24 +330,25 @@ public class ExpandedTypeDescription extends TypeDescription {
 
                     @Override
                     public void set(Object object, Object value) throws Exception {
-                        Schema s = Schema.class.cast(object);
-                        if (value instanceof Schema) {
-                            s.setAdditionalPropertiesSchema((Schema) value);
-                        } else {
-                            s.setAdditionalPropertiesBoolean((Boolean) value);
-                        }
+                        additionalProperties(object, value);
                     }
 
                     @Override
                     public Object get(Object object) {
-                        Schema s = Schema.class.cast(object);
-                        Boolean b = s.getAdditionalPropertiesBoolean();
-                        return b != null ? b : s.getAdditionalPropertiesSchema();
+                        return additionalProperties(object);
+                    }
+
+                    private void additionalProperties(Object object, Object value) {
+                        MODEL_FACTORY.additionalProperties(object, value);
+                    }
+
+                    private Object additionalProperties(Object object) {
+                        return MODEL_FACTORY.additionalProperties(object);
                     }
                 };
 
-        private SchemaTypeDescription(Class<?> clazz, Class<?> impl) {
-            super(clazz, impl);
+        protected SchemaTypeDescription(Class<?> typeClass, Class<?> implementationClass) {
+            super(typeClass, implementationClass);
         }
 
         @Override
@@ -311,7 +359,7 @@ public class ExpandedTypeDescription extends TypeDescription {
         @Override
         public boolean setupPropertyType(String key, Node valueNode) {
             if (key.equals("additionalProperties")) {
-                valueNode.setType(valueNode.getTag().equals(Tag.BOOL) ? Boolean.class : Schema.class);
+                valueNode.setType(valueNode.getTag().equals(Tag.BOOL) ? Boolean.class : schemaType());
                 return true;
             }
             return super.setupPropertyType(key, valueNode);
@@ -319,17 +367,11 @@ public class ExpandedTypeDescription extends TypeDescription {
 
         @Override
         public boolean setProperty(Object targetBean, String propertyName, Object value) throws Exception {
-            if (!(targetBean instanceof Schema schema) || !propertyName.equals("additionalProperties")) {
+            if (!isSchema(targetBean)
+                || !propertyName.equals("additionalProperties")) {
                 return super.setProperty(targetBean, propertyName, value);
             }
-            if (value instanceof Boolean) {
-                schema.setAdditionalPropertiesBoolean((Boolean) value);
-            } else if (value instanceof Schema) {
-                schema.setAdditionalPropertiesSchema((Schema) value);
-            } else {
-                throw new IllegalArgumentException("Expected additionalProperties as Boolean or Schema but was "
-                                                           + value.getClass().getName());
-            }
+            MODEL_FACTORY.additionalProperties(targetBean, value);
             return true;
         }
 
@@ -340,11 +382,27 @@ public class ExpandedTypeDescription extends TypeDescription {
              */
             try {
                 return new PropertyDescriptor("additionalProperties",
-                                              Schema.class.getMethod("getAdditionalPropertiesSchema"),
-                                              Schema.class.getMethod("setAdditionalPropertiesSchema", Schema.class));
+                                              placeholderGetAdditionalProperties(),
+                                              placeholderSetAdditionalProperties());
             } catch (IntrospectionException | NoSuchMethodException e) {
                 throw new RuntimeException(e);
             }
+        }
+
+        private Class<?> schemaType() {
+            return MODEL_FACTORY.schemaType();
+        }
+
+        private boolean isSchema(Object object) {
+            return MODEL_FACTORY.isSchema(object);
+        }
+
+        private static Method placeholderGetAdditionalProperties() throws NoSuchMethodException {
+            return MODEL_FACTORY.placeholderGetAdditionalProperties();
+        }
+
+        private static Method placeholderSetAdditionalProperties() throws NoSuchMethodException {
+            return MODEL_FACTORY.placeholderSetAdditionalProperties();
         }
     }
 
@@ -443,7 +501,7 @@ public class ExpandedTypeDescription extends TypeDescription {
      */
     static class ExtensionProperty extends Property {
 
-        private static final Class[] EXTENSION_TYPE_ARGS = new Class[0];
+        private static final Class<?>[] EXTENSION_TYPE_ARGS = new Class[0];
 
         ExtensionProperty(String name) {
             super(name, Object.class);
@@ -458,13 +516,13 @@ public class ExpandedTypeDescription extends TypeDescription {
         }
 
         @Override
-        public void set(Object object, Object value) throws Exception {
-            asExt(object).addExtension(getName(), value);
+        public void set(Object extensible, Object value) throws Exception {
+            MODEL_FACTORY.addExtension(extensible, getName(), value);
         }
 
         @Override
-        public Object get(Object object) {
-            return asExt(object).getExtensions().get(getName());
+        public Object get(Object extensible) {
+            return MODEL_FACTORY.getExtensions(extensible).get(getName());
         }
 
         @Override
@@ -476,15 +534,6 @@ public class ExpandedTypeDescription extends TypeDescription {
         public <A extends Annotation> A getAnnotation(Class<A> annotationType) {
             return null;
         }
-
-        private Extensible<?> asExt(Object object) {
-            if (!(object instanceof Extensible<?>)) {
-                throw new IllegalArgumentException(String.format(
-                        "Cannot assign extension %s to object of type %s that does not implement %s", getName(),
-                        object.getClass().getName(), Extensible.class.getName()));
-            }
-            return (Extensible<?>) object;
-        }
     }
 
     /**
@@ -492,13 +541,19 @@ public class ExpandedTypeDescription extends TypeDescription {
      */
     static class RenamedProperty extends MethodProperty {
 
-        RenamedProperty(Class<?> c, String pojoName) {
-            super(propertyDescriptor(c, pojoName));
+        RenamedProperty(Class<?> c, String pojoName, String getMethodName, String setMethodName) {
+            super(propertyDescriptor(c, pojoName, getMethodName, setMethodName));
         }
 
-        private static PropertyDescriptor propertyDescriptor(Class<?> c, String pojoName) {
+        private static PropertyDescriptor propertyDescriptor(Class<?> c,
+                                                             String pojoName,
+                                                             String getMethodName,
+                                                             String setMethodName) {
             try {
-                return new PropertyDescriptor("ref", c, "getRef", "setRef");
+                return new PropertyDescriptor("ref",
+                                              c,
+                                              getMethodName,
+                                              setMethodName);
             } catch (IntrospectionException e) {
                 throw new YAMLException("Error describing property " + pojoName + " for class " + c.getName());
             }

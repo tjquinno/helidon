@@ -29,19 +29,19 @@ module io.helidon.openapi {
     requires static io.helidon.common.features.api;
 
     requires io.helidon.common;
-    requires io.helidon.common.config;
+    requires io.helidon.config;
     requires io.helidon.common.media.type;
 
     requires org.jboss.jandex;
 
-    requires smallrye.open.api.core;
     requires jakarta.json;
     requires java.desktop; // for java.beans package
-    requires org.yaml.snakeyaml;
+    requires transitive org.yaml.snakeyaml;
 
-    requires transitive microprofile.openapi.api;
+    requires transitive io.swagger.v3.oas.models;
 
     requires static io.helidon.config.metadata;
 
+    uses io.helidon.openapi.ModelFactory;
     exports io.helidon.openapi;
 }

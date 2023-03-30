@@ -21,14 +21,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
-import org.eclipse.microprofile.openapi.models.PathItem;
-import org.eclipse.microprofile.openapi.models.Paths;
-import org.eclipse.microprofile.openapi.models.callbacks.Callback;
-import org.eclipse.microprofile.openapi.models.media.Content;
-import org.eclipse.microprofile.openapi.models.media.MediaType;
-import org.eclipse.microprofile.openapi.models.responses.APIResponse;
-import org.eclipse.microprofile.openapi.models.responses.APIResponses;
-import org.eclipse.microprofile.openapi.models.security.SecurityRequirement;
+import io.swagger.v3.oas.models.PathItem;
+import io.swagger.v3.oas.models.Paths;
+import io.swagger.v3.oas.models.callbacks.Callback;
+import io.swagger.v3.oas.models.media.Content;
+import io.swagger.v3.oas.models.media.MediaType;
+import io.swagger.v3.oas.models.responses.ApiResponse;
+import io.swagger.v3.oas.models.responses.ApiResponses;
+import io.swagger.v3.oas.models.security.SecurityRequirement;
 import org.yaml.snakeyaml.TypeDescription;
 import org.yaml.snakeyaml.constructor.Constructor;
 import org.yaml.snakeyaml.error.Mark;
@@ -55,14 +55,14 @@ final class CustomConstructor extends Constructor {
     // we provide type-specific factory functions as part of the type metadata here where we can specify the actual parent
     // and child types.
     static final Map<Class<?>, ChildMapType<?, ?>> CHILD_MAP_TYPES = Map.of(
-            APIResponses.class, new ChildMapType<>(APIResponses.class,
-                                                   APIResponse.class,
-                                                   APIResponses::addAPIResponse,
+            ApiResponses.class, new ChildMapType<>(ApiResponses.class,
+                                                   ApiResponse.class,
+                                                   ApiResponses::addApiResponse,
                                                    impl -> ExpandedTypeDescription.MapLikeTypeDescription.create(
-                                                           APIResponses.class,
+                                                           ApiResponses.class,
                                                            impl,
-                                                           APIResponse.class,
-                                                           APIResponses::addAPIResponse)),
+                                                           ApiResponse.class,
+                                                           ApiResponses::addApiResponse)),
             Callback.class, new ChildMapType<>(Callback.class,
                                                PathItem.class,
                                                Callback::addPathItem,
@@ -93,16 +93,16 @@ final class CustomConstructor extends Constructor {
     static final Map<Class<?>, ChildMapListType<?, ?>> CHILD_MAP_OF_LIST_TYPES = Map.of(
             SecurityRequirement.class, new ChildMapListType<>(SecurityRequirement.class,
                                                               String.class,
-                                                              SecurityRequirement::addScheme,
-                                                              SecurityRequirement::addScheme,
-                                                              SecurityRequirement::addScheme,
+                                                              SecurityRequirement::addList, // TODO used to be addScheme
+                                                              SecurityRequirement::addList,
+                                                              SecurityRequirement::addList,
                                                               impl -> ExpandedTypeDescription.ListMapLikeTypeDescription.create(
                                                                       SecurityRequirement.class,
                                                                       impl,
                                                                       String.class,
-                                                                      SecurityRequirement::addScheme,
-                                                                      SecurityRequirement::addScheme,
-                                                                      SecurityRequirement::addScheme)));
+                                                                      SecurityRequirement::addList, // TODO used to be addScheme
+                                                                      SecurityRequirement::addList,
+                                                                      SecurityRequirement::addList)));
 
     /**
      * Adds a single named child to the parent.
@@ -164,6 +164,8 @@ final class CustomConstructor extends Constructor {
 
     private static final System.Logger LOGGER = System.getLogger(CustomConstructor.class.getName());
 
+    private static final ModelFactory MODEL_FACTORY = ExpandedTypeDescription.MODEL_FACTORY;
+
     CustomConstructor(TypeDescription td) {
         super(td);
         yamlClassConstructors.put(NodeId.mapping, new ConstructMapping());
@@ -191,8 +193,8 @@ final class CustomConstructor extends Constructor {
             });
         }
 
-        // Older releases silently accepted numbers for APIResponse status values; they should be strings.
-        if (parentType.equals(APIResponses.class)) {
+        // Older releases silently accepted numbers for ApiResponse status values; they should be strings.
+        if (parentType.equals(MODEL_FACTORY.apiResponsesType())) {
             convertIntHttpStatuses(node);
         }
         super.constructMapping2ndStep(node, mapping);

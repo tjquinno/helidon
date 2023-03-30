@@ -16,6 +16,7 @@
 
 import io.helidon.common.features.api.Feature;
 import io.helidon.common.features.api.HelidonFlavor;
+import io.helidon.microprofile.openapi.MpModelFactory;
 import io.helidon.microprofile.openapi.OpenApiCdiExtension;
 
 /**
@@ -41,7 +42,10 @@ module io.helidon.microprofile.openapi {
     requires io.helidon.nima.openapi;
     requires transitive microprofile.openapi.api;
 
+    requires java.desktop; // For JavaBeans PropertyDescriptor
+
     requires org.jboss.jandex;
+    requires org.yaml.snakeyaml;
 
     requires static io.helidon.config.metadata;
 
@@ -50,5 +54,6 @@ module io.helidon.microprofile.openapi {
     // this is needed for CDI extensions that use non-public observer methods
     opens io.helidon.microprofile.openapi to weld.core.impl, io.helidon.microprofile.cdi;
 
+    provides io.helidon.openapi.ModelFactory with MpModelFactory;
     provides jakarta.enterprise.inject.spi.Extension with OpenApiCdiExtension;
 }

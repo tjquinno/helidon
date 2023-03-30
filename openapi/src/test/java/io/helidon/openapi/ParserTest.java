@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022 Oracle and/or its affiliates.
+ * Copyright (c) 2020, 2023 Oracle and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,26 +20,26 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 
-import org.eclipse.microprofile.openapi.models.OpenAPI;
-import org.eclipse.microprofile.openapi.models.Paths;
-import org.eclipse.microprofile.openapi.models.parameters.Parameter;
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.Paths;
+import io.swagger.v3.oas.models.parameters.Parameter;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 class ParserTest {
 
-    private static ParserHelper helper = ParserHelper.create();
+    private static ParserHelper helper = SwaggerParserHelper.create();
 
     @Test
     public void testParserUsingYAML() throws IOException {
         OpenAPI openAPI = parse(helper, "/petstore.yaml");
         assertThat(openAPI.getOpenapi(), is("3.0.0"));
-        assertThat(openAPI.getPaths().getPathItem("/pets").getGET().getParameters().get(0).getIn(),
-                is(Parameter.In.QUERY));
+        assertThat(openAPI.getPaths().get("/pets").getGet().getParameters().get(0).getIn(),
+                is("query"));
     }
 
     @Test
@@ -83,14 +83,14 @@ class ParserTest {
     void testYamlRef() throws IOException {
         OpenAPI openAPI = parse(helper, "/petstore.yaml");
         Paths paths = openAPI.getPaths();
-        String ref = paths.getPathItem("/pets")
-                .getGET()
+        String ref = paths.get("/pets")
+                .getGet()
                 .getResponses()
-                .getAPIResponse("200")
+                .get("200")
                 .getContent()
-                .getMediaType("application/json")
+                .get("application/json")
                 .getSchema()
-                .getRef();
+                .get$ref();
 
         assertThat("ref value", ref, is(equalTo("#/components/schemas/Pets")));
     }
@@ -99,13 +99,13 @@ class ParserTest {
     void testJsonRef() throws IOException {
         OpenAPI openAPI = parse(helper, "/petstore.json");
         Paths paths = openAPI.getPaths();
-        String ref = paths.getPathItem("/user")
-                .getPOST()
+        String ref = paths.get("/user")
+                .getPost()
                 .getRequestBody()
                 .getContent()
-                .getMediaType("application/json")
+                .get("application/json")
                 .getSchema()
-                .getRef();
+                .get$ref();
 
                 assertThat("ref value", ref, is(equalTo("#/components/schemas/User")));
     }

@@ -27,13 +27,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import io.smallrye.openapi.api.models.OpenAPIImpl;
-import io.smallrye.openapi.runtime.io.Format;
-import org.eclipse.microprofile.openapi.models.Extensible;
-import org.eclipse.microprofile.openapi.models.OpenAPI;
-import org.eclipse.microprofile.openapi.models.Reference;
-import org.eclipse.microprofile.openapi.models.media.Schema;
-import org.eclipse.microprofile.openapi.models.parameters.Parameter;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.introspector.Property;
@@ -53,6 +46,7 @@ import org.yaml.snakeyaml.representer.Representer;
  */
 public class Serializer {
 
+    private static final ModelFactory MODEL_FACTORY = ExpandedTypeDescription.MODEL_FACTORY;
     private static final DumperOptions YAML_DUMPER_OPTIONS = new DumperOptions();
     private static final DumperOptions JSON_DUMPER_OPTIONS = new DumperOptions();
 
@@ -76,29 +70,29 @@ public class Serializer {
      *
      * @param types types
      * @param implsToTypes implementations to types
-     * @param openAPI Open API document to serialize
+     * @param openApi Open API document to serialize
      * @param fmt format to use
      * @param writer writer to serialize to
      */
     public static void serialize(Map<Class<?>, ExpandedTypeDescription> types,
                                  Map<Class<?>, ExpandedTypeDescription> implsToTypes,
-                                 OpenAPI openAPI,
+                                 Object openApi,
                                  Format fmt,
                                  Writer writer) {
         if (fmt == Format.JSON) {
-            serialize(types, implsToTypes, openAPI, writer, JSON_DUMPER_OPTIONS, DumperOptions.ScalarStyle.DOUBLE_QUOTED);
+            serialize(types, implsToTypes, openApi, writer, JSON_DUMPER_OPTIONS, DumperOptions.ScalarStyle.DOUBLE_QUOTED);
         } else {
-            serialize(types, implsToTypes, openAPI, writer, YAML_DUMPER_OPTIONS, DumperOptions.ScalarStyle.PLAIN);
+            serialize(types, implsToTypes, openApi, writer, YAML_DUMPER_OPTIONS, DumperOptions.ScalarStyle.PLAIN);
         }
     }
 
     private static void serialize(Map<Class<?>, ExpandedTypeDescription> types,
-            Map<Class<?>, ExpandedTypeDescription> implsToTypes, OpenAPI openAPI, Writer writer,
+            Map<Class<?>, ExpandedTypeDescription> implsToTypes, Object openApi, Writer writer,
             DumperOptions dumperOptions,
             DumperOptions.ScalarStyle stringStyle) {
 
         Yaml yaml = new Yaml(new CustomRepresenter(types, implsToTypes, dumperOptions, stringStyle), dumperOptions);
-        yaml.dump(openAPI, new TagSuppressingWriter(writer));
+        yaml.dump(openApi, new TagSuppressingWriter(writer, openApi.getClass()));
     }
 
     /**
@@ -177,19 +171,17 @@ public class Serializer {
 
         private NodeTuple doRepresentJavaBeanProperty(Object javaBean, Property property, Object propertyValue, Tag customTag) {
             NodeTuple defaultTuple = super.representJavaBeanProperty(javaBean, property, propertyValue, customTag);
-            if ((javaBean instanceof Reference) && property.getName().equals("ref")) {
+            if (MODEL_FACTORY.isReferenceable(javaBean) && property.getName().equals("ref")) {
                 return new NodeTuple(representData("$ref"), defaultTuple.getValueNode());
             }
-            if (javaBean instanceof Schema) {
-                /*
-                 * At most one of additionalPropertiesBoolean and additionalPropertiesSchema will return a non-null value.
-                 * Whichever one does (if either), replace the name with "additionalProperties" for output. Skip whatever is
-                 * returned from the deprecated additionalProperties method itself.
-                 */
+            if (MODEL_FACTORY.isSchema(javaBean)) {
                 String propertyName = property.getName();
-                if (propertyName.equals("additionalProperties")) {
-                    return null;
-                } else if (propertyName.startsWith("additionalProperties")) {
+
+                /*
+                 * In the MP model at most one of additionalPropertiesBoolean and additionalPropertiesSchema will return a
+                 * non-null value. Whichever one does (if either), replace the name with "additionalProperties" for output.
+                 */
+                if (propertyName.startsWith("additionalProperties")) {
                     return new NodeTuple(representData("additionalProperties"), defaultTuple.getValueNode());
                 }
             }
@@ -228,7 +220,7 @@ public class Serializer {
         }
 
         private void processExtensions(MappingNode node, Object javaBean) {
-            if (!Extensible.class.isAssignableFrom(javaBean.getClass())) {
+            if (!MODEL_FACTORY.isExtensible(javaBean.getClass())) {
                 return;
             }
 
@@ -260,7 +252,7 @@ public class Serializer {
                 }
             });
             if (!handledExtensionNodes.get()) {
-                Map<String, Object> extensions = ((Extensible<?>) javaBean).getExtensions();
+                Map<String, Object> extensions = MODEL_FACTORY.getExtensions(javaBean);
                 if (extensions != null) {
                     extensions.forEach((name, value) -> {
                         Node keyNode = representScalar(Tag.STR,
@@ -285,29 +277,21 @@ public class Serializer {
          * @return true if the property should be processes; false otherwise
          */
         private boolean okToProcess(Object javaBean, Property property) {
-            /*
-             * The following construct might look awkward - and it is. But if SmallRye adds additional properties to its
-             * implementation classes that are not in the corresponding interfaces - and therefore we want to skip processing
-             * them - then we can just add additional lines like the "reject |= ..." one, testing for the new case, without
-             * having to change any other lines in the method.
-             */
-            boolean reject = false;
-            reject |= Parameter.class.isAssignableFrom(javaBean.getClass()) && property.getName().equals("hidden");
-            return !reject;
+            return MODEL_FACTORY.isOkToProcess(javaBean, property);
         }
     }
 
     /**
-     * Suppress the tag output for SmallRye implementation classes so the resulting document can be read into any MP OpenAPI
-     * implementation, not just SmallRye's.
+     * Suppress the tag output for implementation classes so the resulting document can be read into any MP OpenAPI
+     * implementation, not just a given implementation's.
      */
     static class TagSuppressingWriter extends PrintWriter {
 
-        private static final Pattern SMALLRYE_IMPL_TAG_PATTERN =
-                Pattern.compile("!!" + Pattern.quote(OpenAPIImpl.class.getPackage().getName()) + ".+$");
+        private final Pattern tagPattern;
 
-        TagSuppressingWriter(Writer out) {
+        TagSuppressingWriter(Writer out, Class<?> openApiClass) {
             super(out);
+            tagPattern =    Pattern.compile("!!" + Pattern.quote(openApiClass.getPackage().getName()) + ".+$");
         }
 
         @Override
@@ -328,7 +312,7 @@ public class Serializer {
 
         private int detag(CharSequence cs, int off, int len) {
             int result = len;
-            Matcher m = SMALLRYE_IMPL_TAG_PATTERN.matcher(cs.subSequence(off, off + len));
+            Matcher m = tagPattern.matcher(cs.subSequence(off, off + len));
             if (m.matches()) {
                 result = len - (m.end() - m.start());
             }
