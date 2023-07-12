@@ -32,19 +32,26 @@ import java.util.concurrent.atomic.DoubleAccumulator;
 import java.util.concurrent.atomic.DoubleAdder;
 import java.util.concurrent.atomic.LongAccumulator;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
+import io.helidon.metrics.api.HelidonMetric;
 import io.helidon.metrics.api.MetricInstance;
 import io.helidon.metrics.api.Registry;
 import io.helidon.metrics.api.RegistryFactory;
 import io.helidon.metrics.api.SystemTagsManager;
 
 import jakarta.json.Json;
+import jakarta.json.JsonArray;
+import jakarta.json.JsonArrayBuilder;
 import jakarta.json.JsonBuilderFactory;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 import org.eclipse.microprofile.metrics.Counter;
 import org.eclipse.microprofile.metrics.Gauge;
 import org.eclipse.microprofile.metrics.Histogram;
+import org.eclipse.microprofile.metrics.Metadata;
 import org.eclipse.microprofile.metrics.MetricID;
 import org.eclipse.microprofile.metrics.Tag;
 import org.eclipse.microprofile.metrics.Timer;
@@ -64,6 +71,16 @@ class JsonFormatter {
     }
 
     private static final JsonBuilderFactory JSON = Json.createBuilderFactory(Map.of());
+
+    private static final Map<String, String> JSON_ESCAPED_CHARS_MAP = initEscapedCharsMap();
+
+    private static final Pattern JSON_ESCAPED_CHARS_REGEX = Pattern
+            .compile(JSON_ESCAPED_CHARS_MAP
+                             .keySet()
+                             .stream()
+                             .map(Pattern::quote)
+                             .collect(Collectors.joining("", "[", "]")));
+
 
     private final Iterable<String> meterNameSelection;
     private final Iterable<String> scopeSelection;
@@ -128,7 +145,7 @@ class JsonFormatter {
                         MetricInstance adjustedMetric = new MetricInstance(new MetricID(metric.id().getName(),
                                                                                         tags(metric.id().getTags(), scope)),
                                                                            metric.metric());
-                        if (matchesName(adjustedMetric.id())) {
+                        if (matchesName(adjustedMetric.id().getName())) {
 
                             Map<String, MetricOutputBuilder> meterOutputBuildersWithinParent =
                                     organizeByScope ? meterOutputBuildersByScope
@@ -162,6 +179,106 @@ class JsonFormatter {
         }
 
         return isAnyOutput.get() ? Optional.of(top.build()) : Optional.empty();
+    }
+
+    public Optional<JsonObject> metadata(boolean isByScopeRequested) {
+
+        boolean organizeByScope = shouldOrganizeByScope(isByScopeRequested);
+
+        Map<String, Map<String, JsonObjectBuilder>> metadataOutputBuildersByScope = organizeByScope ? new HashMap<>() : null;
+        Map<String, JsonObjectBuilder> metadataOutputBuildersIgnoringScope = organizeByScope ? null : new HashMap<>();
+
+        AtomicBoolean isAnyOutput = new AtomicBoolean(false);
+        RegistryFactory registryFactory = RegistryFactory.getInstance();
+        registryFactory.scopes().forEach(scope -> {
+            String matchingScope = matchingScope(scope);
+            if (matchingScope != null) {
+                Registry registry = registryFactory.getRegistry(scope);
+                registry.getMetadata().forEach((name, metadata) -> {
+                    if (matchesName(name)) {
+
+                        Map<String, JsonObjectBuilder> metadataOutputBuilderWithinParent =
+                                organizeByScope ? metadataOutputBuildersByScope
+                                        .computeIfAbsent(matchingScope, ms -> new HashMap<>())
+                                        : metadataOutputBuildersIgnoringScope;
+
+                        JsonObjectBuilder builderForThisName = metadataOutputBuilderWithinParent
+                                .computeIfAbsent(name, k -> JSON.createObjectBuilder());
+                        addNonEmpty(builderForThisName, "unit", metadata.getUnit());
+                        addNonEmpty(builderForThisName, "description", metadata.getDescription());
+                        isAnyOutput.set(true);
+
+                        List<List<String>> tagGroups = new ArrayList<>();
+
+                        registry.metricIdsByName(name).forEach(metricId -> {
+                            if (registry.enabled(name)) {
+                                List<String> tags = metricId.getTags().entrySet().stream()
+                                        .map(entry -> jsonEscape(entry.getKey()) + "=" + jsonEscape(entry.getValue()))
+                                        .toList();
+                                if (!tags.isEmpty()) {
+                                    tagGroups.add(tags);
+                                }
+                            }
+                        });
+                        if (!tagGroups.isEmpty()) {
+                            JsonArrayBuilder tagsOverAllMetricsWithSameName = JSON.createArrayBuilder();
+                            for (List<String> tagGroup : tagGroups) {
+                                JsonArrayBuilder tagsForMetricBuilder = JSON.createArrayBuilder();
+                                tagGroup.forEach(tagsForMetricBuilder::add);
+                                tagsOverAllMetricsWithSameName.add(tagsForMetricBuilder);
+                            }
+                            builderForThisName.add("tags", tagsOverAllMetricsWithSameName);
+                            isAnyOutput.set(true);
+                        }
+                    }
+                });
+            }
+        });
+        JsonObjectBuilder top = JSON.createObjectBuilder();
+        if (organizeByScope) {
+            metadataOutputBuildersByScope.forEach((scope, builders) -> {
+                JsonObjectBuilder scopeBuilder = JSON.createObjectBuilder();
+                builders.forEach(scopeBuilder::add);
+                top.add(scope, scopeBuilder);
+            });
+        } else {
+            metadataOutputBuildersIgnoringScope.forEach(top::add);
+        }
+        return isAnyOutput.get() ? Optional.of(top.build()) : Optional.empty();
+    }
+
+    static String jsonEscape(String s) {
+        final Matcher m = JSON_ESCAPED_CHARS_REGEX.matcher(s);
+        final StringBuilder sb = new StringBuilder();
+        while (m.find()) {
+            m.appendReplacement(sb, JSON_ESCAPED_CHARS_MAP.get(m.group()));
+        }
+        m.appendTail(sb);
+        return sb.toString();
+    }
+
+
+    private static Map<String, String> initEscapedCharsMap() {
+        final Map<String, String> result = new HashMap<>();
+        result.put("\b", bsls("b"));
+        result.put("\f", bsls("f"));
+        result.put("\n", bsls("n"));
+        result.put("\r", bsls("r"));
+        result.put("\t", bsls("t"));
+        result.put("\"", bsls("\""));
+        result.put("\\", bsls("\\\\"));
+        result.put(";", "_");
+        return result;
+    }
+
+    private static String bsls(String s) {
+        return "\\\\" + s;
+    }
+
+    private static void addNonEmpty(JsonObjectBuilder builder, String name, String value) {
+        if ((null != value) && !value.isEmpty()) {
+            builder.add(name, value);
+        }
     }
 
     private static Tag[] tags(Map<String, String> tagMap, String scope) {
@@ -224,14 +341,13 @@ class JsonFormatter {
         return metricId.getTags().get(scopeTagName);
     }
 
-
-    private boolean matchesName(MetricID metricId) {
+    private boolean matchesName(String metricName) {
         Iterator<String> nameIterator = meterNameSelection.iterator();
         if (!nameIterator.hasNext()) {
             return true;
         }
         while (nameIterator.hasNext()) {
-            if (nameIterator.next().equals(metricId.getName())) {
+            if (nameIterator.next().equals(metricName)) {
                 return true;
             }
         }

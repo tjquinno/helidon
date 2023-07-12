@@ -165,6 +165,18 @@ public interface RegistryFactory {
     Optional<?> scrape(MediaType mediaType, Iterable<String> scopeSelection, Iterable<String> meterNameSelection);
 
     /**
+     * Exposes the metadata contained in the implementation registry according to the requested media type,
+     * limited by the specified scope and meter name selections.
+     *
+     * @param mediaType {@link io.helidon.common.media.type.MediaType} to control the output format
+     * @param scopeSelection {@link java.lang.Iterable} of individual scope names to include in the output
+     * @param meterNameSelection {@link java.lang.Iterable} of individual meter names to include in the output
+     * @return {@link String} metadata exposition as governed by the parameters; {@code empty} if no metrics matched the
+     * selections
+     */
+    Optional<?> scrapeMetadata(MediaType mediaType, Iterable<String> scopeSelection, Iterable<String> meterNameSelection);
+
+    /**
      * Returns the current scopes represented by registries created by the factory.
      *
      * @return scopes

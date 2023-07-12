@@ -19,6 +19,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import io.helidon.common.LazyValue;
@@ -195,10 +196,18 @@ public class MetricsFeature extends HelidonFeatureSupport {
             res.send();
         }
 
+        getOrOptionsMatching(mediaType, res, () -> RegistryFactory.getInstance().scrape(mediaType,
+                                                                                        scopeSelection,
+                                                                                        nameSelection));
+
+    }
+
+    private void getOrOptionsMatching(MediaType mediaType,
+                                      ServerResponse res,
+                                      Supplier<Optional<?>> dataSupplier) {
         try {
-            Optional<?> output = RegistryFactory.getInstance().scrape(mediaType,
-                                                                           scopeSelection,
-                                                                           nameSelection);
+            Optional<?> output = dataSupplier.get();
+
             if (output.isPresent()) {
                 res.status(Http.Status.OK_200)
                         .headers().contentType(mediaType);
@@ -212,6 +221,7 @@ public class MetricsFeature extends HelidonFeatureSupport {
             res.status(Http.Status.NOT_ACCEPTABLE_406);
             res.send();
         }
+
     }
 
     private static MediaType bestAccepted(ServerRequest req) {
@@ -219,6 +229,12 @@ public class MetricsFeature extends HelidonFeatureSupport {
                 .bestAccepted(MediaTypes.TEXT_PLAIN,
                               MediaTypes.APPLICATION_OPENMETRICS_TEXT,
                               MediaTypes.APPLICATION_JSON)
+                .orElse(null);
+    }
+
+    private static MediaType bestAcceptedForMetadata(ServerRequest req) {
+        return req.headers()
+                .bestAccepted(MediaTypes.APPLICATION_JSON)
                 .orElse(null);
     }
 
@@ -233,7 +249,7 @@ public class MetricsFeature extends HelidonFeatureSupport {
         // As of Helidon 4, this is the only path we should need because scope-based or metric-name-based
         // selection should use query parameters instead of paths.
         rules.get("/", this::getAll)
-                .options("/", this::rejectOptions);
+                .options("/", this::optionsAll);
 
         // routing to each scope
         // As of Helidon 4, users should use /metrics?scope=xyz instead of /metrics/xyz, and
@@ -248,9 +264,9 @@ public class MetricsFeature extends HelidonFeatureSupport {
                     String type = registry.scope();
 
                     rules.get("/" + type, (req, res) -> getMatching(req, res, Set.of(type), Set.of()))
-                            .get("/" + type + "/{metric}", (req, res) -> getByName(req, res, Set.of(type))) // should use ?scope=
-                            .options("/" + type, this::rejectOptions)
-                            .options("/" + type + "/{metric}", this::rejectOptions);
+                            .get("/" + type + "/{metric}", (req, res) -> getByName(req, res, Set.of(type)))
+                            .options("/" + type, (req, res) -> optionsMatching(req, res, Set.of(type), Set.of()))
+                            .options("/" + type + "/{metric}", (req, res) -> optionsByName(req, res, Set.of(type)));
                 });
     }
 
@@ -268,16 +284,34 @@ public class MetricsFeature extends HelidonFeatureSupport {
         prms.runTasks(request, response, throwable);
     }
 
-    private void rejectOptions(ServerRequest req, ServerResponse res) {
-        // Options used to return metadata but it's no longer supported unless we restore JSON support.
-        res.header(Http.Header.ALLOW, "GET");
-        res.status(Http.Status.METHOD_NOT_ALLOWED_405);
-        res.send();
+    private void optionsAll(ServerRequest req, ServerResponse res) {
+        optionsMatching(req, res, req.query().all("scope", List::of), req.query().all("name", List::of));
+    }
+
+    private void optionsByName(ServerRequest req, ServerResponse res, Iterable<String> scopeSelection) {
+        String metricName = req.path().pathParameters().value("metric");
+        optionsMatching(req, res, scopeSelection, Set.of(metricName));
+    }
+
+    private void optionsMatching(ServerRequest req,
+                                 ServerResponse res,
+                                 Iterable<String> scopeSelection,
+                                 Iterable<String> nameSelection) {
+        MediaType mediaType = bestAcceptedForMetadata(req);
+        if (mediaType == null) {
+            res.header(Http.Header.ALLOW, "GET");
+            res.status(Http.Status.METHOD_NOT_ALLOWED_405);
+            res.send();
+        }
+
+        getOrOptionsMatching(mediaType, res, () -> RegistryFactory.getInstance().scrapeMetadata(mediaType,
+                                                                                                scopeSelection,
+                                                                                                nameSelection));
     }
 
     private void setUpDisabledEndpoints(HttpRules rules) {
         rules.get("/", DISABLED_ENDPOINT_HANDLER)
-                .options("/", this::rejectOptions);
+                .options("/", this::optionsAll);
 
         // routing to GET and OPTIONS for each metrics scope (registry type) and a specific metric within each scope:
         // application, base, vendor
@@ -285,7 +319,7 @@ public class MetricsFeature extends HelidonFeatureSupport {
                 .forEach(type -> Stream.of("", "/{metric}") // for the whole scope and for a specific metric within that scope
                         .map(suffix -> "/" + type + suffix)
                         .forEach(path -> rules.get(path, DISABLED_ENDPOINT_HANDLER)
-                                .options(path, this::rejectOptions)
+                                .options(path, this::optionsAll)
                         ));
     }
 

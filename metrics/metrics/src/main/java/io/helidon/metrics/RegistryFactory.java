@@ -186,6 +186,20 @@ public class RegistryFactory implements io.helidon.metrics.api.RegistryFactory {
     }
 
     @Override
+    public Optional<?> scrapeMetadata(MediaType mediaType, Iterable<String> scopeSelection, Iterable<String> meterNameSelection) {
+        // We support separate metadata exposition only with JSON output.
+        if (!mediaType.equals(MediaTypes.APPLICATION_JSON)) {
+            throw new UnsupportedOperationException();
+        }
+        var formatter = JsonFormatter.builder()
+                .scopeTagName(MetricsProgrammaticSettings.instance().scopeTagName())
+                .scopeSelection(scopeSelection)
+                .meterNameSelection(meterNameSelection)
+                .build();
+        return formatter.metadata(true);
+    }
+
+    @Override
     public Iterable<String> scopes() {
         if (!registries.containsKey(Registry.BASE_SCOPE)) {
             accessMetricsSettings(() -> registries.computeIfAbsent(Registry.BASE_SCOPE,
