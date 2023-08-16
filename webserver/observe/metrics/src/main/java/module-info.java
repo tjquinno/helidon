@@ -36,7 +36,15 @@ module io.helidon.webserver.observe.metrics {
     requires io.helidon.common.context;
     requires io.helidon.common.features.api;
 
+    requires static micrometer.core;
+    requires static micrometer.registry.prometheus;
+    requires static simpleclient.common;
+
     exports io.helidon.webserver.observe.metrics;
 
     provides ObserveProvider with MetricsObserveProvider;
+    provides io.helidon.metrics.spi.MeterRegistryFormatterProvider
+            with io.helidon.webserver.observe.metrics.JsonMeterRegistryFormatterProvider;
+    uses io.helidon.metrics.spi.MeterRegistryFormatterProvider;
+
 }
