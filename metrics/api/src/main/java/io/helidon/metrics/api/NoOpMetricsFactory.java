@@ -24,7 +24,7 @@ class NoOpMetricsFactory implements MetricsFactory {
 
     private final MeterRegistry meterRegistry = new NoOpMeterRegistry();
 
-    private static final Clock SYSTEM_CLOCK = new Clock() {
+    private static final Clock SYSTEM_CLOCK = new Clock() {OMicro
         @Override
         public <R> R unwrap(Class<? extends R> c) {
             return c.cast(this);
