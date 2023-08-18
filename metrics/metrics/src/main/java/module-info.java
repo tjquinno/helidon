@@ -16,6 +16,8 @@
 
 import io.helidon.common.features.api.Feature;
 import io.helidon.common.features.api.HelidonFlavor;
+import io.helidon.metrics.BaseMetricsProvider;
+import io.helidon.metrics.spi.MetersProvider;
 
 /**
  * Helidon Metrics implementation.
@@ -50,4 +52,5 @@ module io.helidon.metrics {
     provides io.helidon.metrics.api.spi.RegistryFactoryProvider with io.helidon.metrics.RegistryFactoryProviderImpl;
     provides io.helidon.common.configurable.spi.ExecutorServiceSupplierObserver
             with io.helidon.metrics.ExecutorServiceMetricsObserver;
+    provides MetersProvider with BaseMetricsProvider;
 }
