@@ -29,7 +29,6 @@ import io.helidon.webclient.spi.WebClientServiceProvider;
 )
 module io.helidon.webclient.metrics {
     requires io.helidon.webclient;
-    requires microprofile.metrics.api;
     requires io.helidon.metrics.api;
     requires io.helidon.common.features.api;
     provides WebClientServiceProvider
