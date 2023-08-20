@@ -35,18 +35,9 @@ module io.helidon.metrics {
     requires transitive io.helidon.metrics.api;
     requires transitive io.helidon.metrics.serviceapi;
 
-    requires transitive microprofile.metrics.api;
-    requires java.management;
-    requires jakarta.json;
     requires io.helidon.common.configurable;
-    requires transitive micrometer.core;
-    requires micrometer.registry.prometheus;
-    requires simpleclient.common; // for Prometheus formatting
 
-    exports io.helidon.metrics;
 
     uses io.helidon.metrics.api.spi.ExemplarService;
 
-    provides io.helidon.common.configurable.spi.ExecutorServiceSupplierObserver
-            with io.helidon.metrics.ExecutorServiceMetricsObserver;
 }
