@@ -32,10 +32,9 @@ module io.helidon.integrations.neo4j.metrics {
 
     requires io.helidon.common;
     requires io.helidon.integrations.neo4j;
-    requires io.helidon.metrics;
+    requires io.helidon.metrics.api;
 
     requires org.neo4j.driver;
-    requires microprofile.metrics.api;
 
     exports io.helidon.integrations.neo4j.metrics;
 }

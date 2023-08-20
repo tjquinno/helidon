@@ -14,30 +14,10 @@
  * limitations under the License.
  */
 
-import io.helidon.common.features.api.Feature;
-import io.helidon.common.features.api.HelidonFlavor;
-
 /**
  * Helidon Metrics implementation.
  */
-@Feature(value = "Metrics",
-        description = "Metrics for gRPC services",
-        in = HelidonFlavor.SE,
-        path = {"grpc", "Metrics"}
-)
 module io.helidon.metrics {
-    requires static io.helidon.common.features.api;
-
-    requires java.logging;
-
-    requires io.helidon.common;
-    requires io.helidon.common.media.type;
     requires transitive io.helidon.metrics.api;
-    requires transitive io.helidon.metrics.serviceapi;
-
-    requires io.helidon.common.configurable;
-
-
-    uses io.helidon.metrics.api.spi.ExemplarService;
 
 }
