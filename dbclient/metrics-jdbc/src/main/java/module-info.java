@@ -23,7 +23,7 @@ import io.helidon.dbclient.metrics.jdbc.JdbcMetricsExtensionProvider;
 module io.helidon.dbclient.metrics.jdbc {
     requires io.helidon.dbclient;
     requires io.helidon.dbclient.jdbc;
-    requires io.helidon.metrics;
+    requires io.helidon.metrics.api;
     requires io.helidon.dbclient.metrics;
     requires com.zaxxer.hikari;
     requires com.codahale.metrics;

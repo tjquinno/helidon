@@ -15,32 +15,30 @@
  */
 package io.helidon.dbclient.metrics.jdbc;
 
-import org.eclipse.microprofile.metrics.Counter;
-
 /**
- * {@link Counter} metric wrapper for Hikari CP metric.
+ * {link Counter} metric wrapper for Hikari CP metric.
  */
-public class JdbcMetricsCounter implements Counter {
+public class JdbcMetricsCounter /* implements Counter */ {
 
-    private final com.codahale.metrics.Counter counter;
-
-    JdbcMetricsCounter(com.codahale.metrics.Counter counter) {
-        this.counter = counter;
-    }
-
-    @Override
-    public void inc() {
-        counter.inc();
-    }
-
-    @Override
-    public void inc(long n) {
-        counter.inc(n);
-    }
-
-    @Override
-    public long getCount() {
-        return counter.getCount();
-    }
+//    private final com.codahale.metrics.Counter counter;
+//
+//    JdbcMetricsCounter(com.codahale.metrics.Counter counter) {
+//        this.counter = counter;
+//    }
+//
+//    @Override
+//    public void inc() {
+//        counter.inc();
+//    }
+//
+//    @Override
+//    public void inc(long n) {
+//        counter.inc(n);
+//    }
+//
+//    @Override
+//    public long getCount() {
+//        return counter.getCount();
+//    }
 
 }

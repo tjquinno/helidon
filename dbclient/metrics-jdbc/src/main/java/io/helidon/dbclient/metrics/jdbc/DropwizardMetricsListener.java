@@ -16,11 +16,12 @@
 package io.helidon.dbclient.metrics.jdbc;
 
 import java.lang.System.Logger.Level;
+import java.util.Set;
 
 import io.helidon.common.LazyValue;
 import io.helidon.common.config.Config;
-import io.helidon.metrics.api.Registry;
-import io.helidon.metrics.api.RegistryFactory;
+import io.helidon.metrics.api.MeterRegistry;
+import io.helidon.metrics.api.Metrics;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Gauge;
@@ -28,7 +29,6 @@ import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistryListener;
 import com.codahale.metrics.Timer;
-import org.eclipse.microprofile.metrics.MetricRegistry;
 
 /**
  * Hikari CP to Helidon metrics mapper.
@@ -37,13 +37,14 @@ import org.eclipse.microprofile.metrics.MetricRegistry;
  */
 public class DropwizardMetricsListener implements MetricRegistryListener {
 
+    private static final String SCOPE = io.helidon.metrics.api.Meter.Scope.VENDOR;
+
     /** Local logger instance. */
     private static final System.Logger LOGGER = System.getLogger(DropwizardMetricsListener.class.getName());
 
     private final String prefix;
     // Helidon metrics registry
-    private final LazyValue<MetricRegistry> registry = LazyValue.create(
-            () -> RegistryFactory.getInstance().getRegistry(Registry.VENDOR_SCOPE));
+    private final LazyValue<MeterRegistry> registry = LazyValue.create(Metrics::globalRegistry);
 
     private DropwizardMetricsListener(String prefix) {
         this.prefix = prefix;
@@ -58,8 +59,7 @@ public class DropwizardMetricsListener implements MetricRegistryListener {
         Object value = gauge.getValue();
         if (value instanceof Number) {
             LOGGER.log(Level.TRACE, () -> String.format("Gauge added: %s", name));
-            org.eclipse.microprofile.metrics.Gauge<?> mpGauge = new JdbcMetricsGauge<>((Gauge<? extends Number>) gauge);
-            registry.get().gauge(prefix + name, mpGauge::getValue);
+            registerGauge(name, (Gauge<? extends Number>) gauge);
         } else {
             LOGGER.log(Level.WARNING, () -> String.format("Cannot add gauge returning type "
                                                                   + value.getClass().getName()
@@ -70,19 +70,19 @@ public class DropwizardMetricsListener implements MetricRegistryListener {
     @Override
     public void onGaugeRemoved(String name) {
         LOGGER.log(Level.TRACE, () -> String.format("Gauge removed: %s", name));
-        registry.get().remove(prefix + name);
+        registry.get().remove(prefix + name, Set.of(), SCOPE);
     }
 
     @Override
     public void onCounterAdded(String name, Counter counter) {
         LOGGER.log(Level.TRACE, () -> String.format("Counter added: %s", name));
-        registry.get().gauge(prefix + name, counter::getCount);
+        registerGauge(name, counter);
     }
 
     @Override
     public void onCounterRemoved(String name) {
         LOGGER.log(Level.TRACE, () -> String.format("Counter removed: %s", name));
-        registry.get().remove(prefix + name);
+        registry.get().remove(prefix + name, Set.of(), SCOPE);
     }
 
     @Override
@@ -127,4 +127,20 @@ public class DropwizardMetricsListener implements MetricRegistryListener {
         LOGGER.log(Level.TRACE, () -> String.format("Ignoring histogram removed: %s", name));
     }
 
+
+    private io.helidon.metrics.api.Gauge registerGauge(String name, Gauge<? extends Number> gauge) {
+        return registry.get()
+                .getOrCreate(io.helidon.metrics.api.Gauge.builder(prefix + name,
+                                                                  gauge,
+                                                                  g -> g.getValue().doubleValue())
+                                     .scope(SCOPE));
+    }
+
+    private io.helidon.metrics.api.Gauge registerGauge(String name, Counter counter) {
+        return registry.get()
+                .getOrCreate(io.helidon.metrics.api.Gauge.builder(prefix + name,
+                                                                  counter,
+                                                                  Counter::getCount)
+                                     .scope(SCOPE));
+    }
 }
