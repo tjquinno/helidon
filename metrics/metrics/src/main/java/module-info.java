@@ -18,6 +18,4 @@
  * Helidon Metrics implementation.
  */
 module io.helidon.metrics {
-    requires transitive io.helidon.metrics.api;
-
 }

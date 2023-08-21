@@ -16,8 +16,6 @@
 
 import io.helidon.common.features.api.Feature;
 import io.helidon.common.features.api.HelidonFlavor;
-import io.helidon.metrics.spi.MetersProvider;
-import io.helidon.webserver.observe.metrics.BaseMetricsProvider;
 import io.helidon.webserver.observe.metrics.MetricsObserveProvider;
 import io.helidon.webserver.observe.spi.ObserveProvider;
 
@@ -39,10 +37,7 @@ module io.helidon.webserver.observe.metrics {
     requires io.helidon.common.context;
     requires io.helidon.common.features.api;
 
-    requires java.management;
-
     exports io.helidon.webserver.observe.metrics;
 
     provides ObserveProvider with MetricsObserveProvider;
-    provides MetersProvider with BaseMetricsProvider;
 }
