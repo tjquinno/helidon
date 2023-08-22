@@ -48,9 +48,6 @@ module io.helidon.microprofile.metrics {
     requires microprofile.metrics.api;
     requires io.helidon.config.mp;
 
-    requires micrometer.registry.prometheus;
-    requires simpleclient.common;
-
     exports io.helidon.microprofile.metrics;
     exports io.helidon.microprofile.metrics.spi;
 
