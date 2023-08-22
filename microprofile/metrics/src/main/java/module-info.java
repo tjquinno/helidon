@@ -29,6 +29,7 @@ import io.helidon.microprofile.metrics.MpMetricsProgrammaticSettings;
         path = "Metrics"
 )
 module io.helidon.microprofile.metrics {
+    uses io.helidon.metrics.api.spi.ExemplarService;
     requires static io.helidon.common.features.api;
 
     requires static jakarta.cdi;
