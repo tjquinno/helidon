@@ -16,7 +16,8 @@
 
 import io.helidon.common.features.api.Feature;
 import io.helidon.common.features.api.HelidonFlavor;
-import io.helidon.microprofile.metrics.MpMetricsProgrammaticSettings;
+import io.helidon.metrics.api.MetricsProgrammaticConfig;
+import io.helidon.microprofile.metrics.MpMetricsProgrammaticConfig;
 
 /**
  * Microprofile metrics implementation.
@@ -56,5 +57,5 @@ module io.helidon.microprofile.metrics {
     opens io.helidon.microprofile.metrics.spi to io.helidon.microprofile.cdi, weld.core.impl;
 
     provides jakarta.enterprise.inject.spi.Extension with io.helidon.microprofile.metrics.MetricsCdiExtension;
-    provides io.helidon.metrics.api.MetricsProgrammaticSettings with MpMetricsProgrammaticSettings;
+    provides MetricsProgrammaticConfig with MpMetricsProgrammaticConfig;
 }

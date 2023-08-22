@@ -16,8 +16,6 @@
 
 import io.helidon.common.features.api.Feature;
 import io.helidon.common.features.api.HelidonFlavor;
-import io.helidon.webserver.observe.metrics.MetricsObserveProvider;
-import io.helidon.webserver.observe.spi.ObserveProvider;
 
 /**
  * Helidon WebServer Observability Metrics Support.
@@ -26,8 +24,7 @@ import io.helidon.webserver.observe.spi.ObserveProvider;
          description = "WebServer Metrics support",
          in = HelidonFlavor.SE)
 module io.helidon.webserver.observe.metrics {
-    uses io.helidon.metrics.spi.MeterRegistryFormatterProvider;
-    requires transitive io.helidon.webserver.observe;
+   requires transitive io.helidon.webserver.observe;
     requires io.helidon.webserver;
     requires io.helidon.http.media.jsonp;
     requires io.helidon.servicecommon;
@@ -39,5 +36,6 @@ module io.helidon.webserver.observe.metrics {
 
     exports io.helidon.webserver.observe.metrics;
 
-    provides ObserveProvider with MetricsObserveProvider;
+    provides io.helidon.webserver.observe.spi.ObserveProvider with io.helidon.webserver.observe.metrics.MetricsObserveProvider;
+    uses io.helidon.metrics.spi.MeterRegistryFormatterProvider;
 }
