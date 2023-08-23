@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023 Oracle and/or its affiliates.
+ * Copyright (c) 2023 Oracle and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,14 +15,15 @@
  */
 
 /**
- * Tools for implementing metrics service endpoints.
+ * Shared unit tests and support for metrics implementations.
  */
-module io.helidon.metrics.serviceapi {
+module io.helidon.metrics.provider.tests {
 
-    requires java.logging;
-
+    requires io.helidon.common.config;
     requires io.helidon.metrics.api;
-    requires jakarta.json;
-
-    exports io.helidon.metrics.serviceapi;
+    requires io.helidon.common.testing.junit5;
+    requires org.junit.jupiter.api;
+    requires hamcrest.all;
+    requires io.helidon.config;
+    requires org.junit.jupiter.params;
 }
