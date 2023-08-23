@@ -30,7 +30,6 @@ module io.helidon.webserver.observe.metrics {
     requires io.helidon.servicecommon;
     requires static io.helidon.config.metadata;
     requires io.helidon.metrics.api;
-    requires io.helidon.metrics.serviceapi;
     requires io.helidon.common.context;
     requires io.helidon.common.features.api;
 
