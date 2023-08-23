@@ -17,6 +17,7 @@
 import io.helidon.common.features.api.Feature;
 import io.helidon.common.features.api.HelidonFlavor;
 import io.helidon.metrics.api.MetricsProgrammaticConfig;
+import io.helidon.metrics.spi.ExemplarService;
 import io.helidon.microprofile.metrics.MpMetricsProgrammaticConfig;
 
 /**
@@ -30,7 +31,7 @@ import io.helidon.microprofile.metrics.MpMetricsProgrammaticConfig;
         path = "Metrics"
 )
 module io.helidon.microprofile.metrics {
-    uses io.helidon.metrics.api.spi.ExemplarService;
+    uses ExemplarService;
     requires static io.helidon.common.features.api;
 
     requires static jakarta.cdi;

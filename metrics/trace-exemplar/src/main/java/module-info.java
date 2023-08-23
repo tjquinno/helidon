@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import io.helidon.metrics.api.spi.ExemplarService;
+import io.helidon.metrics.spi.ExemplarService;
 
 /**
  * Provides exemplar support in metrics using tracing identifiers.
