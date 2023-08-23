@@ -28,7 +28,6 @@ import io.helidon.webserver.http.HttpService;
 import io.helidon.webserver.http.ServerRequest;
 import io.helidon.webserver.http.ServerResponse;
 
-import io.opencensus.metrics.MetricRegistry;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
 
