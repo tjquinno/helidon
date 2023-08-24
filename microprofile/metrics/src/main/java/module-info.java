@@ -16,9 +16,7 @@
 
 import io.helidon.common.features.api.Feature;
 import io.helidon.common.features.api.HelidonFlavor;
-import io.helidon.metrics.api.MetricsProgrammaticConfig;
-import io.helidon.metrics.spi.ExemplarService;
-import io.helidon.microprofile.metrics.MpMetricsProgrammaticConfig;
+import io.helidon.metrics.spi.MetricsProgrammaticConfig;
 
 /**
  * Microprofile metrics implementation.
@@ -26,12 +24,11 @@ import io.helidon.microprofile.metrics.MpMetricsProgrammaticConfig;
  * @see org.eclipse.microprofile.metrics
  */
 @Feature(value = "Metrics",
-        description = "MicroProfile metrics spec implementation",
-        in = HelidonFlavor.MP,
-        path = "Metrics"
+         description = "MicroProfile metrics spec implementation",
+         in = HelidonFlavor.MP,
+         path = "Metrics"
 )
 module io.helidon.microprofile.metrics {
-    uses ExemplarService;
     requires static io.helidon.common.features.api;
 
     requires static jakarta.cdi;
@@ -58,5 +55,9 @@ module io.helidon.microprofile.metrics {
     opens io.helidon.microprofile.metrics.spi to io.helidon.microprofile.cdi, weld.core.impl;
 
     provides jakarta.enterprise.inject.spi.Extension with io.helidon.microprofile.metrics.MetricsCdiExtension;
-    provides MetricsProgrammaticConfig with MpMetricsProgrammaticConfig;
+    provides MetricsProgrammaticConfig with io.helidon.microprofile.metrics.MpMetricsProgrammaticConfig;
+    provides io.helidon.metrics.spi.MeterRegistryLifeCycleListener with io.helidon.microprofile.metrics.RegistryFactoryManager;
+
+    uses io.helidon.metrics.spi.ExemplarService;
+
 }
