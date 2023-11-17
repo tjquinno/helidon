@@ -95,7 +95,7 @@ public class CorsFeature implements ServerFeature, RuntimeType.Api<CorsConfig> {
 
     @Override
     public void setup(ServerFeatureContext featureContext) {
-        if (!config.enabled()) {
+        if (!config.enabled().orElse(false)) {
             return;
         }
 
