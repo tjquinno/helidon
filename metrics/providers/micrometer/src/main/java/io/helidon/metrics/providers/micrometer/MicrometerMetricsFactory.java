@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Oracle and/or its affiliates.
+ * Copyright (c) 2023, 2024 Oracle and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import java.util.function.ToDoubleFunction;
 import io.helidon.common.HelidonServiceLoader;
 import io.helidon.common.LazyValue;
 import io.helidon.common.config.Config;
+import io.helidon.common.config.GlobalConfig;
 import io.helidon.metrics.api.Clock;
 import io.helidon.metrics.api.Counter;
 import io.helidon.metrics.api.DistributionStatisticsConfig;
@@ -158,16 +159,24 @@ class MicrometerMetricsFactory implements MetricsFactory {
 
     @Override
     public MeterRegistry globalRegistry() {
+        // When creating the global registry with no explicit MetricsConfig build one from using config sources
+        // containing metrics settings (if any).
         return globalMeterRegistry != null
                 ? globalMeterRegistry
-                : globalRegistry(MetricsConfig.create());
+                : globalRegistry(MetricsConfig.create(GlobalConfig.config().get(MetricsConfig.METRICS_CONFIG_KEY)));
     }
 
     @Override
     public MeterRegistry globalRegistry(MetricsConfig metricsConfig) {
         lock.lock();
+        // If the specified MetricsConfig is not equivalent to the config used to create the existing global registry, then
+        // replace the global registry with one derived from the new config. If the configs are equivalent keep using the existing
+        // global registry.
         try {
             if (globalMeterRegistry != null) {
+                if (metricsConfig.equals(this.metricsConfig)) {
+                    return globalMeterRegistry;
+                }
                 globalMeterRegistry.close();
                 meterRegistries.remove(globalMeterRegistry);
             }

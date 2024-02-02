@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Oracle and/or its affiliates.
+ * Copyright (c) 2023, 2024 Oracle and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,10 @@ package io.helidon.metrics.api;
 
 import java.lang.System.Logger.Level;
 import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 import java.util.ServiceLoader;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -170,6 +172,8 @@ class MetricsFactoryManager {
 
     private static MetricsConfig applyOverrides(MetricsConfig metricsConfig) {
         MetricsConfig.Builder metricsConfigBuilder = MetricsConfig.builder(metricsConfig);
+        // TODO - The next line is a temporary workaround for https://github.com/helidon-io/helidon/issues/8324.
+        metricsConfigBuilder.roles(List.copyOf(Set.copyOf(metricsConfigBuilder.roles())));
         METRICS_CONFIG_OVERRIDES.get().forEach(override -> override.apply(metricsConfigBuilder));
         return metricsConfigBuilder.build();
     }

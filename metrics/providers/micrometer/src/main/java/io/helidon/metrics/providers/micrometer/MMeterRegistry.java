@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Oracle and/or its affiliates.
+ * Copyright (c) 2023, 2024 Oracle and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -506,7 +506,7 @@ class MMeterRegistry implements io.helidon.metrics.api.MeterRegistry {
         try {
             MMeter<?> removedHelidonMeter = meters.remove(removedMeter);
             if (removedHelidonMeter == null) {
-                LOGGER.log(Level.WARNING, "No matching neutral meter for implementation meter " + removedMeter);
+                LOGGER.log(Level.WARNING, "No matching neutral meter for implementation meter " + removedMeter.getId());
             } else {
                 recordRemove(removedHelidonMeter);
             }
@@ -565,8 +565,8 @@ class MMeterRegistry implements io.helidon.metrics.api.MeterRegistry {
             MMeter.Builder<?, ?, ?, ?> previousBuilderWithId = pendingBuildersInScope.put(id, mBuilder);
             if (previousBuilderWithId != null) {
                 LOGGER.log(Level.WARNING,
-                           "Unexpected overwrite of existing pending builder " + previousBuilderWithId
-                           + " during creation of new meter " + mBuilder);
+                           "Unexpected overwrite of existing pending builder " + previousBuilderWithId.id()
+                           + " during creation of new meter " + mBuilder.id());
             }
 
             M meter = registration.apply(delegate());
@@ -586,7 +586,7 @@ class MMeterRegistry implements io.helidon.metrics.api.MeterRegistry {
                 */
 
                 LOGGER.log(Level.WARNING,
-                           "Unexpected discovery of unknown previously-created meter; creating wrapper for " + meter);
+                           "Unexpected discovery of unknown previously-created meter; creating wrapper for " + meter.getId());
                 result = wrapMeter(id, meter, mBuilder.scope());
                 recordNewMeter(id, result, meter, effectiveScope);
             }
