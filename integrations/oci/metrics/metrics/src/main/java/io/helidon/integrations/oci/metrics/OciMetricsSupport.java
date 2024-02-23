@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023 Oracle and/or its affiliates.
+ * Copyright (c) 2022, 2024 Oracle and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.ServiceLoader;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -31,6 +32,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
+import io.helidon.common.serviceloader.HelidonServiceLoader;
 import io.helidon.config.Config;
 import io.helidon.config.metadata.Configured;
 import io.helidon.config.metadata.ConfiguredOption;
@@ -59,6 +61,12 @@ import org.eclipse.microprofile.metrics.MetricUnits;
  * </p>
  */
 public class OciMetricsSupport implements Service {
+
+    /**
+     * Config prefix for all OCI metrics settings.
+     */
+    public static final String OCI_METRICS_CONFIG_PREFIX = "oci.metrics";
+
     private static final Logger LOGGER = Logger.getLogger(OciMetricsSupport.class.getName());
 
     private static final UnitConverter STORAGE_UNIT_CONVERTER = UnitConverter.storageUnitConverter();
@@ -295,6 +303,13 @@ public class OciMetricsSupport implements Service {
         private boolean enabled = true;
         private Monitoring monitoringClient;
 
+        private OciMetricsConfigTransformer configTransformer = HelidonServiceLoader.builder(ServiceLoader.load(
+        OciMetricsConfigTransformer.class))
+                .addService(cfg -> cfg, Integer.MAX_VALUE)
+                .get()
+                .iterator()
+                .next();
+
         @Override
         public OciMetricsSupport build() {
             if (monitoringClient == null) {
@@ -495,6 +510,7 @@ public class OciMetricsSupport implements Service {
          * @return updated builder
          */
         public Builder config(Config config) {
+            config = transformConfig(config);
             config.get("initialDelay").asLong().ifPresent(this::initialDelay);
             config.get("delay").asLong().ifPresent(this::delay);
             config.get("batchDelay").asLong().ifPresent(this::batchDelay);
@@ -528,6 +544,11 @@ public class OciMetricsSupport implements Service {
          */
         public boolean enabled() {
             return this.enabled;
+        }
+
+        // Visible for testing.
+        Config transformConfig(Config config) {
+            return configTransformer.apply(config);
         }
 
         private static Type[] getAllMetricScopes() {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Oracle and/or its affiliates.
+ * Copyright (c) 2022, 2024 Oracle and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ module io.helidon.integrations.oci.metrics {
     requires transitive io.helidon.config;
     requires transitive io.helidon.common;
     requires io.helidon.common.http;
+    requires io.helidon.common.serviceloader;
     requires io.helidon.webserver;
     requires static io.helidon.config.metadata;
     requires io.helidon.metrics.api;
@@ -31,6 +32,8 @@ module io.helidon.integrations.oci.metrics {
     requires oci.java.sdk.common;
 
     requires transitive microprofile.metrics.api;
+
+    uses io.helidon.integrations.oci.metrics.OciMetricsConfigTransformer;
 
     exports io.helidon.integrations.oci.metrics;
  }
