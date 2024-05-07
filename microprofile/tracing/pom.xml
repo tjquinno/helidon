@@ -52,6 +52,11 @@
             <groupId>io.helidon.tracing.providers</groupId>
             <artifactId>helidon-tracing-providers-opentelemetry</artifactId>
         </dependency>
+        <!-- So we can manufacture and inject the OpenTelemetry instance. -->
+        <dependency>
+            <groupId>io.helidon.microprofile.telemetry</groupId>
+            <artifactId>helidon-microprofile-telemetry</artifactId>
+        </dependency>
         <dependency>
             <groupId>io.opentelemetry</groupId>
             <artifactId>opentelemetry-opentracing-shim</artifactId>

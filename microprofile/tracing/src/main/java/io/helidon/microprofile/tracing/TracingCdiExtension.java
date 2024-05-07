@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2023 Oracle and/or its affiliates.
+ * Copyright (c) 2019, 2024 Oracle and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import io.helidon.tracing.TracerBuilder;
 import io.helidon.tracing.config.TracingConfig;
 import io.helidon.webserver.observe.tracing.TracingObserver;
 
+import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.opentracingshim.OpenTracingShim;
 import io.opentracing.Tracer;
 import io.opentracing.util.GlobalTracer;
@@ -65,7 +66,7 @@ public class TracingCdiExtension implements Extension {
     // must be higher priority than security, so tracer is ready when IDCS and OIDC uses webclient
     // the client is used in security configuration
     private void setupTracer(@Observes @Priority(PLATFORM_BEFORE) @RuntimeStart Config rootConfig,
-                             BeanManager bm) {
+                             BeanManager bm, OpenTelemetry openTelemetry) {
 
         String serviceName = bm.getExtension(JaxRsCdiExtension.class).serviceName();
         config = rootConfig.get("tracing");
@@ -92,7 +93,7 @@ public class TracingCdiExtension implements Extension {
         } catch (Exception e) {
             try {
                 io.opentelemetry.api.trace.Tracer otelTracer = tracer.unwrap(io.opentelemetry.api.trace.Tracer.class);
-                registeredTracer = OpenTracingShim.createTracerShim(otelTracer);
+                registeredTracer = OpenTracingShim.createTracerShim(openTelemetry);
             } catch (Exception ex) {
                 throw new DeploymentException("MicroProfile tracing requires an OpenTracing or OpenTelemetry based tracer", ex);
             }
