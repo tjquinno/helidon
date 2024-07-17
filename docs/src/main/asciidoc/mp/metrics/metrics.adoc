@@ -47,6 +47,17 @@ Helidon MP metrics implements the MicroProfile Metrics specification, providing:
 
 include::{rootdir}/includes/metrics/metrics-shared.adoc[tag=overview]
 
+// TODO - Remove the following note starting in Helidon 5.
+[NOTE]
+.Recommended Configuration Setting
+====
+Beginning with Helidon 4.1, strongly consider assigning the config setting
+[source,properties]
+----
+metrics.gc-time-type = gauge
+----
+so your service complies with MicroProfile Metrics 5.1. See the <<controlling-gc-time,longer discussion below>> in the  Configuration section.
+====
 include::{rootdir}/includes/dependencies.adoc[]
 
 [source,xml,subs="attributes+"]
@@ -119,6 +130,16 @@ One way to accomplish this is to deal with metrics in a method that observes the
 
 [[config-intro]]
 include::{rootdir}/includes/metrics/metrics-config.adoc[tag=config-intro]
+
+[[controlling-gc-time]]
+=== Controlling the Metric Type for `gc.time`
+Beginning with Microprofile Metrics 5.1, the built-in `gc.time` metric is checked to be a gauge; the TCK formerly checked for a counter.
+To comply with the earlier TCK, previous releases of Helidon 4.x have used a counter for `gc.time` and--to preserve backward compatibility for Helidon users--Helidon {helidon-version} continues to do so by default.
+
+Setting `metrics.gc-time-type` as described above to use a gauge for `gc.time` allows your service to comply with MicroProfile Metrics 5.1.
+
+The ability to choose the metric type for `gc.time` is deprecated and is planned for removal in a future major release of Helidon.
+
 
 == Examples
 

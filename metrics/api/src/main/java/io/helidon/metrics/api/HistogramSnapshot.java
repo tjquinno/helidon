@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Oracle and/or its affiliates.
+ * Copyright (c) 2023, 2024 Oracle and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -87,6 +87,13 @@ public interface HistogramSnapshot extends Wrapper {
      * @return pairs of percentile and the histogram value at that percentile
      */
     Iterable<? extends ValueAtPercentile> percentileValues();
+
+    /**
+     * Returns the values at the configured buckets for the histogram.
+     *
+     * @return pairs of the count of observations in the bucket and the bucket value at that bucket
+     */
+    Iterable<? extends CountAtBucket> bucketValues();
 
     /**
      * Returns information about each of the configured buckets for the histogram.

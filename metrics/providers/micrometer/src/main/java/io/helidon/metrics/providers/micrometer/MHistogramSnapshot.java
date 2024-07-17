@@ -16,15 +16,17 @@
 package io.helidon.metrics.providers.micrometer;
 
 import java.io.PrintStream;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.StringJoiner;
 import java.util.concurrent.TimeUnit;
 
 import io.helidon.metrics.api.Bucket;
+import io.helidon.metrics.api.CountAtBucket;
 
-import io.micrometer.core.instrument.distribution.CountAtBucket;
 import io.micrometer.core.instrument.distribution.HistogramSnapshot;
 
 class MHistogramSnapshot implements io.helidon.metrics.api.HistogramSnapshot {
@@ -87,10 +89,17 @@ class MHistogramSnapshot implements io.helidon.metrics.api.HistogramSnapshot {
     }
 
     @Override
+    public Iterable<? extends CountAtBucket> bucketValues() {
+        return Arrays.stream(delegate.histogramCounts())
+                .map(MCountAtBucket::create)
+                .toList();
+    }
+
+    @Override
     public Iterable<Bucket> histogramCounts() {
         return () -> new Iterator<>() {
 
-            private final CountAtBucket[] counts = delegate.histogramCounts();
+            private final io.micrometer.core.instrument.distribution.CountAtBucket[] counts = delegate.histogramCounts();
             private int slot;
 
             @Override

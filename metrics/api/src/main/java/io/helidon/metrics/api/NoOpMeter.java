@@ -441,6 +441,11 @@ class NoOpMeter implements Meter, NoOpWrapper {
         }
 
         @Override
+        public Iterable<? extends CountAtBucket> bucketValues() {
+            return Set.of();
+        }
+
+        @Override
         public Iterable<Bucket> histogramCounts() {
             return Set.of();
         }
