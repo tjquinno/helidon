@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Oracle and/or its affiliates.
+ * Copyright (c) 2023, 2024 Oracle and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +15,15 @@
  */
 package io.helidon.metrics.api;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 import io.helidon.builder.api.Prototype;
+import io.helidon.common.config.Config;
 import io.helidon.common.config.GlobalConfig;
 
 class MetricsConfigSupport {
@@ -75,6 +80,44 @@ class MetricsConfigSupport {
                 && isScopeEnabled(metricsConfig, targetScope)
                 && (metricsConfig.scoping().scopes().get(targetScope) == null
                             || metricsConfig.scoping().scopes().get(targetScope).isMeterEnabled(name));
+    }
+
+    @Prototype.FactoryMethod
+    static List<DistributionSetting.Percentiles> createPercentiles(Config percentilesNode) {
+        return createPercentiles(percentilesNode.asString().get());
+    }
+
+    // For ease of testing.
+    static List<DistributionSetting.Percentiles> createPercentiles(String expression) {
+        return createDistributionSettings(expression, DistributionSetting.Percentiles::create);
+    }
+
+    @Prototype.FactoryMethod
+    static List<DistributionSetting.SummaryBuckets> createSummaryBuckets(Config summaryBucketsNode) {
+        return createSummaryBuckets(summaryBucketsNode.asString().get());
+    }
+
+    // For ease of testing.
+    static List<DistributionSetting.SummaryBuckets> createSummaryBuckets(String expression) {
+        return createDistributionSettings(expression, DistributionSetting.SummaryBuckets::create);
+    }
+
+    @Prototype.FactoryMethod
+    static List<DistributionSetting.TimerBuckets> createTimerBuckets(Config timerBucketsNode) {
+        return createTimerBuckets(timerBucketsNode.asString().get());
+    }
+
+    // For ease of testing.
+    static List<DistributionSetting.TimerBuckets> createTimerBuckets(String expression) {
+        return createDistributionSettings(expression, DistributionSetting.TimerBuckets::create);
+    }
+
+    static <T> List<T> createDistributionSettings(String expression, Function<String, T> factoryMethod) {
+        String[] settings = expression.split(";");
+        return Arrays.stream(settings)
+                .filter(Predicate.not(String::isBlank))
+                .map(factoryMethod)
+                .toList();
     }
 
     public static class BuilderDecorator implements Prototype.BuilderDecorator<MetricsConfig.BuilderBase<?, ?>> {

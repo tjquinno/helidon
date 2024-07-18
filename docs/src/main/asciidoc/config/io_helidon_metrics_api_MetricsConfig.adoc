@@ -50,6 +50,58 @@ This is a standalone configuration type, prefix from configuration root: `metric
 |`app-tag-name` |string |{nbsp} |Name for the application tag to be added to each meter ID.
 
  Application tag name
+|`distribution.percentiles` |xref:{rootdir}/config/io_helidon_metrics_api_DistributionSetting_Percentiles.adoc[Percentiles[&#93;] |{nbsp} |Percentile settings of the form `meter-name-expression=percentile-values` where `meter-name-expression` is
+ a name of a distribution summary or timer or a name prefix followed by a `*` suffix, and `percentile-values` is
+ a possibly empty comma-separated list of decimal values in the closed interval `[0.0, 1.0]`. A builder for a
+ distribution summary or timer which matches the `name-expression` is preloaded with the configured percentile values.
+ If a builder's name matches multiple settings the last match wins.
+
+     The string form of the configuration value can contain multiple occurrences of this format separated by semicolons.
+
+ Example: `distribution.percentiles=alpha.*=0.5,0.75;alpha.summary=0.3,0.4` assigns percentile values 0.5 and 0.75
+ to distribution summary or timer builders with names starting with `alpha.` and assigns values 0.3 and 0.4 to a
+ builder with the exact meter name `alpha.summary`.
+
+     Example: `distribution.percentiles=delta.summary=` suppresses percentiles for `delta.summary`.
+
+     For any builder with a name that matches none of the settings the Helidon Micrometer-based metrics implementation
+     preloads default percentile values of 0.5, 0.75, 0.95, 0.98, 0.99, 0.999.
+ 
+ Percentile settings
+|`distribution.summary.buckets` |xref:{rootdir}/config/io_helidon_metrics_api_DistributionSetting_SummaryBuckets.adoc[SummaryBuckets[&#93;] |{nbsp} |Non-timer distribution summary (histogram) bucket settings of the form `meter-name-expression=summary-bucket-values`
+ where `meter-name-expression` is a name of a distribution summary or a name prefix followed by a `*` suffix,
+ and `summary-bucket-values` is a possibly empty comma-separated list of decimal or integer numbers all greater than
+ zero.
+ A builder for a distribution summary which matches the `name-expression` is preloaded with the configured bucket
+ boundary values.
+ If a builder's name matches multiple settings the last match wins.
+
+     The string form of the configuration value can contain multiple occurrences of this format separated by semicolons.
+
+     Example: `distribution.summary.buckets=alpha.*=10.0,50.0,100.0;beta.summary1=30.0,50.0,123` assigns bucket
+     values 10.0, 50.0, and 100.0 to builders with names starting with `alpha.`, and assigns bucket values
+     30.0, 50.0, and 123.0 to any builder with the exact meter name `beta.summary1`.
+ 
+ Non-timer distribution summary bucket settings
+|`distribution.timer.buckets` |xref:{rootdir}/config/io_helidon_metrics_api_DistributionSetting_TimerBuckets.adoc[TimerBuckets[&#93;] |{nbsp} |Timer distribution summary (histogram) bucket settings of the form `meter-name-expression=timer-bucket-values` where
+ `meter-name-expression` is a name of a timer or a name prefix followed by a `*` suffix, and
+ `timer-bucket-values` is a possibly empty comma-separated list of integer values each followed by a time unit suffix:
+
+- `ms` milliseconds (the default if no suffix appears after a value
+- `s` seconds
+- `m` minutes
+- `h` hours
+
+A builder for a timer which matches the `name-expression` is preloaded with the configured bucket boundary values.
+ If a builder's name matches multiple settings the last match wins.
+
+     The string form of the configuration value can contain multiple occurrences of this format separated by semicolons.
+
+     Example: `distribution.timer.buckets=alpha.*=500ms,2s,3m;alpha.other=10s,2m,5h` assigns bucket values 500 ms,
+     2 seconds, and 3 minutes to timer builders with names starting with `alpha.` and assigns values 10 seconds,
+     2 minutes, and 5 hours to a timer builder with the exact meter name `alpha.other`.
+ 
+ Timer distribution summary bucket settings
 |`enabled` |boolean |`true` |Whether metrics functionality is enabled.
 
  If metrics are configured to be enabled

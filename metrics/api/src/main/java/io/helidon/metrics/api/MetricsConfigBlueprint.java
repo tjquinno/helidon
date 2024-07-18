@@ -202,6 +202,73 @@ interface MetricsConfigBlueprint {
     boolean restRequestEnabled();
 
     /**
+     * Percentile settings of the form {@code meter-name-expression=percentile-values} where {@code meter-name-expression} is
+     * a name of a distribution summary or timer or a name prefix followed by a {@code *} suffix, and {@code percentile-values} is
+     * a possibly empty comma-separated list of decimal values in the closed interval {@code [0.0, 1.0]}. A builder for a
+     * distribution summary or timer which matches the {@code name-expression} is preloaded with the configured percentile values.
+     * If a builder's name matches multiple settings the last match wins.
+     * <p>
+     *     The string form of the configuration value can contain multiple occurrences of this format separated by semicolons.
+     * <p>
+     * Example: {@code distribution.percentiles=alpha.*=0.5,0.75;alpha.summary=0.3,0.4} assigns percentile values 0.5 and 0.75
+     * to distribution summary or timer builders with names starting with {@code alpha.} and assigns values 0.3 and 0.4 to a
+     * builder with the exact meter name {@code alpha.summary}.
+     * <p>
+     *     Example: {@code distribution.percentiles=delta.summary=} suppresses percentiles for {@code delta.summary}.
+     * <p>
+     *     For any builder with a name that matches none of the settings the Helidon Micrometer-based metrics implementation
+     *     preloads default percentile values of 0.5, 0.75, 0.95, 0.98, 0.99, 0.999.
+     * </p>
+     * @return percentile settings
+     */
+    @Option.Configured(value = "distribution.percentiles")
+    List<DistributionSetting.Percentiles> percentiles();
+
+    /**
+     * Timer distribution summary (histogram) bucket settings of the form {@code meter-name-expression=timer-bucket-values} where
+     * {@code meter-name-expression} is a name of a timer or a name prefix followed by a {@code *} suffix, and
+     * {@code timer-bucket-values} is a possibly empty comma-separated list of integer values each followed by a time unit suffix:
+     * <ul>
+     *     <li>{@code ms} milliseconds (the default if no suffix appears after a value</li>
+     *     <li>{@code s} seconds</li>
+     *     <li>{@code m} minutes</li>
+     *     <li>{@code h} hours</li>
+     * </ul>
+     * A builder for a timer which matches the {@code name-expression} is preloaded with the configured bucket boundary values.
+     * If a builder's name matches multiple settings the last match wins.
+     * <p>
+     *     The string form of the configuration value can contain multiple occurrences of this format separated by semicolons.
+     * <p>
+     *     Example: {@code distribution.timer.buckets=alpha.*=500ms,2s,3m;alpha.other=10s,2m,5h} assigns bucket values 500 ms,
+     *     2 seconds, and 3 minutes to timer builders with names starting with {@code alpha.} and assigns values 10 seconds,
+     *     2 minutes, and 5 hours to a timer builder with the exact meter name {@code alpha.other}.
+     * </p>
+     * @return timer distribution summary bucket settings
+     */
+    @Option.Configured(value = "distribution.timer.buckets")
+    List<DistributionSetting.TimerBuckets> timerBuckets();
+
+    /**
+     * Non-timer distribution summary (histogram) bucket settings of the form {@code meter-name-expression=summary-bucket-values}
+     * where {@code meter-name-expression} is a name of a distribution summary or a name prefix followed by a {@code *} suffix,
+     * and {@code summary-bucket-values} is a possibly empty comma-separated list of decimal or integer numbers all greater than
+     * zero.
+     * A builder for a distribution summary which matches the {@code name-expression} is preloaded with the configured bucket
+     * boundary values.
+     * If a builder's name matches multiple settings the last match wins.
+     * <p>
+     *     The string form of the configuration value can contain multiple occurrences of this format separated by semicolons.
+     * <p>
+     *     Example: {@code distribution.summary.buckets=alpha.*=10.0,50.0,100.0;beta.summary1=30.0,50.0,123} assigns bucket
+     *     values 10.0, 50.0, and 100.0 to builders with names starting with {@code alpha.}, and assigns bucket values
+     *     30.0, 50.0, and 123.0 to any builder with the exact meter name {@code beta.summary1}.
+     * </p>
+     * @return non-timer distribution summary bucket settings
+     */
+    @Option.Configured(value = "distribution.summary.buckets")
+    List<DistributionSetting.SummaryBuckets> summaryBuckets();
+
+    /**
      * Metrics configuration node.
      *
      * @return metrics configuration

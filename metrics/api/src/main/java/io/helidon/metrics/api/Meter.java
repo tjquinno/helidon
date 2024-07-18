@@ -203,11 +203,20 @@ public interface Meter extends Wrapper {
          */
         Optional<String> scope();
 
-
+        /**
+         * If applying the specified metrics config to the current builder would alter it, return a new builder by applying
+         * the metrics config defaults and then applying the builder's current state; otherwise returning the same builder.
+         *
+         * @param metricsConfig {@link io.helidon.metrics.api.MetricsConfig} to apply to the builder
+         * @return either the same, unchanged builder or a new builder with the config and the current builder's settings applied
+         */
+        default Builder<B, M> getOrCreate(MetricsConfig metricsConfig) {
+            return identity();
+        }
     }
 
     /**
-     * Unique idenfier for a meter.
+     * Unique identifier for a meter.
      */
     interface Id {
 

@@ -15,6 +15,7 @@
  */
 package io.helidon.metrics.providers.micrometer;
 
+import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
 import java.util.ServiceLoader;
@@ -30,6 +31,7 @@ import io.helidon.common.LazyValue;
 import io.helidon.config.Config;
 import io.helidon.metrics.api.Clock;
 import io.helidon.metrics.api.Counter;
+import io.helidon.metrics.api.DistributionSetting;
 import io.helidon.metrics.api.DistributionStatisticsConfig;
 import io.helidon.metrics.api.DistributionSummary;
 import io.helidon.metrics.api.FunctionalCounter;
@@ -254,7 +256,11 @@ class MicrometerMetricsFactory implements MetricsFactory {
     @Override
     public DistributionSummary.Builder distributionSummaryBuilder(String name,
                                                                   DistributionStatisticsConfig.Builder configBuilder) {
-        return MDistributionSummary.builder(name, configBuilder);
+        MDistributionSummary.Builder result = MDistributionSummary.builder(name, configBuilder);
+        applyDefaultPercentiles(result, configBuilder::percentiles);
+        applyDefaultBucketCounts(result, configBuilder::buckets);
+
+        return result;
     }
 
     @Override
@@ -269,7 +275,10 @@ class MicrometerMetricsFactory implements MetricsFactory {
 
     @Override
     public Timer.Builder timerBuilder(String name) {
-        return MTimer.builder(name);
+        MTimer.Builder result = MTimer.builder(name);
+        applyDefaultPercentiles(result, result::percentiles);
+        applyDefaultTimerBucketCounts(result, result::buckets);
+        return result;
     }
 
     @Override
@@ -295,6 +304,38 @@ class MicrometerMetricsFactory implements MetricsFactory {
     @Override
     public HistogramSnapshot histogramSnapshotEmpty(long count, double total, double max) {
         return MHistogramSnapshot.create(io.micrometer.core.instrument.distribution.HistogramSnapshot.empty(count, total, max));
+    }
+
+    private <B extends Meter.Builder<B, M>,
+            M extends Meter> B applyDefaultPercentiles(B builder, Consumer<double[]> percentilesSetter) {
+        // Semantics are if multiple settings match the last one wins.
+        for (DistributionSetting.Percentiles percentiles : metricsConfig.percentiles()) {
+            if (percentiles.matches(builder.name())) {
+                percentilesSetter.accept(percentiles.values());
+            }
+        }
+        return builder;
+    }
+
+    private <B extends Meter.Builder<B, M>,
+            M extends Meter> B applyDefaultBucketCounts(B builder, Consumer<double[]> bucketCountsSetter) {
+        // Semantics are if multiple settings match the last one wins.
+        for (DistributionSetting.SummaryBuckets buckets : metricsConfig.summaryBuckets()) {
+            if (buckets.matches(builder.name())) {
+                bucketCountsSetter.accept(buckets.values());
+            }
+        }
+        return builder;
+    }
+    private <B extends Meter.Builder<B, M>,
+            M extends Meter> B applyDefaultTimerBucketCounts(B builder, Consumer<Duration[]> bucketCountsSetter) {
+        // Semantics are if multiple settings match the last one wins.
+        for (DistributionSetting.TimerBuckets buckets : metricsConfig.timerBuckets()) {
+            if (buckets.matches(builder.name())) {
+                bucketCountsSetter.accept(buckets.values());
+            }
+        }
+        return builder;
     }
 
     private void ensurePrometheusRegistry(CompositeMeterRegistry compositeMeterRegistry,
