@@ -19,6 +19,7 @@ import java.lang.reflect.Array;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
@@ -63,6 +64,25 @@ abstract class DistributionSettingImpl<T extends Comparable<T>> implements Distr
         return hasWildcardSuffix
                 ? name.startsWith(prefixOrExactName)
                 : name.equals(prefixOrExactName);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof DistributionSettingImpl<?> that)) {
+            return false;
+        }
+        return hasWildcardSuffix == that.hasWildcardSuffix && Objects.equals(prefixOrExactName,
+                                                                             that.prefixOrExactName) && Objects.deepEquals(
+                values,
+                that.values);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(prefixOrExactName, hasWildcardSuffix, Arrays.hashCode(values));
     }
 
     protected abstract Function<String, T> valueParser();

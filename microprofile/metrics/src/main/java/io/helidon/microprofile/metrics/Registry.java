@@ -405,7 +405,7 @@ class Registry implements MetricRegistry {
 
         Errors.Collector collector = Errors.collector();
 
-        MetricID newMetricID = metricIDWithoutSystemTags(collector, meter.id());
+        MetricID newMetricID = metricIDWithoutSystemTags(meter.id());
 
         lock.lock();
 
@@ -738,6 +738,11 @@ class Registry implements MetricRegistry {
         if (!reservedTagNamesUsed.isEmpty()) {
             collector.fatal(reservedTagNamesUsed, "illegal use of reserved tag names");
         }
+        return new MetricID(meterId.name(), tags(tagsWithoutScope));
+    }
+
+    private MetricID metricIDWithoutSystemTags(Meter.Id meterId) {
+        Map<String, String> tagsWithoutScope = tagsWithoutSystemOrScopeTags(meterId.tags());
         return new MetricID(meterId.name(), tags(tagsWithoutScope));
     }
 

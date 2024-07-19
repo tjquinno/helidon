@@ -426,13 +426,27 @@ public class MetricsCdiExtension extends HelidonRestCdiExtension {
         // "mp.metrics.xxx" settings into a single metrics config object.
         Config rootConfig = rootConfig();
 
+        /*
+         Some MP config refers to "mp.metrics.xxx" whereas te neutral SE metrics implementation uses "metrics.yyy" (where
+         sometimes xxx and yyy are different). In particular, there's "mp.metrics.appName" -> "metrics.app-name" and
+         "mp.metrics.distribution.histogram" -> "metrics.distribution.summary"--summary vs. histogram--so these particular keys
+         in SE are consistent with the SE vocabulary.
+
+         The next bit maps MP config settings (if present) to the corresponding SE config settings, possibly adjusting the
+         key name in the process.
+         */
+        Map<String, String> mpToSeKeyNameMap = Map.of("appName", "app-name",
+                                                      "distribution.histogram.buckets", "distribution.summary.buckets");
         Map<String, String> mpConfigSettings = new HashMap<>();
-        Stream.of("tags", "appName")
-                .forEach(key -> {
+        Stream.of("tags",
+                  "appName",
+                  "distribution.histogram.buckets",
+                  "distribution.timer.buckets",
+                  "distribution.percentiles")
+                .forEach(key ->
                     rootConfig.get("mp.metrics." + key)
                             .asString()
-                            .ifPresent(value -> mpConfigSettings.put(key, value));
-                });
+                            .ifPresent(value -> mpConfigSettings.put(mpToSeKeyNameMap.getOrDefault(key, key), value)));
 
         Config metricsConfig = super.componentConfig().detach();
 
