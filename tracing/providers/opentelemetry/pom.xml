@@ -130,22 +130,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>default-test</id>
-                        <configuration>
-                            <systemPropertyVariables>
-                                <otel.java.global-autoconfigure.enabled>true</otel.java.global-autoconfigure.enabled>
-                            </systemPropertyVariables>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>tests-without-otel-autoconfigure</id>
-                        <goals>
-                            <goal>test</goal>
-                        </goals>
-                    </execution>
-                </executions>
                 <configuration>
                     <properties>
                         <configurationParameters>
@@ -161,6 +145,9 @@
                                 <exclude>**/TestGlobalTracerAssignment.java</exclude>
                                 <exclude>**/TestMdc.java</exclude>
                             </excludes>
+                            <systemPropertyVariables>
+                                <otel.java.global-autoconfigure.enabled>true</otel.java.global-autoconfigure.enabled>
+                            </systemPropertyVariables>
                         </configuration>
                     </execution>
                     <execution>
@@ -172,6 +159,20 @@
                             <includes>
                                 <include>**/TestGlobalTracerAssignment.java</include>
                             </includes>
+                            <systemPropertyVariables>
+                                <otel.java.global-autoconfigure.enabled>true</otel.java.global-autoconfigure.enabled>
+                            </systemPropertyVariables>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>tests-without-otel-autoconfigure</id>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <configuration>
+                            <excludes>
+                                <exclude>**/TestGlobalTracerAssignment.java</exclude>
+                            </excludes>
                         </configuration>
                     </execution>
                     <execution>
