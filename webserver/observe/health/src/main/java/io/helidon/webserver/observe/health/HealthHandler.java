@@ -16,12 +16,11 @@
 
 package io.helidon.webserver.observe.health;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 import io.helidon.health.HealthCheck;
 import io.helidon.health.HealthCheckResponse;
+import io.helidon.health.HealthCheckType;
 import io.helidon.http.HeaderValues;
 import io.helidon.http.HtmlEncoder;
 import io.helidon.http.Status;
@@ -40,51 +39,35 @@ class HealthHandler implements Handler {
 
     private final EntityWriter<JsonObject> entityWriter;
     private final boolean details;
-    private final Collection<HealthCheck> checks;
+    private final HealthCheckType healthCheckType;
+    private final io.helidon.health.HealthService healthService;
 
     HealthHandler(EntityWriter<JsonObject> entityWriter,
                   boolean details,
-                  List<HealthCheck> checks) {
+                  HealthCheckType healthCheckType,
+                  io.helidon.health.HealthService healthService) {
         this.entityWriter = entityWriter;
         this.details = details;
-        this.checks = checks;
+        this.healthCheckType = healthCheckType;
+        this.healthService = healthService;
     }
 
     @Override
     public void handle(ServerRequest req, ServerResponse res) {
-        List<NamedResponse> responses = new ArrayList<>();
-        HealthCheckResponse.Status status = HealthCheckResponse.Status.UP;
+        List<HealthCheckResponse> responses = (
+                (healthCheckType == null)
+                        ? healthService.checkHealth()
+                        : healthService.checkHealth(healthCheckType))
+                .stream()
+                .map(HealthHandler::encodeAnyErrorMessageDetail)
+                .toList();
 
-        for (HealthCheck check : checks) {
-            HealthCheckResponse response;
+        HealthCheckResponse.Status status = responses.stream()
+                .map(HealthCheckResponse::status)
+                .reduce(HealthCheckResponse.Status::poorer)
+                .orElse(HealthCheckResponse.Status.UP);
 
-            try {
-                response = check.call();
-            } catch (Exception e) {
-                response = HealthCheckResponse.builder()
-                        .status(HealthCheckResponse.Status.ERROR)
-                        .detail("error", e.getClass().getName())
-                        .detail("message", HtmlEncoder.encode(e.getMessage()))
-                        .build();
-                LOGGER.log(System.Logger.Level.ERROR, "Unexpected failure of health check", e);
-            }
-            // we may have more checks with the same name (such as in MP Health)
-            responses.add(new NamedResponse(check.name(), response));
-
-            if (response.status() == HealthCheckResponse.Status.ERROR) {
-                status = HealthCheckResponse.Status.ERROR;
-            } else if (response.status() == HealthCheckResponse.Status.DOWN && status == HealthCheckResponse.Status.UP) {
-                status = HealthCheckResponse.Status.DOWN;
-            }
-        }
-
-        Status responseStatus = switch (status) {
-            case UP -> details ? Status.OK_200 : Status.NO_CONTENT_204;
-            case DOWN -> Status.SERVICE_UNAVAILABLE_503;
-            case ERROR -> Status.INTERNAL_SERVER_ERROR_500;
-        };
-
-        res.status(responseStatus);
+        res.status(httpStatus(details, status));
         res.header(HeaderValues.CACHE_NO_CACHE)
                 .header(HeaderValues.X_CONTENT_TYPE_OPTIONS_NOSNIFF);
 
@@ -100,12 +83,42 @@ class HealthHandler implements Handler {
         }
     }
 
-    private static JsonObject toJson(HealthCheckResponse.Status status, List<NamedResponse> responses) {
+    /**
+     * Returns a response with any error message in the details HTML-encoded.
+     *
+     * @param response original response
+     * @return a response equivalent to the original with any error message HTML-encoded
+     */
+    static HealthCheckResponse encodeAnyErrorMessageDetail(HealthCheckResponse response) {
+
+        if (response.status() != HealthCheckResponse.Status.ERROR) {
+            return response;
+        }
+        return HealthCheckResponse.builder()
+                .name(response.name())
+                .status(response.status())
+                .update(b -> response.details().forEach((k, v) ->
+                                                                b.detail(k,
+                                                                         k.equals("message") && v instanceof String vs
+                                                                                 ? HtmlEncoder.encode(vs)
+                                                                                 : v)))
+                .build();
+    }
+
+    static Status httpStatus(boolean details, HealthCheckResponse.Status status) {
+        return switch (status) {
+            case UP -> details ? Status.OK_200 : Status.NO_CONTENT_204;
+            case DOWN -> Status.SERVICE_UNAVAILABLE_503;
+            case ERROR -> Status.INTERNAL_SERVER_ERROR_500;
+        };
+    }
+
+    private static JsonObject toJson(HealthCheckResponse.Status status, List<HealthCheckResponse> responses) {
         JsonObjectBuilder response = HealthHelper.JSON.createObjectBuilder();
         response.add("status", status.toString());
 
         JsonArrayBuilder checks = HealthHelper.JSON.createArrayBuilder();
-        responses.forEach(result -> checks.add(HealthHelper.toJson(result.name(), result.response())));
+        responses.forEach(result -> checks.add(HealthHelper.toJson(result)));
 
         response.add("checks", checks);
         return response.build();

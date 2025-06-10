@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023 Oracle and/or its affiliates.
+ * Copyright (c) 2018, 2025 Oracle and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,14 +48,14 @@ public class HeapMemoryHealthCheck implements HealthCheck {
     public static final double DEFAULT_THRESHOLD = 98;
 
     static final String CONFIG_KEY_HEAP_PREFIX = "heapMemory";
+    static final String NAME = CONFIG_KEY_HEAP_PREFIX;
 
     static final String CONFIG_KEY_THRESHOLD_PERCENT_SUFFIX = "thresholdPercent";
 
     /**
      * Config property key for heap memory threshold.
      */
-    public static final String CONFIG_KEY_THRESHOLD_PERCENT = HealthChecks.CONFIG_KEY_HEALTH_PREFIX
-            + "." + CONFIG_KEY_HEAP_PREFIX
+    public static final String CONFIG_KEY_THRESHOLD_PERCENT = CONFIG_KEY_HEAP_PREFIX
             + "." + CONFIG_KEY_THRESHOLD_PERCENT_SUFFIX;
 
     private final Runtime rt;
@@ -115,6 +115,7 @@ public class HeapMemoryHealthCheck implements HealthCheck {
         final long usedMemory = totalMemory - freeMemory;
         final long threshold = (long) ((thresholdPercent / 100) * maxMemory);
         return HealthCheckResponse.builder()
+                .name(name())
                 .status(threshold >= usedMemory)
                 .detail("percentFree",
                           formatter.format("%.2f%%", 100 * ((double) (maxMemory - usedMemory) / maxMemory)).toString())

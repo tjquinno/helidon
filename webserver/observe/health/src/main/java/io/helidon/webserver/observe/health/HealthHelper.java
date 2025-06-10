@@ -32,9 +32,9 @@ final class HealthHelper {
     private HealthHelper() {
     }
 
-    static JsonObject toJson(String name, HealthCheckResponse response) {
+    static JsonObject toJson(HealthCheckResponse response) {
         JsonObjectBuilder check = JSON.createObjectBuilder();
-        check.add("name", name);
+        check.add("name", response.name());
         check.add("status", response.status().toString());
         Map<String, Object> details = response.details();
         if (!details.isEmpty()) {

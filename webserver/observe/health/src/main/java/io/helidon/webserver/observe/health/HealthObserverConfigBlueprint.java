@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Oracle and/or its affiliates.
+ * Copyright (c) 2023, 2025 Oracle and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ import io.helidon.webserver.observe.spi.ObserveProvider;
  * @see io.helidon.webserver.observe.health.HealthObserver#create(HealthObserverConfig)
  * @see io.helidon.webserver.observe.health.HealthObserver#builder()
  */
-@Prototype.Blueprint
+@Prototype.Blueprint(decorator = HealthObserverSupport.BuilderDecorator.class)
 @Prototype.Configured("health")
 @Prototype.CustomMethods(HealthObserverSupport.CustomMethods.class)
 @Prototype.Provides(ObserveProvider.class)
@@ -61,10 +61,21 @@ interface HealthObserverConfigBlueprint extends ObserverConfigBase, Prototype.Fa
     boolean details();
 
     /**
+     * The health service supporting this observer.
+     *
+     * @return {@link io.helidon.health.HealthService} for the observer
+     */
+    @Option.DefaultCode("io.helidon.service.registry.Services.get(io.helidon.health.HealthService.class)")
+    @Option.Access("")
+    io.helidon.health.HealthService healthService();
+
+    /**
      * Health checks with implicit types.
      *
      * @return health checks to register with the observer
      */
+    @Deprecated(since = "4.2.4", forRemoval = true)
+    @Option.Deprecated("Use io.helidon.health.HealthService and related types and configuration instead.")
     @Option.Singular("check")
     List<HealthCheck> healthChecks();
 
@@ -74,6 +85,8 @@ interface HealthObserverConfigBlueprint extends ObserverConfigBase, Prototype.Fa
      *
      * @return set to {@code false} to disable discovery
      */
+    @Deprecated(since = "4.2.4", forRemoval = true)
+    @Option.Deprecated("Use useSystemServices on io.helidon.health.HealthService and related types and configuration instead.")
     @Option.Configured
     @Option.DefaultBoolean(true)
     boolean useSystemServices();

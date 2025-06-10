@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023 Oracle and/or its affiliates.
+ * Copyright (c) 2022, 2025 Oracle and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@ import java.util.Map;
 
 import io.helidon.health.HealthCheck;
 import io.helidon.health.HealthCheckResponse;
-import io.helidon.http.HtmlEncoder;
 import io.helidon.http.NotFoundException;
 import io.helidon.http.Status;
 import io.helidon.http.media.EntityWriter;
@@ -63,31 +62,14 @@ class SingleCheckHandler implements Handler {
             throw new NotFoundException(name);
         }
 
-        HealthCheckResponse response;
+        HealthCheckResponse response = HealthHandler.encodeAnyErrorMessageDetail(check.call());
 
-        try {
-            response = check.call();
-        } catch (Exception e) {
-            response = HealthCheckResponse.builder()
-                    .status(HealthCheckResponse.Status.ERROR)
-                    .detail("error", e.getClass().getName())
-                    .detail("message", HtmlEncoder.encode(e.getMessage()))
-                    .build();
-            LOGGER.log(System.Logger.Level.ERROR, "Unexpected failure of health check", e);
-        }
-
-        Status responseStatus = switch (response.status()) {
-            case UP -> details ? Status.OK_200 : Status.NO_CONTENT_204;
-            case DOWN -> Status.SERVICE_UNAVAILABLE_503;
-            case ERROR -> Status.INTERNAL_SERVER_ERROR_500;
-        };
-
-        res.status(responseStatus);
+        res.status(HealthHandler.httpStatus(details, response.status()));
 
         if (details) {
             try (OutputStream out = res.outputStream()) {
                 entityWriter.write(JsonpSupport.JSON_OBJECT_TYPE,
-                                   HealthHelper.toJson(check.name(), response),
+                                   HealthHelper.toJson(response),
                                    out,
                                    req.headers(),
                                    res.headers());

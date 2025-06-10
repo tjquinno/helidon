@@ -35,8 +35,9 @@ import io.helidon.health.HealthCheckType;
  */
 public class DeadlockHealthCheck implements HealthCheck {
     private static final System.Logger LOGGER = System.getLogger(DeadlockHealthCheck.class.getName());
-    private static final String NAME = "deadlock";
     private static final String PATH = "deadlock";
+
+    static final String NAME = "deadlock";
 
     /**
      * Used for detecting deadlocks.
@@ -90,6 +91,7 @@ public class DeadlockHealthCheck implements HealthCheck {
         if (disabled) {
             LOGGER.log(Level.TRACE, "Running in graal native image, this health-check always returns up.");
             return HealthCheckResponse.builder()
+                    .name(name())
                     .detail("enabled", "false")
                     .detail("description", "in native image")
                     .status(Status.UP)

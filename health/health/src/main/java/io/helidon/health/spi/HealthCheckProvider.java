@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023 Oracle and/or its affiliates.
+ * Copyright (c) 2022, 2025 Oracle and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,10 +20,12 @@ import java.util.List;
 
 import io.helidon.common.config.Config;
 import io.helidon.health.HealthCheck;
+import io.helidon.service.registry.Service;
 
 /**
- * {@link java.util.ServiceLoader} provider interface for health check services.
+ * Provider interface for health checks.
  */
+@Service.Contract
 public interface HealthCheckProvider {
     /**
      * Health checks provided by this provider.

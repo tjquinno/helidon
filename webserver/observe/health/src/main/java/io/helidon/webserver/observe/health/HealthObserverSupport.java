@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Oracle and/or its affiliates.
+ * Copyright (c) 2023, 2025 Oracle and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,15 +16,23 @@
 
 package io.helidon.webserver.observe.health;
 
+import java.util.List;
 import java.util.function.Supplier;
 
 import io.helidon.builder.api.Prototype;
+import io.helidon.common.config.Config;
 import io.helidon.health.HealthCheck;
 import io.helidon.health.HealthCheckResponse;
 import io.helidon.health.HealthCheckType;
+import io.helidon.health.HealthServiceConfig;
+import io.helidon.service.registry.Services;
 
 final class HealthObserverSupport {
     private HealthObserverSupport() {
+    }
+
+    private static List<Config> configFragments(Config candidateParentOfConfigFragments) {
+        return candidateParentOfConfigFragments.asNodeList().orElse(List.of());
     }
 
     static final class CustomMethods {
@@ -38,7 +46,9 @@ final class HealthObserverSupport {
          * @param builder required for the custom method
          * @param check   health check to add
          * @param type    type to use
+         * @deprecated Use {@link io.helidon.webserver.observe.health.HealthService} and related types instead.
          */
+        @Deprecated(since = "4.2.4", forRemoval = true)
         @Prototype.BuilderMethod
         static void addCheck(HealthObserverConfig.BuilderBase<?, ?> builder, HealthCheck check, HealthCheckType type) {
             if (check.type() == type) {
@@ -86,6 +96,30 @@ final class HealthObserverSupport {
             for (HealthCheck healthCheck : checks) {
                 builder.addCheck(healthCheck);
             }
+        }
+    }
+
+    /**
+     * Builder decorator.
+     * <p>
+     * For backwards compatibility, the observer config temporarily continues to support adding checks and containing config
+     * fragments to tailor the settings for individual health checks, and therefore the observer creates and registers the
+     * {@link io.helidon.webserver.observe.health.HealthService}.
+     */
+    @Deprecated(since = "4.2.4", forRemoval = true)
+    static class BuilderDecorator implements Prototype.BuilderDecorator<HealthObserverConfig.BuilderBase<?, ?>> {
+
+        @Override
+        public void decorate(HealthObserverConfig.BuilderBase<?, ?> target) {
+
+            HealthServiceConfig.Builder healthServiceConfigBuilder = HealthServiceConfig.builder()
+                    .config(Services.get(Config.class).get("health"))
+                    .checks(target.healthService().checks());
+            target.config().ifPresent(c -> {
+                healthServiceConfigBuilder.checksConfig(configFragments(c))
+                        .config(c);
+            });
+            Services.set(io.helidon.health.HealthService.class, healthServiceConfigBuilder.build());
         }
     }
 

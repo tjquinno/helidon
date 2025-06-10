@@ -34,6 +34,7 @@ module io.helidon.webserver.observe.health {
     requires transitive io.helidon.common.config;
     requires transitive io.helidon.health;
     requires transitive io.helidon.webserver.observe;
+    requires io.helidon.service.registry;
 
     exports io.helidon.webserver.observe.health;
 

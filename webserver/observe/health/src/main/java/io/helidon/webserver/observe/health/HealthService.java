@@ -22,6 +22,7 @@ import io.helidon.health.HealthCheck;
 import io.helidon.health.HealthCheckType;
 import io.helidon.http.media.EntityWriter;
 import io.helidon.http.media.jsonp.JsonpSupport;
+import io.helidon.service.registry.Services;
 import io.helidon.webserver.http.HttpRules;
 import io.helidon.webserver.http.HttpService;
 
@@ -43,17 +44,17 @@ class HealthService implements HttpService {
     private final List<HealthCheck> live;
     private final List<HealthCheck> start;
 
-    HealthService(HealthObserverConfig config, List<HealthCheck> healthChecks) {
+    HealthService(HealthObserverConfig config) {
         this.details = config.details();
 
-        this.all = List.copyOf(healthChecks);
-        this.ready = healthChecks.stream()
+        this.all = List.copyOf(config.healthService().checks());
+        this.ready = all.stream()
                 .filter(it -> it.type() == HealthCheckType.READINESS)
                 .toList();
-        this.live = healthChecks.stream()
+        this.live = all.stream()
                 .filter(it -> it.type() == HealthCheckType.LIVENESS)
                 .toList();
-        this.start = healthChecks.stream()
+        this.start = all.stream()
                 .filter(it -> it.type() == HealthCheckType.STARTUP)
                 .toList();
     }
@@ -62,18 +63,20 @@ class HealthService implements HttpService {
     public void routing(HttpRules rules) {
         EntityWriter<JsonObject> entityWriter = JsonpSupport.serverResponseWriter();
 
-        rules.get("/", new HealthHandler(entityWriter, details, all))
-                .get("/" + READINESS.defaultEndpoint(), new HealthHandler(entityWriter, details, ready))
-                .get("/" + LIVENESS.defaultEndpoint(), new HealthHandler(entityWriter, details, live))
-                .get("/" + STARTUP.defaultEndpoint(), new HealthHandler(entityWriter, details, start))
+        var healthService = Services.get(io.helidon.health.HealthService.class);
+
+        rules.get("/", new HealthHandler(entityWriter, details, null, healthService))
+                .get("/" + READINESS.defaultEndpoint(), new HealthHandler(entityWriter, details, READINESS, healthService))
+                .get("/" + LIVENESS.defaultEndpoint(), new HealthHandler(entityWriter, details, LIVENESS, healthService))
+                .get("/" + STARTUP.defaultEndpoint(), new HealthHandler(entityWriter, details, STARTUP, healthService))
                 .get("/" + READINESS.defaultEndpoint() + "/{name}", new SingleCheckHandler(entityWriter, details, ready))
                 .get("/" + LIVENESS.defaultEndpoint() + "/{name}", new SingleCheckHandler(entityWriter, details, live))
                 .get("/" + STARTUP.defaultEndpoint() + "/{name}", new SingleCheckHandler(entityWriter, details, start))
                 .get("/check/{name}", new SingleCheckHandler(entityWriter, details, all))
-                .head("/", new HealthHandler(entityWriter, false, all))
-                .head("/" + READINESS.defaultEndpoint(), new HealthHandler(entityWriter, false, ready))
-                .head("/" + LIVENESS.defaultEndpoint(), new HealthHandler(entityWriter, false, live))
-                .head("/" + STARTUP.defaultEndpoint(), new HealthHandler(entityWriter, false, start))
+                .head("/", new HealthHandler(entityWriter, false, null, healthService))
+                .head("/" + READINESS.defaultEndpoint(), new HealthHandler(entityWriter, false, READINESS, healthService))
+                .head("/" + LIVENESS.defaultEndpoint(), new HealthHandler(entityWriter, false, LIVENESS, healthService))
+                .head("/" + STARTUP.defaultEndpoint(), new HealthHandler(entityWriter, false, STARTUP, healthService))
                 .head("/" + READINESS.defaultEndpoint() + "/{name}", new SingleCheckHandler(entityWriter, false, ready))
                 .head("/" + LIVENESS.defaultEndpoint() + "/{name}", new SingleCheckHandler(entityWriter, false, live))
                 .head("/" + STARTUP.defaultEndpoint() + "/{name}", new SingleCheckHandler(entityWriter, false, start))

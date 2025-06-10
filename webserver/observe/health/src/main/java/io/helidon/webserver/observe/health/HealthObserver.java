@@ -28,7 +28,9 @@ import io.helidon.builder.api.RuntimeType;
 import io.helidon.common.HelidonServiceLoader;
 import io.helidon.common.config.Config;
 import io.helidon.health.HealthCheck;
+import io.helidon.health.HealthServiceConfig;
 import io.helidon.health.spi.HealthCheckProvider;
+import io.helidon.service.registry.Services;
 import io.helidon.webserver.http.HttpFeature;
 import io.helidon.webserver.http.HttpRouting;
 import io.helidon.webserver.observe.DisabledObserverFeature;
@@ -45,19 +47,7 @@ public class HealthObserver implements Observer, RuntimeType.Api<HealthObserverC
 
     private HealthObserver(HealthObserverConfig config) {
         this.config = config;
-
-        List<HealthCheck> checks = new ArrayList<>(config.healthChecks());
-        if (config.useSystemServices()) {
-            Config cfg = config.config().orElseGet(Config::empty);
-            HelidonServiceLoader.create(ServiceLoader.load(HealthCheckProvider.class))
-                    .asList()
-                    .stream()
-                    .map(provider -> provider.healthChecks(cfg))
-                    .flatMap(Collection::stream)
-                    .forEach(checks::add);
-        }
-        // checks now contain all health checks we want to use in this instance
-        this.all = List.copyOf(checks);
+        this.all = config.healthService().checks();
     }
 
     /**
@@ -68,9 +58,13 @@ public class HealthObserver implements Observer, RuntimeType.Api<HealthObserverC
      * @return a new observer to register with {@link io.helidon.webserver.observe.ObserveFeature}
      */
     public static HealthObserver create(HealthCheck... healthChecks) {
-        return builder()
+        io.helidon.health.HealthService healthService = io.helidon.health.HealthServiceConfig.builder()
                 .useSystemServices(false)
-                .addHealthChecks(Arrays.asList(healthChecks))
+                .addChecks(healthChecks)
+                .build();
+
+        return builder()
+                .healthService(healthService)
                 .build();
     }
 
@@ -114,7 +108,7 @@ public class HealthObserver implements Observer, RuntimeType.Api<HealthObserverC
         if (config.enabled()) {
             for (HttpRouting.Builder builder : observeEndpointRouting) {
                 // we must use a feature to honor weight of the observer feature itself
-                builder.addFeature(new HealthHttpFeature(endpoint, config, all));
+                builder.addFeature(new HealthHttpFeature(endpoint, config));
             }
         } else {
             for (HttpRouting.Builder builder : observeEndpointRouting) {
@@ -133,20 +127,26 @@ public class HealthObserver implements Observer, RuntimeType.Api<HealthObserverC
         return config;
     }
 
+    private HealthServiceConfig healthConfig(Config healthObserverConfig) {
+        Config healthConfigNode = healthObserverConfig.root().get("health");
+        if (!healthConfigNode.exists()) {
+            healthConfigNode = healthObserverConfig;
+        }
+        return HealthServiceConfig.create(healthConfigNode);
+    }
+
     private static class HealthHttpFeature implements HttpFeature {
         private final String endpoint;
         private final HealthObserverConfig config;
-        private final List<HealthCheck> all;
 
-        private HealthHttpFeature(String endpoint, HealthObserverConfig config, List<HealthCheck> all) {
+        private HealthHttpFeature(String endpoint, HealthObserverConfig config) {
             this.endpoint = endpoint;
             this.config = config;
-            this.all = all;
         }
 
         @Override
         public void setup(HttpRouting.Builder routing) {
-            routing.register(endpoint, new HealthService(config, all));
+            routing.register(endpoint, new HealthService(config));
         }
     }
 }

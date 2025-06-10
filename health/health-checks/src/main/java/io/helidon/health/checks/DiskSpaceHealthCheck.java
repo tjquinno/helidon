@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023 Oracle and/or its affiliates.
+ * Copyright (c) 2018, 2025 Oracle and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,6 +70,7 @@ public class DiskSpaceHealthCheck implements HealthCheck {
     public static final double DEFAULT_THRESHOLD = 99.999;
 
     static final String CONFIG_KEY_DISKSPACE_PREFIX = "diskSpace";
+    static final String NAME = CONFIG_KEY_DISKSPACE_PREFIX;
 
     static final String CONFIG_KEY_PATH_SUFFIX = "path";
     static final String CONFIG_KEY_THRESHOLD_PERCENT_SUFFIX = "thresholdPercent";
@@ -77,15 +78,13 @@ public class DiskSpaceHealthCheck implements HealthCheck {
     /**
      * Full configuration key for path, when configured through MicroProfile config.
      */
-    public static final String CONFIG_KEY_PATH = HealthChecks.CONFIG_KEY_HEALTH_PREFIX
-            + "." + CONFIG_KEY_DISKSPACE_PREFIX
+    public static final String CONFIG_KEY_PATH = CONFIG_KEY_DISKSPACE_PREFIX
             + "." + CONFIG_KEY_PATH_SUFFIX;
 
     /**
      * Full configuration key for threshold percent, when configured through Microprofile config.
      */
-    public static final String CONFIG_KEY_THRESHOLD_PERCENT = HealthChecks.CONFIG_KEY_HEALTH_PREFIX
-            + "." + CONFIG_KEY_DISKSPACE_PREFIX
+    public static final String CONFIG_KEY_THRESHOLD_PERCENT = CONFIG_KEY_DISKSPACE_PREFIX
             + "." + CONFIG_KEY_THRESHOLD_PERCENT_SUFFIX;
 
     private static final long KB = 1024;
@@ -183,6 +182,7 @@ public class DiskSpaceHealthCheck implements HealthCheck {
         Formatter formatter = new Formatter(Locale.US);
 
         return HealthCheckResponse.builder()
+                .name(name())
                 .status(threshold >= usedInBytes)
                 .detail("percentFree", formatter.format("%.2f%%", 100 * ((double) diskFreeInBytes / totalInBytes)).toString())
                 .detail("free", DiskSpaceHealthCheck.format(diskFreeInBytes))

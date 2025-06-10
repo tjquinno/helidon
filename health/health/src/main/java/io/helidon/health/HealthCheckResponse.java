@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2024 Oracle and/or its affiliates.
+ * Copyright (c) 2022, 2025 Oracle and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,15 @@ public interface HealthCheckResponse {
     }
 
     /**
+     * Name for the response, typically from the name of the health check.
+     *
+     * @return health response name
+     */
+    default String name() {
+        return "";
+    }
+
+    /**
      * Status of this health check.
      *
      * @return status
@@ -49,6 +58,7 @@ public interface HealthCheckResponse {
 
     /**
      * Health check status.
+     *
      */
     enum Status {
         /**
@@ -62,7 +72,20 @@ public interface HealthCheckResponse {
         /**
          * This health check failed with an exception that was not expected.
          */
-        ERROR
+        ERROR;
+
+        /**
+         * Returns the poorer of two status values.
+         *
+         * @param first first status value
+         * @param second second status value
+         * @return whichever status value is worse
+         */
+        public static Status poorer(Status first, Status second) {
+            // This implementation's use of compareTo relies on the current declaration order of the values as
+            // documented on Enum.compareTo. If you change the declaration order you must reimplement this method.
+            return first.compareTo(second) > 0 ? first : second;
+        }
     }
 
     /**
@@ -73,11 +96,27 @@ public interface HealthCheckResponse {
         // Use a TreeMap to preserve stability of the details in JSON output.
         private final Map<String, Object> details = new TreeMap<>();
         private Status status = Status.UP;
+        private String name;
+
+        private Builder() {
+        }
 
         @Override
         public HealthCheckResponse build() {
+
             // Use a new map in case the builder is reused and mutated after this  invocation of build().
-            return new HealthResponseImpl(this.status, new TreeMap<>(this.details));
+            return new HealthResponseImpl(this.name, this.status, new TreeMap<>(this.details));
+        }
+
+        /**
+         * Assigns the name for the health check response.
+         *
+         * @param name name for the response
+         * @return updated builder
+         */
+        public Builder name(String name) {
+            this.name = name;
+            return this;
         }
 
         /**
@@ -113,6 +152,7 @@ public interface HealthCheckResponse {
             this.details.put(name, value);
             return this;
         }
+
 
         Map<String, Object> details() {
             return details;

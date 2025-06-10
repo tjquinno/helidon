@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2025 Oracle and/or its affiliates.
+ * Copyright (c) 2025 Oracle and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,21 @@
  * limitations under the License.
  */
 
-package io.helidon.health;
+package io.helidon.webserver.observe.health;
 
-import java.util.Map;
+import io.helidon.service.registry.Services;
+import io.helidon.webserver.testing.junit5.ServerTest;
 
-record HealthResponseImpl(String name, HealthCheckResponse.Status status, Map<String, Object> details) implements HealthCheckResponse {
+import org.junit.jupiter.api.Test;
+
+@ServerTest
+class TestService {
+
+    @Test
+    void testWithConfigSettings() {
+        var healthService = Services.get(io.helidon.health.HealthService.class);
+
+
+
+    }
 }

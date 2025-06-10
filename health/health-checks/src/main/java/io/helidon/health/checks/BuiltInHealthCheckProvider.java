@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023 Oracle and/or its affiliates.
+ * Copyright (c) 2022, 2025 Oracle and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,16 +17,25 @@ package io.helidon.health.checks;
 
 import java.lang.management.ManagementFactory;
 import java.util.List;
+import java.util.function.Function;
 
 import io.helidon.common.NativeImageHelper;
 import io.helidon.common.config.Config;
 import io.helidon.health.HealthCheck;
 import io.helidon.health.spi.HealthCheckProvider;
+import io.helidon.service.registry.Service;
 
 /**
  * {@link java.util.ServiceLoader} provider implementation for {@link io.helidon.health.spi.HealthCheckProvider}.
  */
+@Service.Singleton
 public class BuiltInHealthCheckProvider implements HealthCheckProvider {
+
+    private final List<HealthCheckInfo> healthCheckInfos = List.of(
+            new HealthCheckInfo(DeadlockHealthCheck.NAME, this::deadlock, false),
+            new HealthCheckInfo(DiskSpaceHealthCheck.NAME, this::diskSpace, true),
+            new HealthCheckInfo(HeapMemoryHealthCheck.NAME, this::heapMemory, true));
+
     /**
      * Default constructor is required by {@link java.util.ServiceLoader}.
      */
@@ -35,14 +44,15 @@ public class BuiltInHealthCheckProvider implements HealthCheckProvider {
 
     @Override
     public List<HealthCheck> healthChecks(Config config) {
-        if (NativeImageHelper.isNativeImage()) {
-            return List.of(diskSpace(config), heapMemory(config));
-        } else {
-            return List.of(diskSpace(config), heapMemory(config), deadlock());
-        }
+
+        boolean isNativeImage = NativeImageHelper.isNativeImage();
+        return healthCheckInfos.stream()
+                .filter(healthCheckInfo -> healthCheckInfo.isNativeImageFriendly || !isNativeImage)
+                .map(healthCheckInfo -> healthCheckInfo.factory.apply(config))
+                .toList();
     }
 
-    private DeadlockHealthCheck deadlock() {
+    private DeadlockHealthCheck deadlock(Config config) {
         return DeadlockHealthCheck.create(ManagementFactory.getThreadMXBean());
     }
 
@@ -58,4 +68,6 @@ public class BuiltInHealthCheckProvider implements HealthCheckProvider {
                 .config(config)
                 .build();
     }
+
+    private record HealthCheckInfo(String name, Function<Config, HealthCheck> factory, boolean isNativeImageFriendly) {}
 }
