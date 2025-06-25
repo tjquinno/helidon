@@ -1,0 +1,222 @@
+///////////////////////////////////////////////////////////////////////////////
+
+    Copyright (c) 2025 Oracle and/or its affiliates.
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+///////////////////////////////////////////////////////////////////////////////
+
+// tag::overview[]
+It’s a good practice to monitor your microservice’s health to ensure that it is
+available and performs correctly.
+Applications implement health checks to expose health status that is collected
+at regular intervals by external tooling, such as orchestrators like
+Kubernetes. The orchestrator may then take action, such as restarting a service instance if it has failed
+or temporarily shunting traffic away from the instance if the service is unable to process
+incoming requests normally.
+
+A typical health check reflects the state of a given subsystem of your service or some external resource on which the service depends, both of which can
+affect availability and the ability of the service to perform correctly:
+
+* network latency
+* storage
+* database
+* other services used by your application
+
+The states of all a service's health checks collectively convey the overall health of the service.
+// end::overview[]
+
+// tag::builtin-health-checks-intro[]
+=== Built-In Health Checks
+
+You can use Helidon-provided health checks to report various
+common health check statuses:
+
+[[built-in-health-checks-table]]
+--
+[cols="1,1,3,5,8,3"]
+.Built-in health checks
+|=======
+|Built-in health check |Health check name |JavaDoc |Config property | Meaning |Default config value
+
+|deadlock detection &dagger;
+|`deadlock`
+| link:{health-javadoc-base-url}/io/helidon/health/checks/DeadlockHealthCheck.html[`DeadlockHealthCheck`]
+3+| &nbsp;
+
+.2+|available disk space &dagger;
+.2+|`diskSpace`
+.2+| link:{health-javadoc-base-url}/io/helidon/health/checks/DiskSpaceHealthCheck.html[`DiskSpaceHealthCheck`]
+|`thresholdPercent` | If the used disk space exceeds  this percentage, the health check reports `down`.
+| `99.999`
+| `path`| Helidon obtains the available disk space from a `java.nio.file.FileStore` created using this path.
+| `.` (dot)
+|available heap memory
+| `heapMemory`
+| link:{health-javadoc-base-url}/io/helidon/health/checks/HeapMemoryHealthCheck.html[`HeapMemoryHealthCheck`]
+|`thresholdPercent` | If the Java heap space usage exceeds this level, the health check reports `down`.
+|`98`
+|=======
+&dagger; Helidon cannot support the indicated health checks in the GraalVM native image environment, so with native image those health checks do not appear in the health output.
+--
+
+Simply adding the built-in health check dependency is sufficient to register all the built-in health checks automatically.
+If you want to use only some of the built-in checks in your application,
+ifdef::mp-flavor[]
+use configuration to disable the ones you want to exclude. (See <<Configuration,configuration>> below.)
+endif::mp-flavor[]
+ifdef::se-flavor[]
+you have these options:
+
+* Disable automatic discovery of the built-in health checks and register only the ones you want.
+* Use configuration to disable the ones you want to exclude. (See <<Configuration,configuration>> below.)
+endif::se-flavor[]
+// end::builtin-health-checks-intro[]
+
+// tag::configuring-behavior[]
+You can control how the health subsystem behaves using configuration.
+
+include::{rootdir}/config/io_helidon_webserver_observe_health_HealthObserver.adoc[tag=config,leveloffset=+1]
+
+[NOTE]
+For Helidon {flavor-uc} services `endpoint` defaults to
+ifdef::mp-flavor[`/health`]
+ifdef::se-flavor[`/observe/health`]
+and  `details` defaults to
+ifdef::mp-flavor[`true`.]
+ifdef::se-flavor[`false`.]
+
+Configure the behavior of individual health checks in the `checks` section, using the health check name
+as the config key. The
+<<built-in-health-checks-table,built-in health checks table>> shows their names and available config settings. Further, you can suppress one or more
+health checks by setting the health check's `enabled` value to `false`. Helidon interprets the configured `enabled` setting for any health check, including custom ones you write. But your code is responsible for applying any other configuration to your custom health checks.  
+
+The following example illustrates customizing and disabling built-in health checks.
+
+.Customizing built-in health checks using configuration
+ifdef::se-flavor[]
+[source,yaml]
+----
+server:
+  features:
+    observe:
+      observers:
+        health:
+          checks:
+            heapMemory:
+              thresholdPercent: 90  # <1>
+            diskSpace:
+              path: "/otherVolume"  # <2>
+              thresholdPercent: 75  # <2>
+            deadlock:
+              enabled: false        # <3>
+----
+endif::se-flavor[]
+ifdef::mp-flavor[]
+[source,properties]
+----
+health.checks.heapMemory.thresholdPercent=90  # <1>
+health.checks.diskSpace.path=/otherVolume     # <2>
+health.checks.diskSpace.thresholdPercent=90   # <2>
+health.checks.deadlock.enabled=false          # <3>
+----
+endif::mp-flavor[]
+<1> Customizes the `heapMemory` health check to use a threshold percent of `90`.
+<2> Customizes the `diskSpace` health check to use a threshold percent of `75` on `/otherVolume`.
+<3> Disables the `deadlock` health check.
+
+// end::configuring-behavior[]
+
+// tag::configure-endpoint[]
+The example below changes the path for the health endpoint.
+
+ifdef::mp-flavor[]
+.Configuring the health endpoint in `META-INF/microprofile-config.properties`
+[source,properties]
+----
+health.endpoint=/myhealth  # <1>
+----
+endif::mp-flavor[]
+ifdef::se-flavor[]
+.Configuring the health endpoint in `application.yaml`
+[source,yaml]
+----
+server:
+  features:
+    observe:
+      observers:
+        health:
+          endpoint: "/myhealth" # <1>
+----
+endif::se-flavor[]
+<1> Specifies the path for the health endpoint.
+// end::configure-endpoint[]
+
+// tag::rest-endpoints[]
+// tag::rest-endpoints-intro[]
+
+== REST Endpoints [[Rest-Endpoints]]
+A
+ifdef::mp-flavor[MicroProfile-compliant]
+ifdef::se-flavor[Helidon SE]
+service reports its overall health via the REST endpoint at `{default-endpoint-prefix}/health` (by default).
+
+Helidon can report detailed information about each health check it invokes  to compute the overall status. These details appear as JSON content in the HTTP response and are different for different health checks. You can control this behavior using the `details` setting in <<Configuration,configuration>>.
+By default Helidon {flavor-uc}
+ifdef::mp-flavor[includes]
+ifdef::se-flavor[excludes]
+details from health checks in the HTTP responses.
+
+
+// end::rest-endpoints-intro[]
+// tag::health-status-codes[]
+[[health-status-codes-table]]
+// Mark the block explicitly so the rendered page handles the cross-reference to the above tag correctly.
+--
+[cols="1,5",role="flex, sm7"]
+.Health status codes
+|=======
+| `200` | The application is healthy (with health check details in the response).
+| `204` | The application is healthy (with _no_ health check details in the response).
+| `503` | The application is not healthy.
+| `500` | An error occurred while reporting the health.
+|=======
+--
+// end::health-status-codes[]
+
+// tag::rest-endpoints-wrapup[]
+Helidon also provides additional REST subresources for each type of health check. The response from each subresource reflects only the health checks of the corresponding type and conforms to the responses described in the <<health-status-codes-table,status codes table>>.
+
+.Types of Health Checks and REST Subresource Paths
+|===
+|Type | Meaning | Selective REST endpoint (default)| Kubernetes response on failure
+
+|liveness
+|whether the runtime environment is suitable
+|`{default-endpoint-prefix}/health/live`
+|Restarts container.
+
+|readiness
+|whether the service is currently capable of doing its work
+|`{default-endpoint-prefix}/health/ready`
+|Diverts requests away from the instance; periodically rechecks readiness and resumes traffic once the
+service reports itself as ready.
+
+|startup
+|whether the service has initialized to the point where liveness and readiness checks might pass
+|`{default-endpoint-prefix}/health/started`
+|Treats the instance as still starting up; does not check liveness or readiness until the startup probe reports success or times out according to its configuration.
+|===
+
+// end::rest-endpoints-wrapup[]
+// end::rest-endpoints[]

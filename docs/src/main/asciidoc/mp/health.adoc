@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 
-    Copyright (c) 2020, 2024 Oracle and/or its affiliates.
+    Copyright (c) 2020, 2025 Oracle and/or its affiliates.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -23,6 +23,8 @@
 :feature-name: MicroProfile Health
 :microprofile-bundle: true
 :rootdir: {docdir}/..
+:health-inc: {rootdir}/includes/health.adoc
+:default-endpoint-prefix:
 
 include::{rootdir}/includes/mp.adoc[]
 
@@ -36,12 +38,11 @@ include::{rootdir}/includes/mp.adoc[]
 - <<Examples, Examples>>
 - <<Reference, Reference>>
 
+include::{rootdir}/includes/mp.adoc
+
 == Overview
 
-Microservices expose their health status primarily so external tools (for example, an orchestrator such as Kubernetes)
-can monitor each service and take action, such as restarting a service instance if it has failed
-or temporarily shunting traffic away from the instance if the service is unable to process
-incoming requests normally.
+include::{health-inc}[tag=overview]
 
 
 == Maven Coordinates [[Maven-Coordinates]]
@@ -114,59 +115,18 @@ some future point it might become able to do so without requiring a restart.
 * _Startup_ checks indicate whether the service has started to the point where liveness and readiness checks even make sense.
 A service reporting `DOWN` for a startup check is still initializing itself and normally will report `UP` soon, assuming it is able to start successfully.
 
+include::{health-inc}[tag=builtin-health-checks-intro]
 
-== REST Endpoints [[Rest-Endpoints]]
-A MicroProfile-compliant service reports its health via known REST endpoints. Helidon MP
-provides these endpoints automatically as part of every MP microservice that includes health support..
-
-External management tools (or `curl` or browsers) retrieve health checks using the REST endpoints in the table below which summarizes the types of health checks in MicroProfile Health.
-Responses from the health endpoints report `200` (OK), `204` (no content), or `503` (service unavailable) depending on the outcome of running the health checks.
-HTTP `GET` responses include JSON content showing the detailed results of all the health checks which the server executed after receiving the request.
-HTTP `HEAD` requests return only the status with no payload.
-
-
-.Types of Health Checks
-|===
-|Type | Meaning | REST endpoint | Kubernetes response on failure
-
-|liveness
-|whether the runtime environment is suitable
-|`/health/live`
-|Restarts container.
-
-|readiness
-|whether the microservice is currently capable of doing its work
-|`/health/ready`
-|Diverts requests away from the instance; periodically rechecks readiness and resumes traffic once the
-microservice reports itself as ready.
-
-|startup
-|whether the microservice has initialized to the point where liveness and readiness checks might pass
-|`/health/started`
-|Treats the instance as still starting up; does not check liveness or readiness until the startup probe reports success or times out according to its configuration.
-|===
+include::{health-inc}[tag=rest-endpoints]
 
 
 == Configuration
 
-Health checks may be configured using the following properties.
-
-The class responsible for configuration is:
-
-include::{rootdir}/config/io_helidon_webserver_observe_health_HealthObserver.adoc[leveloffset=+1,tag=config]
+include::{health-inc}[tag=configuring-behavior]
 
 Properties may be set in `application.yaml` or in `microprofile-config.properties`, in both cases using the `health` prefix.
 
-For example, you can specify a custom port and root context for the root health endpoint path.
-However, you cannot use different ports, such as http://localhost:8080/myhealth and http://localhost:8081/myhealth/live.
-Likewise, you cannot use different paths, such as http://localhost:8080/health and http://localhost:8080/probe/live.
-The example below will change the root path.
-[source,properties]
-.Create a file named `microprofile-config.properties` in the `resources/META-INF` directory with the following contents:
-----
-health.endpoint=/myhealth  #<1>
-----
-<1> The `endpoint` setting specifies the root path for the health endpoint.
+include::{health-inc}[tag=configure-endpoint]
 
 == Examples
 

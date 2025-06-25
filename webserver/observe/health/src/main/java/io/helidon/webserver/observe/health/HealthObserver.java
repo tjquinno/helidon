@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2024 Oracle and/or its affiliates.
+ * Copyright (c) 2023, 2025 Oracle and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,9 @@ package io.helidon.webserver.observe.health;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
@@ -40,6 +42,9 @@ import io.helidon.webserver.spi.ServerFeature;
  */
 @RuntimeType.PrototypedBy(HealthObserverConfig.class)
 public class HealthObserver implements Observer, RuntimeType.Api<HealthObserverConfig> {
+
+    private static final System.Logger LOGGER = System.getLogger(HealthObserver.class.getName());
+
     private final HealthObserverConfig config;
     private final List<HealthCheck> all;
 
@@ -56,8 +61,10 @@ public class HealthObserver implements Observer, RuntimeType.Api<HealthObserverC
                     .flatMap(Collection::stream)
                     .forEach(checks::add);
         }
-        // checks now contain all health checks we want to use in this instance
-        this.all = List.copyOf(checks);
+
+        this.all = config.config()
+                .map(c -> enabledHealthChecks(c, checks))
+                .orElse(List.copyOf(checks));
     }
 
     /**
@@ -131,6 +138,35 @@ public class HealthObserver implements Observer, RuntimeType.Api<HealthObserverC
     @Override
     public HealthObserverConfig prototype() {
         return config;
+    }
+
+    static List<HealthCheck> enabledHealthChecks(Config config, List<HealthCheck> healthChecks) {
+        Map<String, Boolean> isCheckEnabled = new HashMap<>();
+        // @Deprecated(since = "4.2.4") If/when we stop supporting the `helidon.health` prefix for per-check config,
+        // remove the use here of that legacy config location.
+        Config legacyParent = config.get("helidon.health");
+        if (legacyParent.exists()) {
+            LOGGER.log(System.Logger.Level.WARNING,
+                       String.format("Use of '%s' to configure health checks is deprecated; use '%s' instead",
+                                     legacyParent.key(),
+                                     "checks"));
+        }
+        Config parentOfChecks = config.get("checks").exists() ? config.get("checks") : legacyParent;
+
+        parentOfChecks.asNodeList()
+                .ifPresent(nodes ->
+                                   nodes.forEach(checkNode -> isCheckEnabled.put(checkNode.name(),
+                                                                                 checkNode.get("enabled")
+                                                                                         .asBoolean()
+                                                                                         .orElse(true))));
+        return healthChecks.stream()
+                .filter(check -> isCheckEnabled.getOrDefault(check.name(), true))
+                .toList();
+    }
+
+    // For testing
+    List<HealthCheck> all() {
+        return all;
     }
 
     private static class HealthHttpFeature implements HttpFeature {

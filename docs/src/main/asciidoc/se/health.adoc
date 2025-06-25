@@ -21,6 +21,8 @@
 :keywords: helidon, health checks, health, check, readiness, liveness, probes, kubernetes
 :feature-name: Health Checks
 :rootdir: {docdir}/..
+:health-inc: {rootdir}/includes/health.adoc
+:default-endpoint-prefix: /observe
 
 include::{rootdir}/includes/se.adoc[]
 
@@ -188,14 +190,7 @@ registered `HealthCheck` instances and, when queried, invokes the registered
 health checks and returns a response with a status code representing the overall
 status of the application.
 
-[cols="1,5",role="flex, sm7"]
-.Health status codes
-|=======
-| `200` | The application is healthy (with health check details in the response).
-| `204` | The application is healthy (with _no_ health check details in the response).
-| `503` | The application is not healthy.
-| `500` | An error occurred while reporting the health.
-|=======
+include::{health-inc}[tag=health-status-codes]
 
 You control, either using configuration or adding code to your application, whether the HTTP responses to `GET` requests contain detailed information about each health check.
 With details enabled, HTTP `GET` responses include JSON content showing the detailed results of all the health checks which the server executed after receiving the request.
@@ -263,44 +258,7 @@ The following table provides a summary of the Health Check API classes.
 checks
 |=======
 
-[[built-in-health-checks-table]]
-=== Built-In Health Checks
-
-You can use Helidon-provided health checks to report various
-common health check statuses:
-
-// Had to move the anchor to the heading above because the rendered page did not define the ID
-// correctly on the table so the link did not work. The link itself looks OK; just no ID generated on the page.
-//[[built-in-health-checks-table]]
-[cols="1,1,3,15,3"]
-|=======
-|Built-in health check |Health check name |JavaDoc |Config properties (within `server.features.observe.observers.health`) |Default config value
-
-|deadlock detection &dagger;
-|`deadlock`
-| link:{health-javadoc-base-url}/io/helidon/health/checks/DeadlockHealthCheck.html[`DeadlockHealthCheck`]
-| n/a
-| n/a
-
-|available disk space &dagger;
-|`diskSpace`
-| link:{health-javadoc-base-url}/io/helidon/health/checks/DiskSpaceHealthCheck.html[`DiskSpaceHealthCheck`]
-|`helidon.health.diskSpace.thresholdPercent` +
-+
-`helidon.health.diskSpace.path`
-| `99.999` +
-+
-`/`
-|available heap memory
-| `heapMemory`
-| link:{health-javadoc-base-url}/io/helidon/health/checks/HeapMemoryHealthCheck.html[`HeapMemoryHealthCheck`]
-|`helidon.health.heapMemory.thresholdPercent`
-|`98`
-|=======
-&dagger; Helidon cannot support the indicated health checks in the GraalVM native image environment, so with native image those health checks do not appear in the health output.
-
-Simply adding the built-in health check dependency is sufficient to register all the built-in health checks automatically.
-If you want to use only some of the built-in checks in your application, you can disable automatic discovery of the built-in health checks and register only the ones you want.
+include::{health-inc}[tag=builtin-health-checks-intro]
 
 The following code adds only selected built-in health checks to your application:
 
@@ -320,6 +278,11 @@ using their builders instead of using the `HealthChecks` convenience class.
 Follow the JavaDoc links in the <<built-in-health-checks-table,table>> above.
 
 * Using configuration as explained in <<Configuration, Configuration>>.
+
+include::{health-inc}[tag=rest-endpoints-intro]
+HTTP response status values are the same as described in the <<health-status-codes-table,status codes table>>.
+
+include::{health-inc}[tag=rest-endpoints-wrapup]
 
 === Kubernetes Probes
 * <<Liveness Probe, Liveness Probe>>
@@ -428,12 +391,8 @@ TIP: Create log messages in your health check implementation when setting a
 
 == Configuration
 
-Built-in health checks can be configured using the config property keys
-described in this
-<<built-in-health-checks-table,table>>. Further, you can suppress one or more of the built-in
-health checks by setting the configuration item
-`helidon.health.exclude` to a comma-separated list of the health check names
-(from this <<built-in-health-checks-table,table>>) you want to exclude.
+include::{health-inc}[tag=configuring-behavior]
+include::{health-inc}[tag=configure-endpoint]
 
 == Examples
 

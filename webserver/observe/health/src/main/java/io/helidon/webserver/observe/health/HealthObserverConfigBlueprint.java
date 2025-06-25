@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Oracle and/or its affiliates.
+ * Copyright (c) 2023, 2025 Oracle and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -77,6 +77,16 @@ interface HealthObserverConfigBlueprint extends ObserverConfigBase, Prototype.Fa
     @Option.Configured
     @Option.DefaultBoolean(true)
     boolean useSystemServices();
+
+    /**
+     * Settings for individual health checks. The specific settings vary among the different types of health checks.
+     * A health check's name is the config key for the config section containing that check's settings, and Helidon treats
+     * all checks as supporting the {@code enabled} setting.
+     *
+     * @return config nodes for individual health check settings
+     */
+    @Option.Configured
+    List<Config> checks();
 
     /**
      * Config provided by the user (if any).
