@@ -35,6 +35,7 @@ module io.helidon.webserver.observe.tracing {
 
     requires transitive io.helidon.webserver.observe;
     requires transitive io.helidon.config;
+    requires io.helidon.webserver.concurrency.limits;
 
     provides io.helidon.webserver.observe.spi.ObserveProvider
             with io.helidon.webserver.observe.tracing.TracingObserveProvider;
