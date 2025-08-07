@@ -601,7 +601,7 @@ first.
 === Context
 
 Context feature adds a filter that executes all requests within the context of `io.helidon.common.context.Context`.
-A `Context` instance is available on `ServerRequest` even if this feature is not added. This feature adds support for
+A `ContextImpl` instance is available on `ServerRequest` even if this feature is not added. This feature adds support for
 obtaining request context through `io.helidon.common.context.Contexts.context()`.
 
 This feature will provide the same behavior as previous versions of Helidon. Since Helidon 4.0.0, this feature is not

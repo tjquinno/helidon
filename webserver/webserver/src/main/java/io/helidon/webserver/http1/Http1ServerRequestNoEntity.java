@@ -30,8 +30,9 @@ class Http1ServerRequestNoEntity extends Http1ServerRequest {
     Http1ServerRequestNoEntity(ConnectionContext ctx,
                                HttpSecurity security, HttpPrologue prologue,
                                Headers headers,
-                               int requestId) {
-        super(ctx, security, prologue, headers, requestId);
+                               int requestId,
+                               Http1Connection.TrackingContext parentContext) {
+        super(ctx, security, prologue, headers, requestId, parentContext);
     }
 
     @Override

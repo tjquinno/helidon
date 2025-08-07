@@ -28,6 +28,7 @@ import java.util.function.Supplier;
 
 import io.helidon.builder.api.RuntimeType;
 import io.helidon.common.config.Config;
+import io.helidon.common.context.Context;
 import io.helidon.metrics.api.Gauge;
 import io.helidon.metrics.api.MeterRegistry;
 import io.helidon.metrics.api.Metrics;
@@ -173,25 +174,25 @@ public class FixedLimit implements Limit, SemaphoreLimit, RuntimeType.Api<FixedL
 
     @Override
     public Optional<Token> tryAcquire(boolean wait,
-                                      Consumer<List<LimitAlgorithmListener.Context>> limitListenerContextsConsumer) {
-        Objects.requireNonNull(limitListenerContextsConsumer, "limit algorithm listener contexts consumer cannot be null");
-        return doTryAcquire(wait, limitListenerContextsConsumer);
+                                      Supplier<Context> contextSupplier) {
+        Objects.requireNonNull(contextSupplier, "limit algorithm context cannot be null");
+        return doTryAcquire(wait, contextSupplier);
     }
 
     @Override
-    public <T> T invoke(Callable<T> callable, Consumer<List<LimitAlgorithmListener.Context>> limitListenerContextsConsumer)
+    public <T> T invoke(Callable<T> callable, Supplier<Context> contextSupplier)
             throws Exception {
-        Objects.requireNonNull(limitListenerContextsConsumer, "limit algorithm listener contexts consumer cannot be null");
-        return doInvoke(callable, limitListenerContextsConsumer);
+        Objects.requireNonNull(contextSupplier, "limit algorithm context cannot be null");
+        return doInvoke(callable, contextSupplier);
     }
 
     @Override
-    public void invoke(Runnable runnable, Consumer<List<LimitAlgorithmListener.Context>> limitListenerContextsConsumer)
+    public void invoke(Runnable runnable, Supplier<Context> contextSupplier)
             throws Exception {
         invoke(() -> {
             runnable.run();
             return null;
-        }, limitListenerContextsConsumer);
+        }, contextSupplier);
     }
 
     @Override
@@ -306,7 +307,7 @@ public class FixedLimit implements Limit, SemaphoreLimit, RuntimeType.Api<FixedL
     }
 
     private Optional<Token> doTryAcquire(boolean wait,
-                                         Consumer<List<LimitAlgorithmListener.Context>> limitListenerContextsConsumer) {
+                                         Supplier<Context> contextSupplier) {
 
         Optional<LimitAlgorithm.Token> token = handler.tryAcquire(false);
 
@@ -315,7 +316,7 @@ public class FixedLimit implements Limit, SemaphoreLimit, RuntimeType.Api<FixedL
                                                         TYPE,
                                                         token.get(),
                                                         config.enabledListeners(),
-                                                        limitListenerContextsConsumer);
+                                                        contextSupplier);
             return token;
         }
         if (wait && queueLength > 0) {
@@ -329,7 +330,7 @@ public class FixedLimit implements Limit, SemaphoreLimit, RuntimeType.Api<FixedL
                                                            startWait,
                                                            endWait,
                                                            config.enabledListeners(),
-                                                           limitListenerContextsConsumer);
+                                                           contextSupplier);
                 if (queueWaitTimer != null) {
                     queueWaitTimer.record(endWait - startWait, TimeUnit.NANOSECONDS);
                 }
@@ -341,21 +342,21 @@ public class FixedLimit implements Limit, SemaphoreLimit, RuntimeType.Api<FixedL
                                                       startWait,
                                                       endWait,
                                                       config.enabledListeners(),
-                                                      limitListenerContextsConsumer);
+                                                      contextSupplier);
         } else {
             LimitOutcomeImpl.processImmediateRejection(originName,
                                                        TYPE,
                                                        config.enabledListeners(),
-                                                       limitListenerContextsConsumer);
+                                                       contextSupplier);
         }
         rejectedRequests.getAndIncrement();
         return token;
     }
 
-    private <T> T doInvoke(Callable<T> callable, Consumer<List<LimitAlgorithmListener.Context>> limitListenerContextsConsumer)
+    private <T> T doInvoke(Callable<T> callable, Supplier<Context> contextSupplier)
             throws Exception {
 
-        Optional<LimitAlgorithm.Token> optionalToken = doTryAcquire(true, limitListenerContextsConsumer);
+        Optional<LimitAlgorithm.Token> optionalToken = doTryAcquire(true, contextSupplier);
         if (optionalToken.isPresent()) {
             LimitAlgorithm.Token token = optionalToken.get();
             try {

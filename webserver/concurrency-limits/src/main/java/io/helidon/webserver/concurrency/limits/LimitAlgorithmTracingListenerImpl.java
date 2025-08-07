@@ -28,8 +28,6 @@ import io.helidon.tracing.Tracer;
 @Service.Singleton
 final class LimitAlgorithmTracingListenerImpl implements LimitAlgorithmTracingListener {
 
-    private static final Context NO_OP_CONTEXT = new Context();
-
     private final LimitAlgorithmTracingListenerConfig config;
 
     LimitAlgorithmTracingListenerImpl(LimitAlgorithmTracingListenerConfig config) {
@@ -52,19 +50,19 @@ final class LimitAlgorithmTracingListenerImpl implements LimitAlgorithmTracingLi
     }
 
     @Override
-    public Context onAccept(LimitOutcome.Accepted acceptedLimitOutcome) {
+    public Optional<Context> onAccept(LimitOutcome.Accepted acceptedLimitOutcome) {
         return acceptedLimitOutcome instanceof LimitOutcome.Deferred deferredOutcome
-                ? new DeferredDispositionContext(deferredOutcome)
-                : NO_OP_CONTEXT;
+                ? Optional.of(new DeferredDispositionContext(deferredOutcome))
+                : Optional.empty();
     }
 
     @Override
-    public Context onReject(LimitOutcome rejectedLimitOutcome) {
-        return NO_OP_CONTEXT;
+    public Optional<Context> onReject(LimitOutcome rejectedLimitOutcome) {
+        return Optional.empty();
     }
 
     @Override
-    public void onFinish(LimitAlgorithmTracingListener.Context listenerContext,
+    public void onFinish(Optional<Context> listenerContext,
                          LimitOutcome.Accepted.ExecutionResult execResult) {
     }
 
@@ -73,10 +71,10 @@ final class LimitAlgorithmTracingListenerImpl implements LimitAlgorithmTracingLi
         return config;
     }
 
-    static class Context implements LimitAlgorithmTracingListener.Context {
+    static class ContextImpl implements LimitAlgorithmTracingListener.Context {
     }
 
-    static class DeferredDispositionContext extends Context {
+    static class DeferredDispositionContext extends ContextImpl {
 
         private final LimitOutcome.Deferred deferredOutcome;
         private final boolean isRecordable;
@@ -84,15 +82,6 @@ final class LimitAlgorithmTracingListenerImpl implements LimitAlgorithmTracingLi
         DeferredDispositionContext(LimitOutcome.Deferred deferredOutcome) {
             this.deferredOutcome = deferredOutcome;
             isRecordable = deferredOutcome instanceof LimitOutcome.Accepted;
-        }
-
-        @Override
-        public boolean shouldBePropagated() {
-            /*
-            This design triggers the span creation from the tracing filter, so we need to have the context
-            propagated so the filter can find the context and pass the parent span context.
-             */
-            return true;
         }
 
         @Override

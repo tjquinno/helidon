@@ -104,7 +104,7 @@ The ability to use the older format is deprecated, and you should plan for its r
 
 In a distributed tracing system, *traces* are used to capture a series of requests and are composed of multiple *spans* that represent individual operations within those requests. Each *span* includes a name, timestamps, and metadata that provide insights into the corresponding operation.
 
-*Context* is included in each span to identify the specific request that it belongs to. This context information is crucial for tracking requests across various components in a distributed system, enabling developers to trace a single request as it traverses through multiple services.
+*ContextImpl* is included in each span to identify the specific request that it belongs to. This context information is crucial for tracking requests across various components in a distributed system, enabling developers to trace a single request as it traverses through multiple services.
 
 Finally, *exporters* are responsible for transmitting the collected trace data to a backend service for monitoring and visualization. This enables developers to gain a comprehensive understanding of the system's behavior and detect any issues or bottlenecks that may arise.
 

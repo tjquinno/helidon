@@ -56,6 +56,7 @@ abstract class Http1ServerRequest implements RoutingRequest {
     private final HttpSecurity security;
     private final int requestId;
     private final LazyValue<UriInfo> uriInfo = LazyValue.create(this::createUriInfo);
+    private final Http1Connection.TrackingContext trackingContext;
 
     private RoutedPath path;
     private WritableHeaders<?> writable;
@@ -68,12 +69,14 @@ abstract class Http1ServerRequest implements RoutingRequest {
                        HttpSecurity security,
                        HttpPrologue prologue,
                        Headers headers,
-                       int requestId) {
+                       int requestId,
+                       Http1Connection.TrackingContext trackingContext) {
         this.ctx = ctx;
         this.security = security;
         this.headers = ServerRequestHeaders.create(headers);
         this.requestId = requestId;
         this.prologue = prologue;
+        this.trackingContext = trackingContext;
     }
 
     /*
@@ -83,8 +86,9 @@ abstract class Http1ServerRequest implements RoutingRequest {
                                      HttpSecurity security,
                                      HttpPrologue prologue,
                                      Headers headers,
-                                     int requestId) {
-        return new Http1ServerRequestNoEntity(ctx, security, prologue, headers, requestId);
+                                     int requestId,
+                                     Http1Connection.TrackingContext parentContext) {
+        return new Http1ServerRequestNoEntity(ctx, security, prologue, headers, requestId, parentContext);
     }
 
     /*
@@ -101,7 +105,8 @@ abstract class Http1ServerRequest implements RoutingRequest {
                                      int requestId,
                                      boolean expectContinue,
                                      CountDownLatch entityReadLatch,
-                                     Supplier<BufferData> entitySupplier) {
+                                     Supplier<BufferData> entitySupplier,
+                                     Http1Connection.TrackingContext parentContext) {
         return new Http1ServerRequestWithEntity(ctx,
                                                 connection,
                                                 http1Config,
@@ -112,7 +117,8 @@ abstract class Http1ServerRequest implements RoutingRequest {
                                                 requestId,
                                                 expectContinue,
                                                 entityReadLatch,
-                                                entitySupplier);
+                                                entitySupplier,
+                                                parentContext);
     }
 
     @Override
@@ -142,6 +148,7 @@ abstract class Http1ServerRequest implements RoutingRequest {
                     .parent(ctx.listenerContext().context())
                     .id("[" + serverSocketId() + " " + socketId() + "] http/1.1: " + requestId)
                     .build());
+            trackingContext.replay(context);
         }
         return context;
     }

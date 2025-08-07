@@ -18,8 +18,10 @@ package io.helidon.common.concurrency.limits;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Consumer;
+import java.util.Optional;
 import java.util.function.Supplier;
+
+import io.helidon.common.context.Context;
 
 class LimitOutcomeImpl implements LimitOutcome {
 
@@ -47,11 +49,11 @@ class LimitOutcomeImpl implements LimitOutcome {
                                            String algorithmType,
                                            LimitAlgorithm.Token token,
                                            List<LimitAlgorithmListener> listeners,
-                                           Consumer<List<LimitAlgorithmListener.Context>> listenerContextsConsumer) {
+                                           Supplier<Context> contextSupplier) {
         processAccepted(() -> new ImmediateAccepted(originName, algorithmType),
                         token,
                         listeners,
-                        listenerContextsConsumer);
+                        contextSupplier);
 
     }
 
@@ -65,10 +67,10 @@ class LimitOutcomeImpl implements LimitOutcome {
     static void processImmediateRejection(String originName,
                                           String algorithmType,
                                           List<LimitAlgorithmListener> listeners,
-                                          Consumer<List<LimitAlgorithmListener.Context>> listenerContextsConsumer) {
+                                          Supplier<Context> contextSupplier) {
         processRejected(() -> new LimitOutcomeImpl(originName, algorithmType, Disposition.REJECTED),
                         listeners,
-                        listenerContextsConsumer);
+                        contextSupplier);
     }
 
     /**
@@ -86,14 +88,14 @@ class LimitOutcomeImpl implements LimitOutcome {
                                           long waitStart,
                                           long waitEnd,
                                           List<LimitAlgorithmListener> listeners,
-                                          Consumer<List<LimitAlgorithmListener.Context>> listenerContextsConsumer) {
+                                          Supplier<Context> contextSupplier) {
         processAccepted(() -> new DeferredAccepted(originName,
                                                    algorithmType,
                                                    waitStart,
                                                    waitEnd),
                         token,
                         listeners,
-                        listenerContextsConsumer);
+                        contextSupplier);
 
     }
 
@@ -111,10 +113,10 @@ class LimitOutcomeImpl implements LimitOutcome {
                                          long waitStart,
                                          long waitEnd,
                                          List<LimitAlgorithmListener> listeners,
-                                         Consumer<List<LimitAlgorithmListener.Context>> listenerContextsConsumer) {
+                                         Supplier<Context> contextSupplier) {
         processRejected(() -> new Deferred(originName, algorithmType, Disposition.REJECTED, waitStart, waitEnd),
                         listeners,
-                        listenerContextsConsumer);
+                        contextSupplier);
     }
 
     @Override
@@ -146,8 +148,8 @@ class LimitOutcomeImpl implements LimitOutcome {
     private static void processAccepted(Supplier<Accepted> acceptedFactory,
                                         LimitAlgorithm.Token token,
                                         List<LimitAlgorithmListener> listeners,
-                                        Consumer<List<LimitAlgorithmListener.Context>> listenerContextsConsumer) {
-        if (listenerContextsConsumer == null) {
+                                        Supplier<Context> contextSupplier) {
+        if (contextSupplier == null) {
             return;
         }
         var result = acceptedFactory.get();
@@ -158,16 +160,19 @@ class LimitOutcomeImpl implements LimitOutcome {
         if (token instanceof OutcomeAwareToken outcomeAwareToken) {
             outcomeAwareToken.outcome(result);
         }
-        listenerContextsConsumer.accept(result.listenerInfos().stream()
-                                                .map(ListenerInfo::listenerContext)
-                                                .toList());
+
+        result.listenerInfos().stream()
+                .map(ListenerInfo::listenerContext)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .forEach(listenerContext -> contextSupplier.get().register(listenerContext));
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     private static void processRejected(Supplier<LimitOutcomeImpl> rejectedFactory,
                                         List<LimitAlgorithmListener> listeners,
-                                        Consumer<List<LimitAlgorithmListener.Context>> listenerContextsConsumer) {
-        if (listenerContextsConsumer == null) {
+                                        Supplier<Context> contextSupplier) {
+        if (contextSupplier == null) {
             return;
         }
         var result = rejectedFactory.get();
@@ -175,9 +180,11 @@ class LimitOutcomeImpl implements LimitOutcome {
                                      .map(l -> ListenerInfo.createRejected(l, result))
                                      .toList());
 
-        listenerContextsConsumer.accept(result.listenerInfos().stream()
-                                                .map(ListenerInfo::listenerContext)
-                                                .toList());
+        result.listenerInfos().stream()
+                .map(ListenerInfo::listenerContext)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .forEach(listenerContext -> contextSupplier.get().register(listenerContext));
     }
 
     interface Accepted extends LimitOutcome.Accepted {
@@ -236,6 +243,7 @@ class LimitOutcomeImpl implements LimitOutcome {
             }
             return execResult;
         }
+
         @SuppressWarnings({"unchecked", "rawtypes"})
         @Override
         public void execResult(ExecutionResult execResult) {
@@ -275,16 +283,16 @@ class LimitOutcomeImpl implements LimitOutcome {
         }
     }
 
-    record ListenerInfo<CTX extends LimitAlgorithmListener.Context>(LimitAlgorithmListener<CTX> listener, CTX listenerContext) {
+    record ListenerInfo<CTX>(LimitAlgorithmListener<CTX> listener, Optional<CTX> listenerContext) {
 
-        static <CTX extends LimitAlgorithmListener.Context> ListenerInfo<?> createAccepted(LimitAlgorithmListener<CTX> listener,
-                                                                                           LimitOutcome.Accepted
-                                                                                                   acceptedOutcome) {
+        static <CTX> ListenerInfo<?> createAccepted(LimitAlgorithmListener<CTX> listener,
+                                                    LimitOutcome.Accepted
+                                                            acceptedOutcome) {
             return new ListenerInfo<>(listener, listener.onAccept(acceptedOutcome));
         }
 
-        static <CTX extends LimitAlgorithmListener.Context> ListenerInfo<?> createRejected(LimitAlgorithmListener<CTX> listener,
-                                                                                           LimitOutcome rejectedOutcome) {
+        static <CTX> ListenerInfo<?> createRejected(LimitAlgorithmListener<CTX> listener,
+                                                    LimitOutcome rejectedOutcome) {
             return new ListenerInfo<>(listener, listener.onReject(rejectedOutcome));
         }
     }

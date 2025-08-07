@@ -16,14 +16,15 @@
 
 package io.helidon.common.concurrency.limits;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Semaphore;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import io.helidon.builder.api.RuntimeType;
 import io.helidon.common.config.Config;
+import io.helidon.common.context.Context;
 
 /**
  * AIMD based limiter.
@@ -115,9 +116,9 @@ public class AimdLimit implements Limit, SemaphoreLimit, RuntimeType.Api<AimdLim
     }
 
     @Override
-    public <T> T invoke(Callable<T> callable, Consumer<List<LimitAlgorithmListener.Context>> limitListenerContextsConsumer)
+    public <T> T invoke(Callable<T> callable, Supplier<Context> contextSupplier)
             throws Exception {
-        return aimdLimitImpl.invoke(callable, limitListenerContextsConsumer);
+        return aimdLimitImpl.invoke(callable, contextSupplier);
     }
 
     @Override
@@ -126,9 +127,9 @@ public class AimdLimit implements Limit, SemaphoreLimit, RuntimeType.Api<AimdLim
     }
 
     @Override
-    public void invoke(Runnable runnable, Consumer<List<LimitAlgorithmListener.Context>> limitListenerContextsConsumer)
+    public void invoke(Runnable runnable, Supplier<Context> contextSupplier)
             throws Exception {
-        aimdLimitImpl.invoke(runnable, limitListenerContextsConsumer);
+        aimdLimitImpl.invoke(runnable, contextSupplier);
     }
 
     @Override
@@ -138,8 +139,8 @@ public class AimdLimit implements Limit, SemaphoreLimit, RuntimeType.Api<AimdLim
 
     @Override
     public Optional<Token> tryAcquire(boolean wait,
-                                      Consumer<List<LimitAlgorithmListener.Context>> limitListenerContextsConsumer) {
-        return aimdLimitImpl.tryAcquire(wait, limitListenerContextsConsumer);
+                                      Supplier<Context> contextSupplier) {
+        return aimdLimitImpl.tryAcquire(wait, contextSupplier);
     }
 
     @SuppressWarnings("removal")

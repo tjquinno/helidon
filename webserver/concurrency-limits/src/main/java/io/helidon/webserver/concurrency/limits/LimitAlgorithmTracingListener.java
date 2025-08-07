@@ -81,7 +81,7 @@ public interface LimitAlgorithmTracingListener extends LimitAlgorithmListener<Li
     /**
      * Limit tracing listener context.
      */
-    interface Context extends LimitAlgorithmListener.Context {
+    interface Context {
 
         /**
          * Indicates if the context represents a limit decision that should be recorded as a tracing span.

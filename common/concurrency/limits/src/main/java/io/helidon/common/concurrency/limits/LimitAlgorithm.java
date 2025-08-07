@@ -16,10 +16,11 @@
 
 package io.helidon.common.concurrency.limits;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Callable;
-import java.util.function.Consumer;
+import java.util.function.Supplier;
+
+import io.helidon.common.context.Context;
 
 /**
  * Concurrency limit algorithm.
@@ -77,14 +78,14 @@ public interface LimitAlgorithm {
      * when the caller invokes the token's methods the outcome is updated accordingly.</li>
      * </ul>
      *
-     * @param callable                 callable to execute within the limit
-     * @param listenerContextsConsumer consumer of contexts provided by limit algorithm listeners
-     * @param <T>                      the callable return type
+     * @param callable             callable to execute within the limit
+     * @param contextSupplier      supplier of a context where listeners can store data needed downstream
+     * @param <T>                  the callable return type
      * @return result of the callable
      * @throws LimitException      in case the limiter did not have an available permit
      * @throws java.lang.Exception in case the task failed with an exception
      */
-    default <T> T invoke(Callable<T> callable, Consumer<List<LimitAlgorithmListener.Context>> listenerContextsConsumer)
+    default <T> T invoke(Callable<T> callable, Supplier<Context> contextSupplier)
             throws LimitException, Exception {
         return invoke(callable);
     }
@@ -133,12 +134,12 @@ public interface LimitAlgorithm {
      * when the caller invokes the token's methods the outcome is updated accordingly.</li>
      * </ul>
      *
-     * @param runnable                 runnable to execute within the limit
-     * @param listenerContextsConsumer consumer of contexts provided by limit algorithm listeners
+     * @param runnable             runnable to execute within the limit
+     * @param contextSupplier      context where listeners can store data needed downstream
      * @throws LimitException      in case the limiter did not have an available permit
      * @throws java.lang.Exception in case the task failed with an exception
      */
-    default void invoke(Runnable runnable, Consumer<List<LimitAlgorithmListener.Context>> listenerContextsConsumer)
+    default void invoke(Runnable runnable, Supplier<Context> contextSupplier)
             throws Exception {
         invoke(runnable);
     }
@@ -178,13 +179,13 @@ public interface LimitAlgorithm {
      * operations to release the token.
      * If the response is empty, the limit does not have an available token.
      *
-     * @param wait                          whether to wait in the queue (if one is configured/available in the limit), or to
-     *                                      return immediately
-     * @param limitListenerContextsConsumer consumer of contexts provided by limit algorithm listeners
+     * @param wait             whether to wait in the queue (if one is configured/available in the limit), or to
+     *                         return immediately
+     * @param contextSupplier  context where listeners can store data needed downstream
      * @return acquired token, or empty if there is no available token
      */
     default Optional<Token> tryAcquire(boolean wait,
-                                       Consumer<List<LimitAlgorithmListener.Context>> limitListenerContextsConsumer) {
+                                       Supplier<Context> contextSupplier) {
         return tryAcquire(wait);
     }
 

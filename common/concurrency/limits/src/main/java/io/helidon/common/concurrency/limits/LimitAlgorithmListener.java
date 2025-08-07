@@ -16,6 +16,8 @@
 
 package io.helidon.common.concurrency.limits;
 
+import java.util.Optional;
+
 import io.helidon.common.config.NamedService;
 
 /**
@@ -23,7 +25,7 @@ import io.helidon.common.config.NamedService;
  *
  * @param <CTX> type of the listener context provided by this listener
  */
-public interface LimitAlgorithmListener<CTX extends LimitAlgorithmListener.Context> extends NamedService {
+public interface LimitAlgorithmListener<CTX> extends NamedService {
 
     /**
      * Indicates if the listener is enabled or not.
@@ -38,7 +40,7 @@ public interface LimitAlgorithmListener<CTX extends LimitAlgorithmListener.Conte
      * @param acceptedLimitOutcome {@link io.helidon.common.concurrency.limits.LimitOutcome.Accepted} outcome
      * @return the listener context for the accepted work item
      */
-    CTX onAccept(LimitOutcome.Accepted acceptedLimitOutcome);
+    Optional<CTX> onAccept(LimitOutcome.Accepted acceptedLimitOutcome);
 
     /**
      * Records the outcome related to a rejection of the work item by the limit algorihtm.
@@ -46,7 +48,7 @@ public interface LimitAlgorithmListener<CTX extends LimitAlgorithmListener.Conte
      * @param rejectedLimitOutcome {@linkplain io.helidon.common.concurrency.limits.LimitOutcome rejected outcome}
      * @return the listener context for the rejected work item
      */
-    CTX onReject(LimitOutcome rejectedLimitOutcome);
+    Optional<CTX> onReject(LimitOutcome rejectedLimitOutcome);
 
     /**
      * Records the completion of the limit algorithm's processing of an accepted work item.
@@ -55,27 +57,6 @@ public interface LimitAlgorithmListener<CTX extends LimitAlgorithmListener.Conte
      * {@link #onAccept(io.helidon.common.concurrency.limits.LimitOutcome.Accepted)}
      * @param execResult execution result reported by the user of the limit algorithm
      */
-    void onFinish(CTX listenerContext, LimitOutcome.Accepted.ExecutionResult execResult);
+    void onFinish(Optional<CTX> listenerContext, LimitOutcome.Accepted.ExecutionResult execResult);
 
-    /**
-     * Common superinterface for all listener context types.
-     */
-    interface Context {
-
-        /**
-         * Indicates if the listener context should be propagated using a mechanism available to the caller of the limit
-         * algorithm.
-         * <p>
-         * A component which provides a listener might do some work in the listener context after the limit algorithm
-         * has completed its processing&mdash;for example, in an HTTP listener which is invoked well after the limit algorithm
-         * processing completes. In such cases, this method returns {@code true} as a cue to the caller of the limit algorithm
-         * to propagate this context in a way that the downstream logic can find it&mdash;for example, in an HTTP request's
-         * request context.
-         *
-         * @return true if this context should be propagated; false otherwise
-         */
-        default boolean shouldBePropagated() {
-            return false;
-        }
-    }
 }

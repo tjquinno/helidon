@@ -23,6 +23,7 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
@@ -35,7 +36,7 @@ import io.helidon.common.buffers.DataWriter;
 import io.helidon.common.concurrency.limits.FixedLimit;
 import io.helidon.common.concurrency.limits.Limit;
 import io.helidon.common.concurrency.limits.LimitAlgorithm;
-import io.helidon.common.concurrency.limits.LimitAlgorithmListener;
+import io.helidon.common.context.Context;
 import io.helidon.common.mapper.MapperException;
 import io.helidon.common.task.InterruptableTask;
 import io.helidon.common.tls.TlsUtils;
@@ -209,8 +210,9 @@ public class Http1Connection implements ServerConnection, InterruptableTask<Void
                     }
                 }
 
-                List<LimitAlgorithmListener.Context> listenerContexts = new ArrayList<>();
-                Optional<LimitAlgorithm.Token> token = limit.tryAcquire(true, listenerContexts::addAll);
+                TrackingContext listenerContext = new TrackingContext();
+
+                Optional<LimitAlgorithm.Token> token = limit.tryAcquire(true, () -> listenerContext);
 
                 if (token.isEmpty()) {
                     ctx.log(LOGGER, TRACE, "Too many concurrent requests, rejecting request and closing connection.");
@@ -225,7 +227,7 @@ public class Http1Connection implements ServerConnection, InterruptableTask<Void
 
                     try {
                         this.lastRequestTimestamp = DateTime.timestamp();
-                        route(prologue, headers, limit, listenerContexts);
+                        route(prologue, headers, limit, listenerContext);
                         permit.success();
                         this.lastRequestTimestamp = DateTime.timestamp();
                     } catch (Throwable e) {
@@ -506,7 +508,7 @@ public class Http1Connection implements ServerConnection, InterruptableTask<Void
     private void route(HttpPrologue prologue,
                        WritableHeaders<?> headers,
                        Limit limit,
-                       List<LimitAlgorithmListener.Context> listenerContexts) {
+                       TrackingContext listenerContext) {
         EntityStyle entity = EntityStyle.NONE;
 
         if (headers.contains(HeaderValues.TRANSFER_ENCODING_CHUNKED)) {
@@ -540,10 +542,8 @@ public class Http1Connection implements ServerConnection, InterruptableTask<Void
                                                                    routing.security(),
                                                                    prologue,
                                                                    headers,
-                                                                   requestId);
-            listenerContexts.stream()
-                    .filter(LimitAlgorithmListener.Context::shouldBePropagated)
-                    .forEach(listenerContext -> request.context().register(listenerContext));
+                                                                   requestId,
+                                                                   listenerContext);
 
             Http1ServerResponse response = new Http1ServerResponse(ctx,
                                                                    sendListener,
@@ -611,7 +611,8 @@ public class Http1Connection implements ServerConnection, InterruptableTask<Void
                                                                requestId,
                                                                expectContinue,
                                                                entityReadLatch,
-                                                               () -> this.readEntityFromPipeline(prologue, headers));
+                                                               () -> this.readEntityFromPipeline(prologue, headers),
+                                                               listenerContext);
         Http1ServerResponse response = new Http1ServerResponse(ctx,
                                                                sendListener,
                                                                writer,
@@ -708,6 +709,148 @@ public class Http1Connection implements ServerConnection, InterruptableTask<Void
 
         if (response.status() == Status.INTERNAL_SERVER_ERROR_500) {
             LOGGER.log(WARNING, "Internal server error", e);
+        }
+    }
+
+    private interface Action {
+
+        static <T> Action register(Object classifier, T instance) {
+            return new InstanceReg<>(classifier, instance);
+        }
+
+        static <T> Action register(T instance) {
+            return new InstanceReg<>(null, instance);
+        }
+
+        static <T> Action supply(Object classifier, Class<T> type, Supplier<T> supplier) {
+            return new SupplierReg<>(classifier, type, supplier);
+        }
+
+        static <T> Action supply(Class<T> type, Supplier<T> supplier) {
+            return new SupplierReg<>(null, type, supplier);
+        }
+
+        static <T> Action unregister(Object classifier, T instance) {
+            return new InstanceUnreg<>(classifier, instance);
+        }
+
+        static <T> Action unregister(T instance) {
+            return new InstanceUnreg<>(null, instance);
+        }
+
+        void replay(Context context);
+    }
+
+    private record InstanceReg<T>(Object classifier, T instance) implements Action {
+
+        @Override
+        public void replay(Context context) {
+            if (classifier == null) {
+                context.register(instance);
+            } else {
+                context.register(classifier, instance);
+            }
+        }
+    }
+
+    private record InstanceUnreg<T>(Object classifier, T instance) implements Action {
+        @Override
+        public void replay(Context context) {
+            if (classifier == null) {
+                context.unregister(instance);
+            } else {
+                context.unregister(classifier, instance);
+            }
+        }
+    }
+
+    private record SupplierReg<T>(Object classifier, Class<T> type, Supplier<T> supplier) implements Action {
+        @Override
+        public void replay(Context context) {
+            if (classifier == null) {
+                context.supply(type, supplier);
+            } else {
+                context.supply(classifier, type, supplier);
+            }
+        }
+    }
+
+    static class TrackingContext implements Context {
+
+        private final Context delegate;
+        private final List<Action> actions = new ArrayList<>();
+
+        private TrackingContext() {
+            this.delegate = Context.create();
+        }
+
+       @Override
+        public <T> void register(T instance) {
+            delegate.register(instance);
+            actions.add(Action.register(instance));
+        }
+
+        @Override
+        public <T> void unregister(T instance) {
+            delegate.unregister(instance);
+            actions.add(Action.unregister(instance));
+        }
+
+        @Override
+        public <T> void supply(Class<T> type, Supplier<T> supplier) {
+            delegate.supply(type, supplier);
+            actions.add(Action.supply(type, supplier));
+        }
+
+        @Override
+        public <T> Optional<T> get(Class<T> type) {
+            return delegate.get(type);
+        }
+
+        @Override
+        public <T> void register(Object classifier, T instance) {
+            delegate.register(classifier, instance);
+            actions.add(Action.register(classifier, instance));
+        }
+
+        @Override
+        public <T> void unregister(Object classifier, T instance) {
+            delegate.unregister(classifier, instance);
+            actions.add(Action.unregister(classifier, instance));
+        }
+
+        @Override
+        public <T> void supply(Object classifier, Class<T> type, Supplier<T> supplier) {
+            delegate.supply(classifier, type, supplier);
+            actions.add(Action.supply(classifier, type, supplier));
+        }
+
+        @Override
+        public <T> Optional<T> get(Object classifier, Class<T> type) {
+            return delegate.get(classifier, type);
+        }
+
+        @Override
+        public String id() {
+            return delegate.id();
+        }
+
+        void replay(Context context) {
+            actions.forEach(action -> action.replay(context));
+            actions.clear();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (!(o instanceof TrackingContext that)) {
+                return false;
+            }
+            return Objects.equals(delegate, that.delegate) && Objects.equals(actions, that.actions);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(delegate, actions);
         }
     }
 }

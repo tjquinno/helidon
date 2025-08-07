@@ -54,8 +54,9 @@ final class Http1ServerRequestWithEntity extends Http1ServerRequest {
                                  int requestId,
                                  boolean expectContinue,
                                  CountDownLatch entityReadLatch,
-                                 Supplier<BufferData> readEntityFromPipeline) {
-        super(ctx, security, prologue, headers, requestId);
+                                 Supplier<BufferData> readEntityFromPipeline,
+                                 Http1Connection.TrackingContext parentContext) {
+        super(ctx, security, prologue, headers, requestId, parentContext);
         this.ctx = ctx;
         this.connection = connection;
         this.expectContinue = expectContinue;
