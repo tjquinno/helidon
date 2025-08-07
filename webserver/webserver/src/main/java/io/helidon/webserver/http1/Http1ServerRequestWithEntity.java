@@ -24,6 +24,7 @@ import java.util.function.UnaryOperator;
 
 import io.helidon.common.LazyValue;
 import io.helidon.common.buffers.BufferData;
+import io.helidon.common.context.Context;
 import io.helidon.http.HttpPrologue;
 import io.helidon.http.ServerRequestHeaders;
 import io.helidon.http.Status;
@@ -55,8 +56,8 @@ final class Http1ServerRequestWithEntity extends Http1ServerRequest {
                                  boolean expectContinue,
                                  CountDownLatch entityReadLatch,
                                  Supplier<BufferData> readEntityFromPipeline,
-                                 Http1Connection.TrackingContext parentContext) {
-        super(ctx, security, prologue, headers, requestId, parentContext);
+                                 Supplier<Context> requestContextFactory) {
+        super(ctx, security, prologue, headers, requestId, requestContextFactory);
         this.ctx = ctx;
         this.connection = connection;
         this.expectContinue = expectContinue;

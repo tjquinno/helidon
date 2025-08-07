@@ -17,8 +17,10 @@
 package io.helidon.webserver.http1;
 
 import java.io.InputStream;
+import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
+import io.helidon.common.context.Context;
 import io.helidon.http.Headers;
 import io.helidon.http.HttpPrologue;
 import io.helidon.http.media.ReadableEntity;
@@ -31,8 +33,8 @@ class Http1ServerRequestNoEntity extends Http1ServerRequest {
                                HttpSecurity security, HttpPrologue prologue,
                                Headers headers,
                                int requestId,
-                               Http1Connection.TrackingContext parentContext) {
-        super(ctx, security, prologue, headers, requestId, parentContext);
+                               Supplier<Context> requestContextFactory) {
+        super(ctx, security, prologue, headers, requestId, requestContextFactory);
     }
 
     @Override

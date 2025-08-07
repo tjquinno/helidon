@@ -23,7 +23,6 @@ import java.util.function.Supplier;
 import io.helidon.common.LazyValue;
 import io.helidon.common.buffers.BufferData;
 import io.helidon.common.context.Context;
-import io.helidon.common.context.Contexts;
 import io.helidon.common.socket.PeerInfo;
 import io.helidon.common.uri.UriInfo;
 import io.helidon.common.uri.UriQuery;
@@ -56,13 +55,12 @@ abstract class Http1ServerRequest implements RoutingRequest {
     private final HttpSecurity security;
     private final int requestId;
     private final LazyValue<UriInfo> uriInfo = LazyValue.create(this::createUriInfo);
-    private final Http1Connection.TrackingContext trackingContext;
+    private final Supplier<Context> requestContextSupplier;
 
     private RoutedPath path;
     private WritableHeaders<?> writable;
 
     private HttpPrologue prologue;
-    private Context context;
     private String matchingPattern;
 
     Http1ServerRequest(ConnectionContext ctx,
@@ -70,13 +68,13 @@ abstract class Http1ServerRequest implements RoutingRequest {
                        HttpPrologue prologue,
                        Headers headers,
                        int requestId,
-                       Http1Connection.TrackingContext trackingContext) {
+                       Supplier<Context> requestContextSupplier) {
         this.ctx = ctx;
         this.security = security;
         this.headers = ServerRequestHeaders.create(headers);
         this.requestId = requestId;
         this.prologue = prologue;
-        this.trackingContext = trackingContext;
+        this.requestContextSupplier = requestContextSupplier;
     }
 
     /*
@@ -87,8 +85,8 @@ abstract class Http1ServerRequest implements RoutingRequest {
                                      HttpPrologue prologue,
                                      Headers headers,
                                      int requestId,
-                                     Http1Connection.TrackingContext trackingContext) {
-        return new Http1ServerRequestNoEntity(ctx, security, prologue, headers, requestId, trackingContext);
+                                     LazyValue<Context> requestContextSupplier) {
+        return new Http1ServerRequestNoEntity(ctx, security, prologue, headers, requestId, requestContextSupplier);
     }
 
     /*
@@ -106,7 +104,7 @@ abstract class Http1ServerRequest implements RoutingRequest {
                                      boolean expectContinue,
                                      CountDownLatch entityReadLatch,
                                      Supplier<BufferData> entitySupplier,
-                                     Http1Connection.TrackingContext trackingContext) {
+                                     Supplier<Context> requestContextFactory) {
         return new Http1ServerRequestWithEntity(ctx,
                                                 connection,
                                                 http1Config,
@@ -118,7 +116,7 @@ abstract class Http1ServerRequest implements RoutingRequest {
                                                 expectContinue,
                                                 entityReadLatch,
                                                 entitySupplier,
-                                                trackingContext);
+                                                requestContextFactory);
     }
 
     @Override
@@ -143,16 +141,7 @@ abstract class Http1ServerRequest implements RoutingRequest {
 
     @Override
     public Context context() {
-        if (context == null) {
-            context = Contexts.context().orElseGet(() -> Context.builder()
-                    .parent(ctx.listenerContext().context())
-                    .id("[" + serverSocketId() + " " + socketId() + "] http/1.1: " + requestId)
-                    .build());
-            if (trackingContext != null) {
-                trackingContext.replay(context);
-            }
-        }
-        return context;
+        return requestContextSupplier.get();
     }
 
     @Override

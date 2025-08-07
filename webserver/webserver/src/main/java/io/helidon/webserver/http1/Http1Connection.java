@@ -20,15 +20,14 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.function.Supplier;
 
+import io.helidon.common.LazyValue;
 import io.helidon.common.ParserHelper;
 import io.helidon.common.buffers.BufferData;
 import io.helidon.common.buffers.DataReader;
@@ -37,6 +36,7 @@ import io.helidon.common.concurrency.limits.FixedLimit;
 import io.helidon.common.concurrency.limits.Limit;
 import io.helidon.common.concurrency.limits.LimitAlgorithm;
 import io.helidon.common.context.Context;
+import io.helidon.common.context.Contexts;
 import io.helidon.common.mapper.MapperException;
 import io.helidon.common.task.InterruptableTask;
 import io.helidon.common.tls.TlsUtils;
@@ -210,9 +210,8 @@ public class Http1Connection implements ServerConnection, InterruptableTask<Void
                     }
                 }
 
-                TrackingContext listenerContext = new TrackingContext();
-
-                Optional<LimitAlgorithm.Token> token = limit.tryAcquire(true, () -> listenerContext);
+                LazyValue<Context> requestContextSupplier = LazyValue.create(() -> requestContext(ctx,  requestId++));
+                Optional<LimitAlgorithm.Token> token = limit.tryAcquire(true, requestContextSupplier);
 
                 if (token.isEmpty()) {
                     ctx.log(LOGGER, TRACE, "Too many concurrent requests, rejecting request and closing connection.");
@@ -227,7 +226,7 @@ public class Http1Connection implements ServerConnection, InterruptableTask<Void
 
                     try {
                         this.lastRequestTimestamp = DateTime.timestamp();
-                        route(prologue, headers, limit, listenerContext);
+                        route(prologue, headers, limit, requestContextSupplier);
                         permit.success();
                         this.lastRequestTimestamp = DateTime.timestamp();
                     } catch (Throwable e) {
@@ -295,6 +294,13 @@ public class Http1Connection implements ServerConnection, InterruptableTask<Void
     void reset() {
         currentEntitySize = 0;
         currentEntitySizeRead = 0;
+    }
+
+    static Context requestContext(ConnectionContext ctx, Integer requestId) {
+        return Contexts.context().orElseGet(() -> Context.builder()
+                .parent(ctx.listenerContext().context())
+                .id("[" + ctx.socketId() + " " + ctx.socketId() + "] http/1.1: " + requestId)
+                .build());
     }
 
     /**
@@ -508,7 +514,7 @@ public class Http1Connection implements ServerConnection, InterruptableTask<Void
     private void route(HttpPrologue prologue,
                        WritableHeaders<?> headers,
                        Limit limit,
-                       TrackingContext listenerContext) {
+                       LazyValue<Context> requestContextSupplier) {
         EntityStyle entity = EntityStyle.NONE;
 
         if (headers.contains(HeaderValues.TRANSFER_ENCODING_CHUNKED)) {
@@ -535,7 +541,10 @@ public class Http1Connection implements ServerConnection, InterruptableTask<Void
                         .build();
             }
         }
-        requestId++;
+        if (!requestContextSupplier.isLoaded()) {
+            requestId++;
+            requestContextSupplier = LazyValue.create(() -> requestContext(ctx, requestId));
+        }
 
         if (entity == EntityStyle.NONE) {
             Http1ServerRequest request = Http1ServerRequest.create(ctx,
@@ -543,7 +552,7 @@ public class Http1Connection implements ServerConnection, InterruptableTask<Void
                                                                    prologue,
                                                                    headers,
                                                                    requestId,
-                                                                   listenerContext);
+                                                                   requestContextSupplier);
 
             Http1ServerResponse response = new Http1ServerResponse(ctx,
                                                                    sendListener,
@@ -612,7 +621,7 @@ public class Http1Connection implements ServerConnection, InterruptableTask<Void
                                                                expectContinue,
                                                                entityReadLatch,
                                                                () -> this.readEntityFromPipeline(prologue, headers),
-                                                               listenerContext);
+                                                               requestContextSupplier);
         Http1ServerResponse response = new Http1ServerResponse(ctx,
                                                                sendListener,
                                                                writer,
@@ -775,82 +784,4 @@ public class Http1Connection implements ServerConnection, InterruptableTask<Void
         }
     }
 
-    static class TrackingContext implements Context {
-
-        private final Context delegate;
-        private final List<Action> actions = new ArrayList<>();
-
-        private TrackingContext() {
-            this.delegate = Context.create();
-        }
-
-       @Override
-        public <T> void register(T instance) {
-            delegate.register(instance);
-            actions.add(Action.register(instance));
-        }
-
-        @Override
-        public <T> void unregister(T instance) {
-            delegate.unregister(instance);
-            actions.add(Action.unregister(instance));
-        }
-
-        @Override
-        public <T> void supply(Class<T> type, Supplier<T> supplier) {
-            delegate.supply(type, supplier);
-            actions.add(Action.supply(type, supplier));
-        }
-
-        @Override
-        public <T> Optional<T> get(Class<T> type) {
-            return delegate.get(type);
-        }
-
-        @Override
-        public <T> void register(Object classifier, T instance) {
-            delegate.register(classifier, instance);
-            actions.add(Action.register(classifier, instance));
-        }
-
-        @Override
-        public <T> void unregister(Object classifier, T instance) {
-            delegate.unregister(classifier, instance);
-            actions.add(Action.unregister(classifier, instance));
-        }
-
-        @Override
-        public <T> void supply(Object classifier, Class<T> type, Supplier<T> supplier) {
-            delegate.supply(classifier, type, supplier);
-            actions.add(Action.supply(classifier, type, supplier));
-        }
-
-        @Override
-        public <T> Optional<T> get(Object classifier, Class<T> type) {
-            return delegate.get(classifier, type);
-        }
-
-        @Override
-        public String id() {
-            return delegate.id();
-        }
-
-        void replay(Context context) {
-            actions.forEach(action -> action.replay(context));
-            actions.clear();
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (!(o instanceof TrackingContext that)) {
-                return false;
-            }
-            return Objects.equals(delegate, that.delegate) && Objects.equals(actions, that.actions);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(delegate, actions);
-        }
-    }
 }
