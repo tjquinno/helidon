@@ -87,8 +87,8 @@ abstract class Http1ServerRequest implements RoutingRequest {
                                      HttpPrologue prologue,
                                      Headers headers,
                                      int requestId,
-                                     Http1Connection.TrackingContext parentContext) {
-        return new Http1ServerRequestNoEntity(ctx, security, prologue, headers, requestId, parentContext);
+                                     Http1Connection.TrackingContext trackingContext) {
+        return new Http1ServerRequestNoEntity(ctx, security, prologue, headers, requestId, trackingContext);
     }
 
     /*
@@ -106,7 +106,7 @@ abstract class Http1ServerRequest implements RoutingRequest {
                                      boolean expectContinue,
                                      CountDownLatch entityReadLatch,
                                      Supplier<BufferData> entitySupplier,
-                                     Http1Connection.TrackingContext parentContext) {
+                                     Http1Connection.TrackingContext trackingContext) {
         return new Http1ServerRequestWithEntity(ctx,
                                                 connection,
                                                 http1Config,
@@ -118,7 +118,7 @@ abstract class Http1ServerRequest implements RoutingRequest {
                                                 expectContinue,
                                                 entityReadLatch,
                                                 entitySupplier,
-                                                parentContext);
+                                                trackingContext);
     }
 
     @Override
@@ -148,7 +148,9 @@ abstract class Http1ServerRequest implements RoutingRequest {
                     .parent(ctx.listenerContext().context())
                     .id("[" + serverSocketId() + " " + socketId() + "] http/1.1: " + requestId)
                     .build());
-            trackingContext.replay(context);
+            if (trackingContext != null) {
+                trackingContext.replay(context);
+            }
         }
         return context;
     }
