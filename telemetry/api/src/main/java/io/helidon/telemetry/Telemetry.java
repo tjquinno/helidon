@@ -16,9 +16,10 @@
 
 package io.helidon.telemetry;
 
+import java.util.Optional;
+
 import io.helidon.common.config.NamedService;
 import io.helidon.service.registry.Service;
-import io.helidon.tracing.Tracer;
 
 /**
  * Contract for a telemetry implementation.
@@ -26,10 +27,56 @@ import io.helidon.tracing.Tracer;
 @Service.Contract
 public interface Telemetry extends NamedService {
 
+//    /**
+//     * Provides the {@link io.helidon.tracing.Tracer} initialized in this telemetry instance.
+//     *
+//     * @return tracer
+//     */
+//    Tracer tracer();
+
     /**
-     * The tracer initialized in this telemetry instance.
+     * Returns the signal of the requested type, if present.
      *
-     * @return tracer
+     * @param signalType type of signal (e.g, {@code Tracing}
+     * @return the {@link io.helidon.telemetry.Telemetry.Signal} of the type
+     * @param <T> type of the signal
      */
-    Tracer tracer();
+    <T> Optional<T> signal(Class<T> signalType);
+
+    /**
+     * Shuts down telemetry.
+     */
+    void close();
+
+    /**
+     * Abstraction of a telemetry signal type for a particular Helidon signal technology (e.g., tracing).
+     *
+     * @param <T> type of Helidon signal manifestation (e.g., {@code io.helidon.tracing.Tracer}) exposed by this signal
+     */
+    interface Signal<T> {
+
+        /**
+         * Returns an instance of the signal's Helidon signal manifestation.
+         *
+         * @param name name to assign to the new signal manifestation
+         * @return new signal manifestation
+         */
+        T get(String name);
+
+        /**
+         * Returns an instance of the signal's Helidon signal manifestation.
+         *
+         * @param name name to assign to the new signal manifestation
+         * @param version version to associate with the new signal manifestation
+         * @return new signal manifestation
+         */
+        default T get(String name, String version) {
+            return get(name);
+        }
+
+        /**
+         * Performs any clean-up related to the telemetry signal.
+         */
+        void close();
+    }
 }

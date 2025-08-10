@@ -46,7 +46,7 @@ class TestOtelConfigViaHelidonConfig {
                       protocol: http""";
 
         Config config = Config.just(ConfigSources.create(yaml, MediaTypes.APPLICATION_YAML));
-        OpenTelemetryConfig otelConfig = OpenTelemetryConfig.create(config);
+//        OpenTelemetryConfig otelConfig = OpenTelemetryConfig.create(config);
 
 
 

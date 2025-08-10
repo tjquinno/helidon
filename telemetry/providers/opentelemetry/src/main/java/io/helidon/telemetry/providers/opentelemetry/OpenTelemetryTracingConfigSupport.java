@@ -16,32 +16,22 @@
 
 package io.helidon.telemetry.providers.opentelemetry;
 
-import java.util.Optional;
-
-import io.helidon.builder.api.Option;
 import io.helidon.builder.api.Prototype;
-/**
- * Tracing sampler settings.
- */
-@Prototype.Blueprint
-@Prototype.Configured
-interface SamplerConfigBlueprint {
+import io.helidon.common.LazyValue;
 
-    /**
-     * Sampler type.
-     *
-     * @return sampler type
-     */
-    @Option.Configured
-    @Option.Default(SamplerType.DEFAULT_NAME)
-    SamplerType type();
+import io.opentelemetry.sdk.trace.samplers.Sampler;
 
-    /**
-     * Sampler parameter.
-     *
-     * @return sampler parameter
-     */
-    @Option.Configured
-    Optional<Number> param();
+class OpenTelemetryTracingConfigSupport {
+
+    static class BuilderDecorator implements Prototype.BuilderDecorator<OpenTelemetryTracingConfig.BuilderBase<?, ?>> {
+
+        private static final LazyValue<Sampler> DEFAULT_SAMPLER = LazyValue.create(() -> Sampler.parentBased(Sampler.alwaysOn()));
+
+        @Override
+        public void decorate(OpenTelemetryTracingConfig.BuilderBase<?, ?> target) {
+
+        }
+
+    }
 
 }

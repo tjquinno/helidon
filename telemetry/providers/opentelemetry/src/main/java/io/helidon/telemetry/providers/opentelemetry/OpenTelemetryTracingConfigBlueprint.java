@@ -20,19 +20,19 @@ import java.util.Optional;
 
 import io.helidon.builder.api.Option;
 import io.helidon.builder.api.Prototype;
-import io.helidon.common.config.Config;
-import io.helidon.telemetry.TelemetryTracerConfig;
-import io.helidon.tracing.spi.TracerProvider;
+import io.helidon.telemetry.providers.opentelemetry.spi.OpenTelemetrySignalProvider;
 
+import io.opentelemetry.sdk.trace.SdkTracerProvider;
+import io.opentelemetry.sdk.trace.SpanLimits;
 import io.opentelemetry.sdk.trace.samplers.Sampler;
 
 /**
  * OpenTelemetry tracer settings.
  */
-@Prototype.Configured
-@Prototype.Blueprint(decorator = OpenTelemetryTracerConfigSupport.BuilderDecorator.class)
-//@Prototype.Provides(TracerProvider.class)
-interface OpenTelemetryTracerConfigBlueprint extends TelemetryTracerConfig {
+@Prototype.Configured(value = OpenTelemetryTracing.TYPE, root = false)
+@Prototype.Blueprint(decorator = OpenTelemetryTracingConfigSupport.BuilderDecorator.class)
+@Prototype.Provides(OpenTelemetrySignalProvider.class)
+interface OpenTelemetryTracingConfigBlueprint extends Prototype.Factory<OpenTelemetryTracing> {
 
     @Prototype.FactoryMethod
     static Sampler createSampler(SamplerConfig samplerConfig) {
@@ -52,11 +52,26 @@ interface OpenTelemetryTracerConfigBlueprint extends TelemetryTracerConfig {
         };
     }
 
-//    @Prototype.FactoryMethod
-//    static Sampler createSampler(Config config) {
-//        SamplerConfig samplerConfig = SamplerConfig.create(config);
-//
-//    }
+    @Prototype.FactoryMethod
+    static SpanLimits createSpanLimits(SpanLimitsConfig config) {
+        var builder = SpanLimits.builder();
+
+        config.maxAttributes().ifPresent(builder::setMaxNumberOfAttributes);
+        config.maxAttributeValueLength().ifPresent(builder::setMaxAttributeValueLength);
+        config.maxEvents().ifPresent(builder::setMaxNumberOfEvents);
+        config.maxLinks().ifPresent(builder::setMaxNumberOfLinks);
+        config.maxAttributeValueLength().ifPresent(builder::setMaxAttributeValueLength);
+
+        return builder.build();
+    }
+
+    /**
+     * Name of this instance.
+     *
+     * @return name of the instance
+     */
+    @Option.Default(OpenTelemetryTracing.TYPE)
+    String name();
 
     /**
      * Tracing sampler
@@ -64,7 +79,22 @@ interface OpenTelemetryTracerConfigBlueprint extends TelemetryTracerConfig {
      * @return tracing sampler
      */
     @Option.Configured()
-//    @Option.Decorator(OpenTelemetryTracerConfigSupport.SamplerConfigDecorator.class)
     Optional<Sampler> sampler();
+
+    /**
+     * Tracing span limits.
+     *
+     * @return tracing span limits
+     */
+    @Option.Configured
+    Optional<SpanLimits> spanLimits();
+
+    /**
+     * OTel tracer provider prepared using these configuration settings.
+     *
+     * @return tracer provider
+     */
+    @Option.Access("")
+    Optional<SdkTracerProvider> tracerProvider();
 
 }

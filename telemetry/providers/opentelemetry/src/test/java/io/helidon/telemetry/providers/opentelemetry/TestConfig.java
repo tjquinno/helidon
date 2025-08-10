@@ -23,7 +23,6 @@ import io.helidon.config.ConfigSources;
 import io.opentelemetry.api.baggage.propagation.W3CBaggagePropagator;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.extension.trace.propagation.JaegerPropagator;
-import io.opentelemetry.sdk.trace.SdkTracerProvider;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -39,17 +38,18 @@ class TestConfig {
     @ParameterizedTest
     @ValueSource(strings = {
             "[\"tracecontext\",\"baggage\",\"jaeger\"]", // list of strings--a node list
-            "tracecontext,baggage,jaeger"})              // one node with a comma-separated list
+            "tracecontext,baggage,jaeger"})
+        // one node with a comma-separated list
     void testSimpleConfig(String propagatorsValue) {
 
         Config config = Config.just(ConfigSources
                                             .create(String.format("""
-                                                            telemetry:
-                                                              service: "test-otel"
-                                                              enabled: false
-                                                              global: true
-                                                              propagators: %s
-                                                            """, propagatorsValue),
+                                                                          telemetry:
+                                                                            service: "test-otel"
+                                                                            enabled: false
+                                                                            global: true
+                                                                            propagators: %s
+                                                                          """, propagatorsValue),
                                                     MediaTypes.APPLICATION_YAML));
 
         OpenTelemetry openTelemetry = OpenTelemetry.builder().config(config.get("telemetry")).build();
@@ -81,6 +81,34 @@ class TestConfig {
                                                             """,
                                                     MediaTypes.APPLICATION_YAML));
 
-//        SdkTracerProvider tracerProvider = OpenTelemetryTracerConfig.builder().config(config.get("tracer"));
+        //        SdkTracerProvider tracerProvider = OpenTelemetryTracerConfig.builder().config(config.get("tracer"));
+    }
+
+    @Test
+    void testTelemetryWithTracer() {
+        Config config = Config.just(ConfigSources.create(
+                """
+                        telemetry:
+                          service: "test-otel"
+                          enabled: false
+                          global: true
+                          signals:
+                            tracing:
+                              sampler:
+                                type: "always-on"
+                        """,
+                MediaTypes.APPLICATION_YAML));
+
+        OpenTelemetry openTelemetry = OpenTelemetry.builder().config(config.get("telemetry")).build();
+
+        assertThat("Helidon OpenTelemetry", openTelemetry, notNullValue());
+        assertThat("Propagators",
+                   openTelemetry.prototype().propagators(),
+                   hasItems(instanceOf(W3CBaggagePropagator.class),
+                            instanceOf(W3CTraceContextPropagator.class)));
+
+        assertThat("Service name", openTelemetry.prototype().service(), is("test-otel"));
+        assertThat("Enabled", openTelemetry.prototype().enabled(), is(false));
+        assertThat("Global", openTelemetry.prototype().global(), is(true));
     }
 }

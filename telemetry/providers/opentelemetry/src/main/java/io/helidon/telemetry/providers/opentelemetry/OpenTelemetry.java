@@ -16,6 +16,7 @@
 
 package io.helidon.telemetry.providers.opentelemetry;
 
+import java.util.Optional;
 import java.util.function.Consumer;
 
 import io.helidon.builder.api.RuntimeType;
@@ -45,11 +46,6 @@ public class OpenTelemetry implements Telemetry, RuntimeType.Api<OpenTelemetryCo
 
 
     @Override
-    public Tracer tracer() {
-        return null;
-    }
-
-    @Override
     public String name() {
         return config.service();
     }
@@ -62,5 +58,18 @@ public class OpenTelemetry implements Telemetry, RuntimeType.Api<OpenTelemetryCo
     @Override
     public OpenTelemetryConfig prototype() {
         return config;
+    }
+
+    @Override
+    public void close() {
+        config.signals().forEach(Telemetry.Signal::close);
+    }
+
+    @Override
+    public <T> Optional<T> signal(Class<T> signalType) {
+        return config.signals().stream()
+                .filter(signalType::isInstance)
+                .map(signalType::cast)
+                .findFirst();
     }
 }

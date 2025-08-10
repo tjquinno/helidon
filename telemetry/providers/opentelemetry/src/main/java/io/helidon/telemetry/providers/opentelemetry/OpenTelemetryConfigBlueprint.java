@@ -17,14 +17,13 @@
 package io.helidon.telemetry.providers.opentelemetry;
 
 import java.util.List;
-import java.util.Optional;
 
 import io.helidon.builder.api.Option;
 import io.helidon.builder.api.Prototype;
 import io.helidon.telemetry.TelemetryConfig;
+import io.helidon.telemetry.providers.opentelemetry.spi.OpenTelemetrySignalProvider;
 import io.helidon.telemetry.spi.TelemetryProvider;
 
-import io.opentelemetry.api.trace.TracerProvider;
 import io.opentelemetry.context.propagation.TextMapPropagator;
 
 /**
@@ -34,6 +33,7 @@ import io.opentelemetry.context.propagation.TextMapPropagator;
 @Prototype.Configured("telemetry")
 @Prototype.CustomMethods(OpenTelemetryConfigSupport.CustomMethods.class)
 @Prototype.Provides(TelemetryProvider.class)
+//@Prototype.RegistrySupport
 interface OpenTelemetryConfigBlueprint extends TelemetryConfig, Prototype.Factory<OpenTelemetry> {
 
     //    /**
@@ -76,11 +76,14 @@ interface OpenTelemetryConfigBlueprint extends TelemetryConfig, Prototype.Factor
     List<TextMapPropagator> propagators();
 
     /**
-     * OpenTelemetry tracer provider, either explicitly set by the app or derived from the tracer config.
+     * OpenTelemetry signals (e.g., tracing) and, for each, signal-specific settings.
      *
-     * @return tracer provider
+     * @return signals
      */
+    @SuppressWarnings("rawtypes")
     @Option.Configured
-    Optional<TracerProvider> tracerProvider();
+//    @Option.RegistryService
+    @Option.Provider(value = OpenTelemetrySignalProvider.class)
+    List<OpenTelemetrySignal> signals();
 
 }

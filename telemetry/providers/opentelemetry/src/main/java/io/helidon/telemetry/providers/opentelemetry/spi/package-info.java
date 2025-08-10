@@ -13,35 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package io.helidon.telemetry.providers.opentelemetry;
-
-import java.util.Optional;
-
-import io.helidon.builder.api.Option;
-import io.helidon.builder.api.Prototype;
 /**
- * Tracing sampler settings.
+ * SPIs related to the OpenTelemetry implementation of Helidon telemetry.
  */
-@Prototype.Blueprint
-@Prototype.Configured
-interface SamplerConfigBlueprint {
-
-    /**
-     * Sampler type.
-     *
-     * @return sampler type
-     */
-    @Option.Configured
-    @Option.Default(SamplerType.DEFAULT_NAME)
-    SamplerType type();
-
-    /**
-     * Sampler parameter.
-     *
-     * @return sampler parameter
-     */
-    @Option.Configured
-    Optional<Number> param();
-
-}
+package io.helidon.telemetry.providers.opentelemetry.spi;

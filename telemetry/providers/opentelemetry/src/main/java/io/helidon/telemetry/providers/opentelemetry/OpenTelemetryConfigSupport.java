@@ -51,12 +51,16 @@ class OpenTelemetryConfigSupport {
                         TextMapPropagator.composite(target.propagators())));
             }
 
-            target.tracerProvider()
-                    .filter(tracerProvider -> tracerProvider instanceof SdkTracerProvider sdkTracerProvider)
-                    .map(tracerProvider -> (SdkTracerProvider) tracerProvider)
-                    .ifPresent(openTelemetrySdkBuilder::setTracerProvider);
+            target.signals().forEach(signal -> signal.update(openTelemetrySdkBuilder));
 
-            openTelemetrySdkBuilder.build();
+//            target.tracerProvider()
+//                    .filter(tracerProvider -> tracerProvider instanceof SdkTracerProvider sdkTracerProvider)
+//                    .map(tracerProvider -> (SdkTracerProvider) tracerProvider)
+//                    .ifPresent(openTelemetrySdkBuilder::setTracerProvider);
+
+            var sdk = openTelemetrySdkBuilder.build();
+
+            target.signals().forEach(signal -> signal.processSdk(sdk));
         }
 
     }
@@ -99,7 +103,7 @@ class OpenTelemetryConfigSupport {
          */
         @Prototype.FactoryMethod
         static TracerProvider createTracerProvider(Config config) {
-            OpenTelemetryTracerConfig tracerConfig = OpenTelemetryTracerConfig.create(config);
+            OpenTelemetryTracingConfig tracerConfig = OpenTelemetryTracingConfig.create(config);
 
             SdkTracerProviderBuilder builder = SdkTracerProvider.builder();
 

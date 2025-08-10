@@ -13,6 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import io.helidon.telemetry.providers.opentelemetry.spi.OpenTelemetrySignalProvider;
+
 /**
  * OpenTelemetry implementation for telemetry.
  */
@@ -35,4 +38,13 @@ module io.helidon.telemetry.providers.opentelemetry {
     requires zipkin2;
     requires zipkin2.reporter;
     requires io.opentelemetry.exporter.zipkin;
+    requires io.helidon.tracing.providers.opentelemetry;
+
+    exports io.helidon.telemetry.providers.opentelemetry;
+    exports io.helidon.telemetry.providers.opentelemetry.spi;
+
+    uses io.helidon.telemetry.providers.opentelemetry.spi.OpenTelemetrySignalProvider;
+
+    provides io.helidon.telemetry.providers.opentelemetry.spi.OpenTelemetrySignalProvider
+        with io.helidon.telemetry.providers.opentelemetry.OpenTelemetryTracingProvider;
 }
