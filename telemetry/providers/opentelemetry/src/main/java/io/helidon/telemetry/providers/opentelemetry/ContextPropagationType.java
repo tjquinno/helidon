@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
-package io.helidon.tracing.providers.opentelemetry;
+package io.helidon.telemetry.providers.opentelemetry;
 
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import io.helidon.common.config.Config;
 
@@ -33,7 +35,7 @@ import io.opentelemetry.extension.trace.propagation.OtTracePropagator;
 /**
  * Known OpenTelemetry trace context propagation formats.
  */
-public enum ContextPropagation {
+enum ContextPropagationType {
 
     /**
      * W3C trace context propagation.
@@ -44,11 +46,6 @@ public enum ContextPropagation {
      * W3C baggage propagation.
      */
     BAGGAGE("baggage", W3CBaggagePropagator::getInstance),
-
-    /**
-     * Shorthand for both W3C propagators ({@code tracecontext} and {@code baggage}).
-     */
-    W3C("w3c", List.of( W3CTraceContextPropagator::getInstance, W3CBaggagePropagator::getInstance)),
 
     /**
      * Zipkin B3 trace context propagation using a single header.
@@ -70,19 +67,19 @@ public enum ContextPropagation {
      */
     OT_TRACE("ottrace", OtTracePropagator::getInstance);
 
-    static final String DEFAULT_STRING = "w3c";
-    static final EnumSet<ContextPropagation> DEFAULT = EnumSet.of(TRACE_CONTEXT, BAGGAGE);
+    static final String DEFAULT_NAMES = "tracecontext,baggage";
+
+    static final List<ContextPropagationType> DEFAULT = List.of(TRACE_CONTEXT, BAGGAGE);
+    static final List<TextMapPropagator> DEFAULT_PROPAGATORS = DEFAULT.stream()
+            .map(ContextPropagationType::propagator)
+            .collect(Collectors.toCollection(ArrayList::new)); // Used as the config default so must be writeable.
 
     private final String format;
-    private final List<Supplier<TextMapPropagator>> propagatorSuppliers;
+    private final Supplier<TextMapPropagator> propagatorSupplier;
 
-    ContextPropagation(String format, Supplier<TextMapPropagator> propagatorSupplier) {
-        this(format, List.of(propagatorSupplier));
-    }
-
-    ContextPropagation(String format, List<Supplier<TextMapPropagator>> propagatorSuppliers) {
+    ContextPropagationType(String format, Supplier<TextMapPropagator> propagatorSupplier) {
         this.format = format;
-        this.propagatorSuppliers = propagatorSuppliers;
+        this.propagatorSupplier = propagatorSupplier;
     }
 
     /**
@@ -92,10 +89,10 @@ public enum ContextPropagation {
      * @param configNode config node to map
      * @return {@code PropagationFormat} value corresponding to the config node
      */
-    static ContextPropagation from(Config configNode) {
+    static ContextPropagationType from(Config configNode) {
         return configNode.asString()
-                .as(ContextPropagation::from)
-                .orElseGet(() -> configNode.as(ContextPropagation.class).orElseThrow());
+                .as(ContextPropagationType::from)
+                .orElseGet(() -> configNode.as(ContextPropagationType.class).orElseThrow());
     }
 
     /**
@@ -105,8 +102,8 @@ public enum ContextPropagation {
      * @param value string to convert
      * @return {@code PropagationFormat} value corresponding to the provided string
      */
-    static ContextPropagation from(String value) {
-        for (ContextPropagation contextPropagation : ContextPropagation.values()) {
+    static ContextPropagationType from(String value) {
+        for (ContextPropagationType contextPropagation : ContextPropagationType.values()) {
             if (contextPropagation.format.equals(value) || contextPropagation.name().equals(value)) {
                 return contextPropagation;
             }
@@ -114,12 +111,10 @@ public enum ContextPropagation {
         throw new IllegalArgumentException("Unknown propagation format: "
                                                    + value
                                                    + "; expected one or more of "
-                                                   + Arrays.toString(ContextPropagation.values()));
+                                                   + Arrays.toString(ContextPropagationType.values()));
     }
 
-    List<TextMapPropagator> propagators() {
-        return propagatorSuppliers.stream()
-                .map(Supplier::get)
-                .toList();
+    TextMapPropagator propagator() {
+        return propagatorSupplier.get();
     }
 }

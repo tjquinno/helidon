@@ -709,6 +709,18 @@
                 <version>${helidon.version}</version>
             </dependency>
 
+            <!-- telemetry -->
+            <dependency>
+                <groupId>io.helidon.telemetry</groupId>
+                <artifactId>helidon-telemetry-api</artifactId>
+                <version>${helidon.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.helidon.telemetry.providers</groupId>
+                <artifactId>helidon-telemetry-providers-opentelemetry</artifactId>
+                <version>${helidon.version}</version>
+            </dependency>
+
             <!-- tracing -->
             <dependency>
                 <!-- to add tracer builder -->

@@ -32,14 +32,14 @@ class TestOtelConfigViaHelidonConfig {
     @Test
     void testOtlpHttpSpanExporter() {
         var yaml = """
+                service: "test-tracing"
+                propagation: ["tracecontext","b3"]
                 tracing:
-                  service: "test-tracing"
-                  propagation: ["tracecontext","b3"]
-                  span-processors:
-                    - exporter-name: "@default"
-                    - exporter-name: test-zipkin-exporter
-                  span-exporters:
-                    - exporter-protocol: http/protobuf
+                  processors:
+                    - name: "@default"
+                    - exporter: test-zipkin-exporter
+                  exporters:
+                    - protocol: http/protobuf
                       compression: gzip
                     - type: zipkin
                       name: test-zipkin-exporter

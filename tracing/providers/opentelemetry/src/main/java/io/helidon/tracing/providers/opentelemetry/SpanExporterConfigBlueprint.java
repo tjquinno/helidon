@@ -31,7 +31,7 @@ import io.opentelemetry.sdk.trace.export.SpanExporter;
  * of the settings.
  */
 @Prototype.Blueprint
-@Prototype.Configured("span-exporters")
+@Prototype.Configured("exporters")
 @Prototype.CustomMethods(SpanExporterConfigSupport.class)
 interface SpanExporterConfigBlueprint {
 

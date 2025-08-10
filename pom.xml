@@ -242,6 +242,7 @@
         <module>testing</module>
         <module>declarative</module>
         <module>discovery</module>
+        <module>telemetry</module>
     </modules>
 
     <build>

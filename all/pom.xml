@@ -532,6 +532,14 @@
             <artifactId>helidon-dbclient-tracing</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.helidon.telemetry</groupId>
+            <artifactId>helidon-telemetry-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.helidon.telemetry.providers</groupId>
+            <artifactId>helidon-telemetry-providers-opentelemetry</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.helidon.tracing</groupId>
             <artifactId>helidon-tracing</artifactId>
         </dependency>

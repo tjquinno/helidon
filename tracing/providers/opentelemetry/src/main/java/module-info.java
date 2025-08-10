@@ -20,6 +20,7 @@
 @SuppressWarnings({ "requires-automatic", "requires-transitive-automatic" })
 module io.helidon.tracing.providers.opentelemetry {
     requires io.helidon.config;
+    requires io.helidon.telemetry.api;
     requires io.opentelemetry.context;
     requires io.opentelemetry.extension.trace.propagation;
     requires io.opentelemetry.sdk;
@@ -38,7 +39,6 @@ module io.helidon.tracing.providers.opentelemetry {
     requires static io.opentelemetry.exporter.zipkin;
     requires static io.opentelemetry.exporter.logging;
     requires static io.opentelemetry.exporter.logging.otlp;
-
 
     exports io.helidon.tracing.providers.opentelemetry;
 

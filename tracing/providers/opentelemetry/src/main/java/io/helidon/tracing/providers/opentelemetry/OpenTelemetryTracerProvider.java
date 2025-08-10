@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import io.helidon.common.LazyValue;
 import io.helidon.common.Weight;
 import io.helidon.common.Weighted;
+import io.helidon.common.config.Config;
 import io.helidon.common.context.Context;
 import io.helidon.common.context.Contexts;
 import io.helidon.tracing.Span;
@@ -125,6 +126,16 @@ public class OpenTelemetryTracerProvider implements TracerProvider {
         // Create the span directly with the retrieved baggage. Ideally, it will be our writable baggage because we had put it
         // there in the context.
         return Optional.of(HelidonOpenTelemetry.create(otelSpan, otelBaggage));
+    }
+
+    @Override
+    public String configKey() {
+        return "tracing";
+    }
+
+    @Override
+    public Tracer create(Config config, String name) {
+        return createBuilder().config(config).serviceName(name).build();
     }
 
     @Override

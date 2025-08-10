@@ -172,7 +172,7 @@ The link:{tracing-otel-provider-javadoc-base-url}/io/helidon/tracing/providers/o
 
 .Enabling OpenTelemetry Objects for `SpanListener` Support
 |====
-| `HelidonOpenTelemetry` method | Return value
+| `OpenTelemetry` method | Return value
 
 | link:{tracing-otel-provider-javadoc-base-url}/io/helidon/tracing/providers/opentelemetry/HelidonOpenTelemetry.html#callbackEnabledFrom(io.helidon.tracing.Tracer)[`Tracer callbackEnabledFrom(helidonTracer)`] | Callback-enabled OpenTelemetry `Tracer` corresponding to the specified Helidon `Tracer`.
 | link:{tracing-otel-provider-javadoc-base-url}/io/helidon/tracing/providers/opentelemetry/HelidonOpenTelemetry.html#callbackEnabledFrom(io.opentelemetry.api.trace.Tracer)[ `Tracer callbackEnabledFrom(otelTracer)`] | Callback-enabled OpenTelemetry `Tracer` for the specified OpenTelemetry `Tracer`.

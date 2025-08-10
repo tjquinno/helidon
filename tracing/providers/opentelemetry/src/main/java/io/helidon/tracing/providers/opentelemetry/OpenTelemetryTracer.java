@@ -121,6 +121,16 @@ class OpenTelemetryTracer implements Tracer {
         return Collections.unmodifiableList(spanListeners);
     }
 
+    @Override
+    public String name() {
+        return "otel";
+    }
+
+    @Override
+    public String type() {
+        return "otel";
+    }
+
     private static class Getter implements TextMapGetter<HeaderProvider> {
         @Override
         public Iterable<String> keys(HeaderProvider headerProvider) {

@@ -45,7 +45,7 @@ import io.opentelemetry.sdk.trace.samplers.Sampler;
 import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
 
 /**
- * Prepares OpenTelemetry using the Helidon {@code tracing} configuration abstractions.
+ * Prepares OpenTelemetry tracing using the Helidon {@code tracing} configuration abstractions.
  * <p>
  * OpenTelemetry comprises multiple technologies (e.g., tracing, logging, metrics). The settings which this class manages apply
  * primarily to tracing, although the {@link io.opentelemetry.api.OpenTelemetry} object applies implicitly to all OTel
@@ -844,7 +844,7 @@ public class OpenTelemetryTracerBuilder implements TracerBuilder<OpenTelemetryTr
 
     private Iterable<TextMapPropagator> propagators() {
         return contextPropagations.stream()
-                .map(ContextPropagation::propagator)
+                .flatMap(cp -> cp.propagators().stream())
                 .toList();
     }
 

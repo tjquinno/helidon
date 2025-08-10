@@ -14,42 +14,45 @@
  * limitations under the License.
  */
 
-package io.helidon.tracing.providers.opentelemetry;
+package io.helidon.telemetry;
 
-import java.util.List;
+import java.util.Optional;
 
 import io.helidon.builder.api.Option;
 import io.helidon.builder.api.Prototype;
+import io.helidon.telemetry.spi.TelemetryProvider;
+import io.helidon.tracing.Tracer;
 
 /**
- * OpenTelemetry settings.
+ * Common configuration settings for telemetry.
  */
+@Prototype.Configured(value = "telemetry")
 @Prototype.Blueprint
-@Prototype.Configured("otel")
-@Prototype.CustomMethods(OpenTelemetryConfigSupport.class)
-interface OpenTelemetryConfigBlueprint {
+interface TelemetryConfigBlueprint /* extends Prototype.Factory<Telemetry> */ {
 
+    /**
+     * Telemetry service name reported to back ends.
+     *
+     * @return service name
+     */
     @Option.Configured
-    @Option.DefaultBoolean(true)
-    boolean global();
+    String service();
 
+    /**
+     * Whether telemetry is enabled.
+     *
+     * @return true if telemetry is enabled; false otherwise
+     */
     @Option.Configured
     @Option.DefaultBoolean(true)
     boolean enabled();
 
-    @Option.Configured
-    @Option.Required
-    String serviceName();
-
-
     /**
-     * Propagation types.
+     * The tracer used by telemetry.
      *
-     * @return propagation types
+     * @return tracer
      */
-    @Option.Singular
-    List<ContextPropagation> propagations();
-
     @Option.Configured
-    TracingConfig tracing();
+    Optional<Tracer> tracer();
+
 }

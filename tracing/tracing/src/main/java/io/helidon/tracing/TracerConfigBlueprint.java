@@ -14,8 +14,37 @@
  * limitations under the License.
  */
 
-package io.helidon.tracing.providers.opentelemetry;
+package io.helidon.tracing;
 
-class OpenTelemetryConfigSupport {
+import java.net.URI;
+import java.util.Optional;
+
+import io.helidon.builder.api.Option;
+import io.helidon.builder.api.Prototype;
+
+/**
+ * Settings for tracing.
+ */
+@Prototype.Configured
+@Prototype.Blueprint
+interface TracerConfigBlueprint extends Prototype.Factory<Tracer> {
+
+    @Option.Configured
+    @Option.DefaultBoolean(true)
+    boolean enabled();
+
+    @Option.Configured
+    @Option.Default("http")
+    String protocol();
+
+    @Option.Configured
+    String host();
+
+    @Option.Configured
+    int port();
+
+    @Option.Configured
+    Optional<String> path();
+
 
 }
