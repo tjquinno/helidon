@@ -20,8 +20,7 @@ import java.util.Optional;
 import java.util.function.Consumer;
 
 import io.helidon.builder.api.RuntimeType;
-import io.helidon.telemetry.Telemetry;
-import io.helidon.tracing.Tracer;
+import io.helidon.telemetry.api.Telemetry;
 
 @RuntimeType.PrototypedBy(OpenTelemetryConfig.class)
 public class OpenTelemetry implements Telemetry, RuntimeType.Api<OpenTelemetryConfig> {

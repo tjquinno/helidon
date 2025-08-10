@@ -13,11 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package io.helidon.telemetry.spi;
-
-import io.helidon.common.config.ConfiguredProvider;
-import io.helidon.telemetry.TelemetryTracer;
-
-public interface TelemetryTracerProvider extends ConfiguredProvider<TelemetryTracer> {
-}
+/**
+ * Helidon telemetry abstractions.
+ */
+package io.helidon.telemetry.api;

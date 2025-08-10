@@ -17,7 +17,7 @@
 package io.helidon.telemetry.providers.opentelemetry;
 
 import io.helidon.common.config.Config;
-import io.helidon.telemetry.Telemetry;
+import io.helidon.telemetry.api.Telemetry;
 import io.helidon.telemetry.spi.TelemetryProvider;
 
 public class OpenTelemetryProvider implements TelemetryProvider {

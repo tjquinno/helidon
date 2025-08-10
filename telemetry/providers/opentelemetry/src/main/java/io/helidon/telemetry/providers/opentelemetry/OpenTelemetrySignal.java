@@ -18,7 +18,7 @@ package io.helidon.telemetry.providers.opentelemetry;
 
 import io.helidon.common.config.NamedService;
 import io.helidon.service.registry.Service;
-import io.helidon.telemetry.Telemetry;
+import io.helidon.telemetry.api.Telemetry;
 
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.OpenTelemetrySdkBuilder;

@@ -34,6 +34,9 @@ import io.opentelemetry.extension.trace.propagation.OtTracePropagator;
 
 /**
  * Known OpenTelemetry trace context propagation formats.
+ * <p>
+ * OTel configuration of propagation uses lower-case names. For user-friendliness, we allow users
+ * to use the Otel-friendly names (lowercase) or the enum names (UPPERCASE) in config sources.
  */
 enum ContextPropagationType {
 
@@ -67,12 +70,15 @@ enum ContextPropagationType {
      */
     OT_TRACE("ottrace", OtTracePropagator::getInstance);
 
+    // The following is used in a {@value} Javadoc reference, so it needs to be a constant.
     static final String DEFAULT_NAMES = "tracecontext,baggage";
 
-    static final List<ContextPropagationType> DEFAULT = List.of(TRACE_CONTEXT, BAGGAGE);
-    static final List<TextMapPropagator> DEFAULT_PROPAGATORS = DEFAULT.stream()
+    // The following is used as the config default, so it must be writable, so collect into "new ArrayList" instead
+    // of using "toList."
+    static final List<TextMapPropagator> DEFAULT_PROPAGATORS = Arrays.stream(DEFAULT_NAMES.split(","))
+            .map(ContextPropagationType::from)
             .map(ContextPropagationType::propagator)
-            .collect(Collectors.toCollection(ArrayList::new)); // Used as the config default so must be writeable.
+            .collect(Collectors.toCollection(ArrayList::new));
 
     private final String format;
     private final Supplier<TextMapPropagator> propagatorSupplier;
@@ -83,20 +89,7 @@ enum ContextPropagationType {
     }
 
     /**
-     * Converts the config node to a {@code PropagationFormat} enum value, using the normal enum mapping plus the
-     * OTel-friendly values.
-     *
-     * @param configNode config node to map
-     * @return {@code PropagationFormat} value corresponding to the config node
-     */
-    static ContextPropagationType from(Config configNode) {
-        return configNode.asString()
-                .as(ContextPropagationType::from)
-                .orElseGet(() -> configNode.as(ContextPropagationType.class).orElseThrow());
-    }
-
-    /**
-     * Converts the specified string to a {@code PropagationFormat} enum value, using the enum name as well as the
+     * Converts the specified string to a {@code PropagationFormat} enum value, using the enum names as well as the
      * OTel-friendly values.
      *
      * @param value string to convert

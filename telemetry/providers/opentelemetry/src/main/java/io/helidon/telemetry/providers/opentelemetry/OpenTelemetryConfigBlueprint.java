@@ -20,7 +20,7 @@ import java.util.List;
 
 import io.helidon.builder.api.Option;
 import io.helidon.builder.api.Prototype;
-import io.helidon.telemetry.TelemetryConfig;
+import io.helidon.telemetry.api.TelemetryConfig;
 import io.helidon.telemetry.providers.opentelemetry.spi.OpenTelemetrySignalProvider;
 import io.helidon.telemetry.spi.TelemetryProvider;
 

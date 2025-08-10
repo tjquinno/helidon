@@ -14,17 +14,15 @@
  * limitations under the License.
  */
 
-package io.helidon.telemetry;
-
-import java.util.Optional;
+package io.helidon.telemetry.api;
 
 import io.helidon.builder.api.Option;
 import io.helidon.builder.api.Prototype;
-import io.helidon.telemetry.spi.TelemetryProvider;
-import io.helidon.tracing.Tracer;
 
 /**
  * Common configuration settings for telemetry.
+ * <p>
+ * Implementations of telemetry define their own additional configuration settings.
  */
 @Prototype.Configured(value = "telemetry")
 @Prototype.Blueprint
@@ -46,13 +44,5 @@ interface TelemetryConfigBlueprint /* extends Prototype.Factory<Telemetry> */ {
     @Option.Configured
     @Option.DefaultBoolean(true)
     boolean enabled();
-
-    /**
-     * The tracer used by telemetry.
-     *
-     * @return tracer
-     */
-    @Option.Configured
-    Optional<Tracer> tracer();
 
 }

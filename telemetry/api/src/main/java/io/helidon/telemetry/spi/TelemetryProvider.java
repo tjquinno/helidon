@@ -18,10 +18,10 @@ package io.helidon.telemetry.spi;
 
 import io.helidon.common.config.ConfiguredProvider;
 import io.helidon.service.registry.Service;
-import io.helidon.telemetry.Telemetry;
+import io.helidon.telemetry.api.Telemetry;
 
 /**
- * Provider of a Helidon {@link io.helidon.telemetry.Telemetry} implementation.
+ * Provider of a Helidon {@link io.helidon.telemetry.api.Telemetry} implementation.
  */
 @Service.Contract
 public interface TelemetryProvider extends ConfiguredProvider<Telemetry> {

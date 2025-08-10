@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.helidon.telemetry;
+package io.helidon.telemetry.api;
 
 import java.util.Optional;
 
@@ -23,22 +23,18 @@ import io.helidon.service.registry.Service;
 
 /**
  * Contract for a telemetry implementation.
+ * <p>
+ * A telemetry implementation handles one or more <em>signals</em>&mdash;sources of telemetry&mdash;for example, tracing,
+ * metrics, and logging.
  */
 @Service.Contract
 public interface Telemetry extends NamedService {
-
-//    /**
-//     * Provides the {@link io.helidon.tracing.Tracer} initialized in this telemetry instance.
-//     *
-//     * @return tracer
-//     */
-//    Tracer tracer();
 
     /**
      * Returns the signal of the requested type, if present.
      *
      * @param signalType type of signal (e.g, {@code Tracing}
-     * @return the {@link io.helidon.telemetry.Telemetry.Signal} of the type
+     * @return the {@link Telemetry.Signal} of the type
      * @param <T> type of the signal
      */
     <T> Optional<T> signal(Class<T> signalType);
@@ -49,7 +45,11 @@ public interface Telemetry extends NamedService {
     void close();
 
     /**
-     * Abstraction of a telemetry signal type for a particular Helidon signal technology (e.g., tracing).
+     * Abstraction of a telemetry signal type for a particular Helidon signal technology.
+     * <p>>
+     * Each telemetry signal technology (for example, tracing) can create one or more manifestations of that signal
+     * (for example, a {@code io.helidon.tracing.Tracer}) using the {@code get} methods. Not all signals support versioning so
+     * the for those signals the two {@code get} methods behave exactly the same way.
      *
      * @param <T> type of Helidon signal manifestation (e.g., {@code io.helidon.tracing.Tracer}) exposed by this signal
      */
