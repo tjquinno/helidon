@@ -17,6 +17,7 @@
 package io.helidon.telemetry.providers.opentelemetry;
 
 import java.net.URI;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -80,13 +81,13 @@ interface OpenTelemetryTracingConfigBlueprint extends Prototype.Factory<OpenTele
     //                .map(
     //    }
     //
-    //    private static SpanProcessor spanProcessor(SpanProcessorConfig spanProcessorConfig) {
-    //        return switch (spanProcessorConfig.type()) {
-    //            case BATCH -> {
-    //                var builder = BatchSpanProcessor.b
-    //            }
-    //        }
-    //    }
+//        private static SpanProcessor spanProcessor(SpanProcessorConfig spanProcessorConfig) {
+//            return switch (spanProcessorConfig.type()) {
+//                case BATCH -> {
+//                    var builder = BatchSpanProcessor.b
+//                }
+//            }
+//        }
 
     //    @Prototype.FactoryMethod
     //    static SpanProcessor createSpanProcessor(Config config) {
@@ -103,18 +104,18 @@ interface OpenTelemetryTracingConfigBlueprint extends Prototype.Factory<OpenTele
     //        }
     //    }
 
-        @Prototype.FactoryMethod
-        static SpanExporter createSpanExporter(Config config) {
-
-            ExporterType exporterType = ExporterType.from(config.get("type").asString().orElseThrow());
-
-            return switch (exporterType) {
-                case ZIPKIN -> createZipkinSpanExporter(config);
-                case CONSOLE -> LoggingSpanExporter.create();
-                case LOGGING_OTLP -> OtlpJsonLoggingSpanExporter.create();
-                case OTLP -> OtlpExporterConfigSupport.createOtlpSpanExporter(config);
-            };
-        }
+//        @Prototype.FactoryMethod
+//        static SpanExporter createSpanExporter(Config config) {
+//
+//            ExporterType exporterType = ExporterType.from(config.get("type").asString().orElseThrow());
+//
+//            return switch (exporterType) {
+//                case ZIPKIN -> createZipkinSpanExporter(config);
+//                case CONSOLE -> LoggingSpanExporter.create();
+//                case LOGGING_OTLP -> OtlpJsonLoggingSpanExporter.create();
+//                case OTLP -> OtlpExporterConfigSupport.createOtlpSpanExporter(config);
+//            };
+//        }
 
     /**
      * Name of this instance.
@@ -146,6 +147,9 @@ interface OpenTelemetryTracingConfigBlueprint extends Prototype.Factory<OpenTele
     @Option.Configured
     Map<String, SpanExporter> exporters();
 
+//    @Option.Configured
+//    Map<String, SpanExporter> exporters();
+
     /**
      * OTel tracer provider prepared using these configuration settings.
      *
@@ -154,20 +158,20 @@ interface OpenTelemetryTracingConfigBlueprint extends Prototype.Factory<OpenTele
     @Option.Access("")
     Optional<SdkTracerProvider> tracerProvider();
 
-    private static ZipkinSpanExporter createZipkinSpanExporter(Config config) {
-        ZipkinSpanExporterBuilder builder = ZipkinSpanExporter.builder();
-
-        var zipkinConfig = ZipkinExporterConfig.create(config);
-
-        zipkinConfig.compression().map(CompressionType::value).ifPresent(builder::setCompression);
-        zipkinConfig.endpoint().map(URI::toASCIIString).ifPresent(builder::setEndpoint);
-        zipkinConfig.timeout().ifPresent(builder::setReadTimeout);
-        zipkinConfig.sender().ifPresent(builder::setSender);
-        zipkinConfig.localIpAddressSupplier().ifPresent(builder::setLocalIpAddressSupplier);
-        zipkinConfig.meterProvider().ifPresent(builder::setMeterProvider);
-
-        return builder.build();
-    }
+//    private static ZipkinSpanExporter createZipkinSpanExporter(Config config) {
+//        ZipkinSpanExporterBuilder builder = ZipkinSpanExporter.builder();
+//
+//        var zipkinConfig = ZipkinExporterConfig.create(config);
+//
+//        zipkinConfig.compression().map(CompressionType::value).ifPresent(builder::setCompression);
+//        zipkinConfig.endpoint().map(URI::toASCIIString).ifPresent(builder::setEndpoint);
+//        zipkinConfig.timeout().ifPresent(builder::setReadTimeout);
+//        zipkinConfig.sender().ifPresent(builder::setSender);
+//        zipkinConfig.localIpAddressSupplier().ifPresent(builder::setLocalIpAddressSupplier);
+//        zipkinConfig.meterProvider().ifPresent(builder::setMeterProvider);
+//
+//        return builder.build();
+//    }
 
 
 }

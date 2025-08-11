@@ -79,7 +79,7 @@ interface OtlpExporterConfigBlueprint {
      * @return collector endpoint
      */
     @Option.Configured
-    URI endpoint();
+    Optional<URI> endpoint();
 
     /**
      * Compression the exporter uses.

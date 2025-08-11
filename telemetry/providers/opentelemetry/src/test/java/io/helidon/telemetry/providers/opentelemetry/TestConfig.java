@@ -99,7 +99,14 @@ class TestConfig {
                             tracing:
                               sampler:
                                 type: "always_on"
+                              exporters:
+                                - type: otlp
+                                  prococol: http/proto
                         """,
+//                              processors:
+//                                batch:
+//                                  max-queue-size: 21
+//                        """,
                 MediaTypes.APPLICATION_YAML));
 
         OpenTelemetry openTelemetry = OpenTelemetry.builder().config(config.get("telemetry")).build();

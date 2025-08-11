@@ -89,7 +89,7 @@ class OtlpExporterConfigSupport {
                 .map(CompressionType::value)
                 .ifPresent(doCompression);
 
-        doEndpoint.accept(target.endpoint().toASCIIString());
+        target.endpoint().map(URI::toASCIIString).ifPresent(doEndpoint);
 
         target.headers().forEach(addHeader);
         target.timeout().ifPresent(doTimeout);

@@ -29,5 +29,6 @@ interface SpanExporterConfigBlueprint {
     }
 
     @Option.Configured
+    @Option.DefaultCode("ExporterType.DEFAULT")
     ExporterType type();
 }

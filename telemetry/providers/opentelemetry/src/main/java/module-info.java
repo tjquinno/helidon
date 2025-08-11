@@ -49,4 +49,7 @@ module io.helidon.telemetry.providers.opentelemetry {
 
     provides io.helidon.telemetry.providers.opentelemetry.spi.OpenTelemetrySignalProvider
         with io.helidon.telemetry.providers.opentelemetry.OpenTelemetryTracingProvider;
+
+    provides io.helidon.config.spi.ConfigMapperProvider
+            with io.helidon.telemetry.providers.opentelemetry.OtelConfigMapper;
 }
