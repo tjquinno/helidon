@@ -18,6 +18,8 @@ package io.helidon.telemetry.providers.opentelemetry;
 
 import java.util.Arrays;
 
+import io.helidon.common.config.Config;
+
 /**
  * Types of compression supported by OpenTelemetry.
  */
@@ -51,5 +53,9 @@ enum CompressionType {
         }
         throw new IllegalArgumentException("Unknown compression type: " + value + "; expected one of "
                                            + Arrays.toString(CompressionType.values()));
+    }
+
+    static CompressionType from(Config config) {
+        return from(config.asString().get());
     }
 }

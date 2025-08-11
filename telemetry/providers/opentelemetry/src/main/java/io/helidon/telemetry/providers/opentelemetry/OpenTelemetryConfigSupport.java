@@ -79,13 +79,9 @@ class OpenTelemetryConfigSupport {
          */
         @Prototype.FactoryMethod
         static List<TextMapPropagator> createPropagators(Config config) {
+
             Stream<String> propagatorNames = config.isList()
-                    ? config.asNodeList()
-                    .map(nodeList -> nodeList.stream()
-                            .map(Config::asString)
-                            .filter(ConfigValue::isPresent)
-                            .map(ConfigValue::get))
-                    .orElse(Stream.empty())
+                    ? config.asList(String.class).get().stream()
                     : Arrays.stream(config.asString().get().split(","));
 
             return propagatorNames

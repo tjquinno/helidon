@@ -18,6 +18,8 @@ package io.helidon.telemetry.providers.opentelemetry;
 
 import java.util.Arrays;
 
+import io.helidon.common.config.Config;
+
 enum OtlpExporterProtocolType {
     HTTP_PROTO("http/proto"),
 
@@ -41,5 +43,9 @@ enum OtlpExporterProtocolType {
         }
         throw new IllegalArgumentException("Unknown protocol: " + protocol + "; expected one of "
                                                    + Arrays.toString(OtlpExporterProtocolType.values()));
+    }
+
+    static OtlpExporterProtocolType from(Config config) {
+        return from(config.asString().get());
     }
 }

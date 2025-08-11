@@ -16,39 +16,33 @@
 
 package io.helidon.telemetry.providers.opentelemetry;
 
-import java.util.Optional;
+import java.util.List;
 
 import io.helidon.builder.api.Option;
 import io.helidon.builder.api.Prototype;
-import io.helidon.common.config.Config;
 
 /**
- * Tracing sampler settings.
+ * Generic configuration for a {@link io.opentelemetry.sdk.trace.SpanProcessor}, linked to a
+ * {@link io.opentelemetry.sdk.trace.export.SpanExporter} by its name in the configuration.
  */
 @Prototype.Blueprint
 @Prototype.Configured
-interface SamplerConfigBlueprint {
-
-    @Prototype.FactoryMethod
-    static SamplerType createType(Config config) {
-        return SamplerType.from(config);
-    }
+interface SpanProcessorConfigBlueprint {
 
     /**
-     * Sampler type.
-     *
-     * @return sampler type
+     * Name of the span exporter this span processor should use.
+     * @return span exporter name
      */
     @Option.Configured
-    @Option.Default(SamplerType.DEFAULT_NAME)
-    SamplerType type();
+    @Option.Default("@default")
+    List<String> spanExporters();
 
     /**
-     * Sampler parameter.
-     *
-     * @return sampler parameter
+     * Span processor type.
+     * @return span processor type
      */
     @Option.Configured
-    Optional<Number> param();
+    @Option.DefaultCode("SpanProcessorType.DEFAULT")
+    SpanProcessorType type();
 
 }

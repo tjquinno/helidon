@@ -37,9 +37,9 @@ class ZipkinExporterConfigSupport {
             target.localIpAddressSupplier().ifPresent(v -> builder.get().setLocalIpAddressSupplier(v));
             target.meterProvider().ifPresent(v -> builder.get().setMeterProvider(v));
 
-            if (builder.isLoaded()) {
-                target.exporter(builder.get().build());
-            }
+//            if (builder.isLoaded()) {
+//                target.exporter(builder.get().build());
+//            }
         }
     }
 }

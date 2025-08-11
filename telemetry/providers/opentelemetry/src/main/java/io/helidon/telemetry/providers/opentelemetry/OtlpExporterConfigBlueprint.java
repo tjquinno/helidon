@@ -26,9 +26,11 @@ import javax.net.ssl.X509TrustManager;
 
 import io.helidon.builder.api.Option;
 import io.helidon.builder.api.Prototype;
+import io.helidon.common.config.Config;
 import io.helidon.common.configurable.Resource;
 
 import io.opentelemetry.api.metrics.MeterProvider;
+import io.opentelemetry.sdk.common.export.RetryPolicy;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
 
 /**
@@ -40,6 +42,28 @@ import io.opentelemetry.sdk.trace.export.SpanExporter;
 @Prototype.Configured
 @Prototype.Blueprint(decorator = OtlpExporterConfigSupport.BuilderDecorator.class)
 interface OtlpExporterConfigBlueprint {
+
+    @Prototype.FactoryMethod
+    static CompressionType createCompression(Config config) {
+        return CompressionType.from(config);
+    }
+
+    @Prototype.FactoryMethod
+    static OtlpExporterProtocolType createProtocol(Config config) {
+        return OtlpExporterProtocolType.from(config);
+    }
+
+    @Prototype.FactoryMethod
+    static RetryPolicy createRetryPolicy(RetryPolicyConfig config) {
+        RetryPolicy.RetryPolicyBuilder builder = RetryPolicy.builder();
+
+        config.maxAttempts().ifPresent(builder::setMaxAttempts);
+        config.maxBackoff().ifPresent(builder::setMaxBackoff);
+        config.backoffMultiplier().ifPresent(builder::setBackoffMultiplier);
+        config.initialBackoff().ifPresent(builder::setInitialBackoff);
+
+        return builder.build();
+    }
 
     /**
      * Exporter timeout.
@@ -103,7 +127,7 @@ interface OtlpExporterConfigBlueprint {
      * @return retry policy
      */
     @Option.Configured
-    Optional<RetryPolicyConfig> retryPolicy();
+    Optional<RetryPolicy> retryPolicy();
 
     /**
      * Exporter protocol type.
@@ -113,6 +137,9 @@ interface OtlpExporterConfigBlueprint {
     @Option.Configured
     @Option.DefaultCode("io.helidon.telemetry.providers.opentelemetry.OtlpExporterProtocolType.DEFAULT")
     Optional<OtlpExporterProtocolType> protocol();
+
+    @Option.Configured
+    Optional<SpanExporter> spanExporter();
 
     /**
      * SSL context for the exporter.
@@ -135,7 +162,5 @@ interface OtlpExporterConfigBlueprint {
      */
     Optional<MeterProvider> meterProvider();
 
-    @Option.Access("")
-    SpanExporter spanExporter();
 
 }

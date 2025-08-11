@@ -23,6 +23,7 @@ import io.helidon.config.ConfigSources;
 import io.opentelemetry.api.baggage.propagation.W3CBaggagePropagator;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.extension.trace.propagation.JaegerPropagator;
+import io.opentelemetry.sdk.trace.SdkTracerProvider;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -77,11 +78,13 @@ class TestConfig {
                                             .create("""
                                                             tracer:
                                                               sampler:
-                                                                type: "always-on"
+                                                                type: "always_on"
                                                             """,
                                                     MediaTypes.APPLICATION_YAML));
 
-        //        SdkTracerProvider tracerProvider = OpenTelemetryTracerConfig.builder().config(config.get("tracer"));
+                OpenTelemetryTracing otelTracing = OpenTelemetryTracingConfig.builder()
+                        .config(config.get("tracer"))
+                        .build();
     }
 
     @Test
@@ -95,7 +98,7 @@ class TestConfig {
                           signals:
                             tracing:
                               sampler:
-                                type: "always-on"
+                                type: "always_on"
                         """,
                 MediaTypes.APPLICATION_YAML));
 

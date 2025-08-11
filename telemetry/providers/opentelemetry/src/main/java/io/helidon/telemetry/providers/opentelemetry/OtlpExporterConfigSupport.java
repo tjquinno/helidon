@@ -25,6 +25,7 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.X509TrustManager;
 
 import io.helidon.builder.api.Prototype;
+import io.helidon.common.config.Config;
 
 import io.opentelemetry.api.metrics.MeterProvider;
 import io.opentelemetry.exporter.otlp.http.trace.OtlpHttpSpanExporter;
@@ -34,6 +35,79 @@ import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporterBuilder;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
 
 class OtlpExporterConfigSupport {
+
+    static SpanExporter createOtlpSpanExporter(Config config) {
+        OtlpExporterConfig exporterConfig = OtlpExporterConfig.create(config);
+        OtlpExporterProtocolType protocolType = exporterConfig.protocol().orElse(OtlpExporterProtocolType.DEFAULT);
+        return switch (protocolType) {
+            case HTTP_PROTO -> createHttpProtobufSpanExporter(exporterConfig);
+            case GRPC -> createGrpcSpanExporter(exporterConfig);
+        };
+    }
+
+    static SpanExporter createHttpProtobufSpanExporter(OtlpExporterConfig exporterConfig) {
+        var builder = OtlpHttpSpanExporter.builder();
+        apply(exporterConfig,
+              builder::setEndpoint,
+              builder::setCompression,
+              builder::setTimeout,
+              builder::addHeader,
+              builder::setClientTls,
+              builder::setTrustedCertificates,
+              builder::setSslContext,
+              builder::setMeterProvider);
+
+        return builder.build();
+    }
+
+    static SpanExporter createGrpcSpanExporter(OtlpExporterConfig exporterConfig) {
+        var builder = OtlpGrpcSpanExporter.builder();
+        apply(exporterConfig,
+              builder::setEndpoint,
+              builder::setCompression,
+              builder::setTimeout,
+              builder::addHeader,
+              builder::setClientTls,
+              builder::setTrustedCertificates,
+              builder::setSslContext,
+              builder::setMeterProvider);
+
+        return builder.build();
+    }
+
+    static void apply(OtlpExporterConfig target,
+                      Consumer<String> doEndpoint,
+                      Consumer<String> doCompression,
+                      Consumer<Duration> doTimeout,
+                      BiConsumer<String, String> addHeader,
+                      BiConsumer<byte[], byte[]> doClientTls,
+                      Consumer<byte[]> doTrustedCertificates,
+                      BiConsumer<SSLContext, X509TrustManager> doSslContext,
+                      Consumer<MeterProvider> doMeterProvider) {
+
+        target.compression()
+                .map(CompressionType::value)
+                .ifPresent(doCompression);
+
+        doEndpoint.accept(target.endpoint().toASCIIString());
+
+        target.headers().forEach(addHeader);
+        target.timeout().ifPresent(doTimeout);
+
+
+        target.clientTlsPrivateKeyPem()
+                .ifPresent(privateKey -> target.clientTlsCertificatePem()
+                        .ifPresent(certificatePem -> doClientTls.accept(certificatePem.bytes(),
+                                                                        privateKey.bytes())));
+
+        target.trustedCertificatesPem()
+                .ifPresent(certs -> doTrustedCertificates.accept(certs.bytes()));
+
+        if (target.sslContext().isPresent() || target.trustManager().isPresent()) {
+            doSslContext.accept(target.sslContext().orElse(null), target.trustManager().orElse(null));
+        }
+    }
+
 
     static class BuilderDecorator implements Prototype.BuilderDecorator<OtlpExporterConfig.BuilderBase<?, ?>> {
 

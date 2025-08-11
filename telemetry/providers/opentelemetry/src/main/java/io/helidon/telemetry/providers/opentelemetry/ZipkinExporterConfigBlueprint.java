@@ -26,7 +26,6 @@ import io.helidon.builder.api.Option;
 import io.helidon.builder.api.Prototype;
 
 import io.opentelemetry.api.metrics.MeterProvider;
-import io.opentelemetry.exporter.zipkin.ZipkinSpanExporter;
 import zipkin2.codec.SpanBytesEncoder;
 import zipkin2.reporter.Sender;
 
@@ -87,7 +86,5 @@ interface  ZipkinExporterConfigBlueprint {
      */
     Optional<MeterProvider> meterProvider();
 
-    @Option.Access("")
-    Optional<ZipkinSpanExporter> exporter();
 
 }

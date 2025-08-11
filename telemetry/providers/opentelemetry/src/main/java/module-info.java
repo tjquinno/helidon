@@ -39,6 +39,8 @@ module io.helidon.telemetry.providers.opentelemetry {
     requires zipkin2.reporter;
     requires io.opentelemetry.exporter.zipkin;
     requires io.helidon.tracing.providers.opentelemetry;
+    requires io.opentelemetry.exporter.logging;
+    requires io.opentelemetry.exporter.logging.otlp;
 
     exports io.helidon.telemetry.providers.opentelemetry;
     exports io.helidon.telemetry.providers.opentelemetry.spi;

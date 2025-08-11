@@ -16,39 +16,18 @@
 
 package io.helidon.telemetry.providers.opentelemetry;
 
-import java.util.Optional;
-
 import io.helidon.builder.api.Option;
 import io.helidon.builder.api.Prototype;
-import io.helidon.common.config.Config;
 
-/**
- * Tracing sampler settings.
- */
-@Prototype.Blueprint
 @Prototype.Configured
-interface SamplerConfigBlueprint {
+@Prototype.Blueprint
+interface SpanExporterConfigBlueprint {
 
     @Prototype.FactoryMethod
-    static SamplerType createType(Config config) {
-        return SamplerType.from(config);
+    static ExporterType createType(String value) {
+        return ExporterType.from(value);
     }
 
-    /**
-     * Sampler type.
-     *
-     * @return sampler type
-     */
     @Option.Configured
-    @Option.Default(SamplerType.DEFAULT_NAME)
-    SamplerType type();
-
-    /**
-     * Sampler parameter.
-     *
-     * @return sampler parameter
-     */
-    @Option.Configured
-    Optional<Number> param();
-
+    ExporterType type();
 }

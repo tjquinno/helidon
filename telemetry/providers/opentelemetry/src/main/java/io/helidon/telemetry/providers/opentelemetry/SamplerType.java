@@ -18,6 +18,8 @@ package io.helidon.telemetry.providers.opentelemetry;
 
 import java.util.Arrays;
 
+import io.helidon.common.config.Config;
+
 /**
  * Sampler types valid for OpenTelemetry tracing.
  * <p>
@@ -60,9 +62,7 @@ public enum SamplerType {
      */
     PARENT_BASED_TRACE_ID_RATIO("parentbased_traceidratio");
 
-    static final String DEFAULT_STRING = "parentbased_always_on";
     static final String DEFAULT_NAME = "PARENT_BASED_ALWAYS_ON";
-    static final SamplerType DEFAULT = from(DEFAULT_STRING);
 
     private final String name;
 
@@ -76,7 +76,12 @@ public enum SamplerType {
                 return samplerType;
             }
         }
-        throw new IllegalArgumentException("Unknown sample type: " + value + "; expected one of "
-                                                   + Arrays.toString(SamplerType.values()));
+        throw new IllegalArgumentException("Unknown sampler type: " + value + "; expected one of "
+                                                   + Arrays.toString(SamplerType.values())
+                                                   + "(or in lower case)");
+    }
+
+    static SamplerType from(Config config) {
+        return config.asString().map(SamplerType::from).orElseThrow();
     }
 }
