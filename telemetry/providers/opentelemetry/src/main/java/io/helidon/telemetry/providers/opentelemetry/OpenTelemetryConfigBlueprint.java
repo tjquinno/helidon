@@ -23,7 +23,6 @@ import io.helidon.builder.api.Option;
 import io.helidon.builder.api.Prototype;
 import io.helidon.telemetry.api.TelemetryConfig;
 import io.helidon.telemetry.providers.opentelemetry.spi.OpenTelemetrySignalProvider;
-import io.helidon.telemetry.spi.TelemetryProvider;
 
 import io.opentelemetry.context.propagation.TextMapPropagator;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
@@ -34,7 +33,6 @@ import io.opentelemetry.sdk.OpenTelemetrySdk;
 @Prototype.Blueprint(decorator = OpenTelemetryConfigSupport.BuildDecorator.class)
 @Prototype.Configured("telemetry")
 @Prototype.CustomMethods(OpenTelemetryConfigSupport.CustomMethods.class)
-@Prototype.Provides(TelemetryProvider.class)
 interface OpenTelemetryConfigBlueprint extends TelemetryConfig, Prototype.Factory<OpenTelemetry> {
 
     /**
@@ -80,6 +78,11 @@ interface OpenTelemetryConfigBlueprint extends TelemetryConfig, Prototype.Factor
      */
     Optional<io.opentelemetry.api.OpenTelemetry> openTelemetry();
 
+    /**
+     * The {@link io.opentelemetry.sdk.OpenTelemetrySdk} to use (restricted visibility).
+     *
+     * @return the SDK
+     */
     @Option.Access("")
     OpenTelemetrySdk openTelemetrySdk();
 

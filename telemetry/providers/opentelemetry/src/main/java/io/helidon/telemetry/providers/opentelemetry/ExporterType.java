@@ -16,6 +16,8 @@
 
 package io.helidon.telemetry.providers.opentelemetry;
 
+import io.helidon.common.config.Config;
+
 /**
  * Types of OpenTelemetry span exporters supported via Helidon {@code tracing} configuration.
  * <p>
@@ -76,5 +78,9 @@ public enum ExporterType {
     // This is easier than for some other enums because the OTel-friendly names happen to be just the enum values in lower case.
     static ExporterType from(String value) {
         return ExporterType.valueOf(value.toUpperCase());
+    }
+
+    static ExporterType from(Config config) {
+        return from(config.asString().orElseThrow());
     }
 }

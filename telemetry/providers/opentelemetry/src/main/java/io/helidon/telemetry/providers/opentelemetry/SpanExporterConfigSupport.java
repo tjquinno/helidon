@@ -16,31 +16,22 @@
 
 package io.helidon.telemetry.providers.opentelemetry;
 
+import io.helidon.builder.api.Prototype;
 import io.helidon.common.config.Config;
-import io.helidon.telemetry.api.Telemetry;
-import io.helidon.telemetry.spi.TelemetryProvider;
 
-/**
- * Service provider for {@link io.helidon.telemetry.providers.opentelemetry.OpenTelemetry}.
- */
-public class OpenTelemetryProvider implements TelemetryProvider {
+class SpanExporterConfigSupport {
 
-    /**
-     * Constructor for service loading.
-     */
-    public OpenTelemetryProvider() {
+    private SpanExporterConfigSupport() {
     }
 
-    @Override
-    public String configKey() {
-        return Telemetry.CONFIG_KEY;
-    }
+    static class CustomMethods {
 
-    @Override
-    public Telemetry create(Config config, String name) {
-        return OpenTelemetry.builder()
-                .config(config)
-                .service(name)
-                .build();
+        private CustomMethods() {
+        }
+
+        @Prototype.FactoryMethod
+        static ExporterType createType(Config config) {
+            return ExporterType.from(config);
+        }
     }
 }

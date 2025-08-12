@@ -22,6 +22,8 @@ import io.helidon.telemetry.providers.opentelemetry.OpenTelemetry;
 
 /**
  * Provider for discovering OpenTelemetry signal implementations (e.g., tracing).
+ *
+ * @param <T> type of the signal producer (e.g., Tracer).
  */
 @Service.Contract
 public interface OpenTelemetrySignalProvider<T> extends ConfiguredProvider<OpenTelemetry.Signal<T>> {

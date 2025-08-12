@@ -21,6 +21,7 @@ import io.helidon.builder.api.Prototype;
 
 @Prototype.Configured
 @Prototype.Blueprint
+@Prototype.CustomMethods(SpanExporterConfigSupport.CustomMethods.class)
 interface SpanExporterConfigBlueprint {
 
     @Prototype.FactoryMethod
@@ -28,6 +29,11 @@ interface SpanExporterConfigBlueprint {
         return ExporterType.from(value);
     }
 
+    /**
+     * Span exporter type.
+     *
+     * @return exporter type
+     */
     @Option.Configured
     @Option.Default("DEFAULT")
     ExporterType type();

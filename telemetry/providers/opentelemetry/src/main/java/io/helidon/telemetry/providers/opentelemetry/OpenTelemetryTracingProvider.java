@@ -20,6 +20,9 @@ import io.helidon.common.config.Config;
 import io.helidon.telemetry.providers.opentelemetry.spi.OpenTelemetrySignalProvider;
 import io.helidon.tracing.Tracer;
 
+/**
+ * Provider for the tracing signal.
+ */
 public class OpenTelemetryTracingProvider implements OpenTelemetrySignalProvider<Tracer> {
 
     /**
@@ -30,7 +33,7 @@ public class OpenTelemetryTracingProvider implements OpenTelemetrySignalProvider
 
     @Override
     public String configKey() {
-        return "tracing";
+        return OpenTelemetryTracing.TYPE;
     }
 
     @Override

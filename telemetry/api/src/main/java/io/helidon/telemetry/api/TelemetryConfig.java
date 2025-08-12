@@ -23,9 +23,6 @@ import io.helidon.builder.api.Option;
  * <p>
  * Implementations of telemetry define their own additional configuration settings.
  */
-//@Prototype.Configured(value = "telemetry")
-//@Prototype.Blueprint
-//interface TelemetryConfigBlueprint {
 public interface TelemetryConfig {
 
     /**

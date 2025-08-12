@@ -18,7 +18,6 @@ package io.helidon.telemetry.api;
 
 import java.util.Optional;
 
-import io.helidon.common.config.NamedService;
 import io.helidon.service.registry.Service;
 
 
@@ -29,7 +28,7 @@ import io.helidon.service.registry.Service;
  * metrics, and logging.
  */
 @Service.Contract
-public interface Telemetry extends NamedService {
+public interface Telemetry /* extends NamedService */ {
 
     /**
      * Config key for telemetry settings.

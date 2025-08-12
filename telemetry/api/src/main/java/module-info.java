@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-import io.helidon.common.features.api.Feature;
+import io.helidon.common.features.api.Features;
 import io.helidon.common.features.api.HelidonFlavor;
 
 /**
  * Helidon telemetry abstractions.
  */
-@Feature(value = "Registry",
-         description = "Service Registry",
-         in = HelidonFlavor.SE,
-         path = "Registry"
-)
+@Features.Name("Telemetry")
+@Features.Description("Support for Telemetry")
+@Features.Flavor({HelidonFlavor.SE, HelidonFlavor.MP})
+@Features.Path({"Telemetry"})
+@Features.Incubating
 module io.helidon.telemetry.api {
     requires static io.helidon.common.features.api;
 
@@ -33,7 +33,7 @@ module io.helidon.telemetry.api {
     requires io.helidon.common.config;
     requires io.helidon.service.registry;
     requires jdk.unsupported;
+    requires io.helidon.tracing;
 
-    exports io.helidon.telemetry.spi;
     exports io.helidon.telemetry.api;
 }

@@ -26,12 +26,10 @@ import javax.net.ssl.X509TrustManager;
 
 import io.helidon.builder.api.Option;
 import io.helidon.builder.api.Prototype;
-import io.helidon.common.config.Config;
 import io.helidon.common.configurable.Resource;
 
 import io.opentelemetry.api.metrics.MeterProvider;
 import io.opentelemetry.sdk.common.export.RetryPolicy;
-import io.opentelemetry.sdk.trace.export.SpanExporter;
 
 /**
  * Settings for OpenTelemetry OTLP exporters.
@@ -40,7 +38,7 @@ import io.opentelemetry.sdk.trace.export.SpanExporter;
  * @see io.opentelemetry.exporter.otlp.http.trace.OtlpHttpSpanExporterBuilder
  */
 @Prototype.Configured
-@Prototype.Blueprint(decorator = OtlpExporterConfigSupport.BuilderDecorator.class)
+@Prototype.Blueprint
 @Prototype.CustomMethods(OtlpExporterConfigSupport.CustomMethods.class)
 interface OtlpExporterConfigBlueprint {
 
@@ -122,7 +120,7 @@ interface OtlpExporterConfigBlueprint {
      *
      * @return SSL context
      */
-    Optional<SSLContext>  sslContext();
+    Optional<SSLContext> sslContext();
 
     /**
      * X509 trust manager for the exporter.
@@ -137,6 +135,5 @@ interface OtlpExporterConfigBlueprint {
      * @return meter provider
      */
     Optional<MeterProvider> meterProvider();
-
 
 }

@@ -145,8 +145,29 @@ class TestBasicConfig {
     @Test
     void testUsingServiceRegistry() {
 
-        Telemetry telemetry = Services.get(Telemetry.class);
-        assertThat(telemetry, notNullValue());
+        Config config = Config.just(ConfigSources.create(
+                """
+                        telemetry:
+                          service: "test-otel"
+                          global: false
+                          signals:
+                            tracing:
+                              sampler:
+                                type: "always_on"
+                              exporters:
+                                - type: otlp
+                                  protocol: http/proto
+                                  name: my-oltp
+                                - type: zipkin
+                              processors:
+                                - max-queue-size: 21
+                                  type: batch
+                        """,
+                MediaTypes.APPLICATION_YAML));
+
+        Services.set(Config.class, config);
+        Tracer tracer = Services.get(Tracer.class);
+        assertThat("Tracer", tracer, notNullValue());
 
 
 //        Optional<Telemetry.Signal<Tracer>> tracerSignal = openTelemetry.signal(Tracer.class);

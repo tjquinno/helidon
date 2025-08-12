@@ -14,11 +14,17 @@
  * limitations under the License.
  */
 
-import io.helidon.telemetry.providers.opentelemetry.spi.OpenTelemetrySignalProvider;
+import io.helidon.common.features.api.Features;
+import io.helidon.common.features.api.HelidonFlavor;
 
 /**
  * OpenTelemetry implementation for telemetry.
  */
+@Features.Name("Telemetry")
+@Features.Description("Support for Telemetry")
+@Features.Flavor({HelidonFlavor.SE, HelidonFlavor.MP})
+@Features.Path({"Telemetry"})
+@Features.Incubating
 module io.helidon.telemetry.providers.opentelemetry {
 
     requires io.helidon.common.configurable;
@@ -42,6 +48,8 @@ module io.helidon.telemetry.providers.opentelemetry {
     requires io.opentelemetry.exporter.logging;
     requires io.opentelemetry.exporter.logging.otlp;
 
+    requires static io.helidon.common.features.api;
+
     exports io.helidon.telemetry.providers.opentelemetry;
     exports io.helidon.telemetry.providers.opentelemetry.spi;
 
@@ -49,8 +57,5 @@ module io.helidon.telemetry.providers.opentelemetry {
 
     provides io.helidon.telemetry.providers.opentelemetry.spi.OpenTelemetrySignalProvider
         with io.helidon.telemetry.providers.opentelemetry.OpenTelemetryTracingProvider;
-
-    provides io.helidon.telemetry.spi.TelemetryProvider
-            with io.helidon.telemetry.providers.opentelemetry.OpenTelemetryProvider;
 
 }

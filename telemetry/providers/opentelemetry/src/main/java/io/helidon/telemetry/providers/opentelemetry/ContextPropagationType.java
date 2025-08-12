@@ -19,11 +19,8 @@ package io.helidon.telemetry.providers.opentelemetry;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-
-import io.helidon.common.config.Config;
 
 import io.opentelemetry.api.baggage.propagation.W3CBaggagePropagator;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
@@ -70,11 +67,15 @@ enum ContextPropagationType {
      */
     OT_TRACE("ottrace", OtTracePropagator::getInstance);
 
-    // The following is used in a {@value} Javadoc reference, so it needs to be a constant.
+    /*
+    The following is used in a {@value} Javadoc reference, so it needs to be a constant.
+     */
     static final String DEFAULT_NAMES = "tracecontext,baggage";
 
-    // The following is used as the config default, so it must be writable, so collect into "new ArrayList" instead
-    // of using "toList."
+    /*
+    The following is used as the config default, so it must be writable;,therefore collect into a "new ArrayList" instead
+    of using "toList."
+     */
     static final List<TextMapPropagator> DEFAULT_PROPAGATORS = Arrays.stream(DEFAULT_NAMES.split(","))
             .map(ContextPropagationType::from)
             .map(ContextPropagationType::propagator)

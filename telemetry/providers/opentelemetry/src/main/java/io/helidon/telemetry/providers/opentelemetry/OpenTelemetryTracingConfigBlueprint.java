@@ -48,7 +48,7 @@ interface OpenTelemetryTracingConfigBlueprint extends Prototype.Factory<OpenTele
     String name();
 
     /**
-     * Tracing sampler
+     * Tracing sampler.
      *
      * @return tracing sampler
      */
