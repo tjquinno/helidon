@@ -28,107 +28,92 @@ import io.helidon.builder.api.Prototype;
 import io.helidon.common.config.Config;
 
 import io.opentelemetry.api.metrics.MeterProvider;
+import io.opentelemetry.exporter.logging.LoggingSpanExporter;
+import io.opentelemetry.exporter.logging.otlp.OtlpJsonLoggingSpanExporter;
 import io.opentelemetry.exporter.otlp.http.trace.OtlpHttpSpanExporter;
 import io.opentelemetry.exporter.otlp.http.trace.OtlpHttpSpanExporterBuilder;
 import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporter;
 import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporterBuilder;
+import io.opentelemetry.exporter.zipkin.ZipkinSpanExporter;
+import io.opentelemetry.exporter.zipkin.ZipkinSpanExporterBuilder;
+import io.opentelemetry.sdk.common.export.RetryPolicy;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
 
 class OtlpExporterConfigSupport {
 
-    static SpanExporter createOtlpSpanExporter(Config config) {
-        OtlpExporterConfig exporterConfig = OtlpExporterConfig.create(config);
-        OtlpExporterProtocolType protocolType = exporterConfig.protocol().orElse(OtlpExporterProtocolType.DEFAULT);
-        return switch (protocolType) {
-            case HTTP_PROTO -> createHttpProtobufSpanExporter(exporterConfig);
-            case GRPC -> createGrpcSpanExporter(exporterConfig);
-        };
+    private OtlpExporterConfigSupport() {
     }
 
-    static SpanExporter createHttpProtobufSpanExporter(OtlpExporterConfig exporterConfig) {
-        var builder = OtlpHttpSpanExporter.builder();
-        apply(exporterConfig,
-              builder::setEndpoint,
-              builder::setCompression,
-              builder::setTimeout,
-              builder::addHeader,
-              builder::setClientTls,
-              builder::setTrustedCertificates,
-              builder::setSslContext,
-              builder::setMeterProvider);
+    static class CustomMethods {
 
-        return builder.build();
-    }
-
-    static SpanExporter createGrpcSpanExporter(OtlpExporterConfig exporterConfig) {
-        var builder = OtlpGrpcSpanExporter.builder();
-        apply(exporterConfig,
-              builder::setEndpoint,
-              builder::setCompression,
-              builder::setTimeout,
-              builder::addHeader,
-              builder::setClientTls,
-              builder::setTrustedCertificates,
-              builder::setSslContext,
-              builder::setMeterProvider);
-
-        return builder.build();
-    }
-
-    static void apply(OtlpExporterConfig target,
-                      Consumer<String> doEndpoint,
-                      Consumer<String> doCompression,
-                      Consumer<Duration> doTimeout,
-                      BiConsumer<String, String> addHeader,
-                      BiConsumer<byte[], byte[]> doClientTls,
-                      Consumer<byte[]> doTrustedCertificates,
-                      BiConsumer<SSLContext, X509TrustManager> doSslContext,
-                      Consumer<MeterProvider> doMeterProvider) {
-
-        target.compression()
-                .map(CompressionType::value)
-                .ifPresent(doCompression);
-
-        target.endpoint().map(URI::toASCIIString).ifPresent(doEndpoint);
-
-        target.headers().forEach(addHeader);
-        target.timeout().ifPresent(doTimeout);
-
-
-        target.clientTlsPrivateKeyPem()
-                .ifPresent(privateKey -> target.clientTlsCertificatePem()
-                        .ifPresent(certificatePem -> doClientTls.accept(certificatePem.bytes(),
-                                                                        privateKey.bytes())));
-
-        target.trustedCertificatesPem()
-                .ifPresent(certs -> doTrustedCertificates.accept(certs.bytes()));
-
-        if (target.sslContext().isPresent() || target.trustManager().isPresent()) {
-            doSslContext.accept(target.sslContext().orElse(null), target.trustManager().orElse(null));
-        }
-    }
-
-
-    static class BuilderDecorator implements Prototype.BuilderDecorator<OtlpExporterConfig.BuilderBase<?, ?>> {
-
-        @Override
-        public void decorate(OtlpExporterConfig.BuilderBase<?, ?> target) {
-
-            OtlpExporterProtocolType protocolType = target.protocol().orElse(OtlpExporterProtocolType.DEFAULT);
-
-            if (target.spanExporter().isEmpty()) {
-                target.spanExporter(
-                        switch (protocolType) {
-                            case HTTP_PROTO -> createHttpProtobufSpanExporter(target);
-                            case GRPC -> createGrpcSpanExporter(target);
-                        });
-            }
+        private CustomMethods() {
         }
 
-        static SpanExporter createGrpcSpanExporter(OtlpExporterConfig.BuilderBase<?, ?> target) {
+        @Prototype.FactoryMethod
+        static CompressionType createCompression(Config config) {
+            return CompressionType.from(config);
+        }
 
-            OtlpGrpcSpanExporterBuilder builder = OtlpGrpcSpanExporter.builder();
-            apply(target,
+        @Prototype.FactoryMethod
+        static OtlpExporterProtocolType createProtocol(Config config) {
+            return OtlpExporterProtocolType.from(config);
+        }
+
+        @Prototype.FactoryMethod
+        static SpanExporter createSpanExporter(Config config) {
+            SpanExporterConfig exporterConfig = SpanExporterConfig.create(config);
+
+            return switch (exporterConfig.type()) {
+                case ZIPKIN -> createZipkinSpanExporter(config);
+                case CONSOLE -> LoggingSpanExporter.create();
+                case LOGGING_OTLP -> OtlpJsonLoggingSpanExporter.create();
+                case OTLP -> createOtlpSpanExporter(config);
+            };
+        }
+
+        static SpanExporter createOtlpSpanExporter(Config config) {
+            OtlpExporterConfig exporterConfig = OtlpExporterConfig.create(config);
+            OtlpExporterProtocolType protocolType = exporterConfig.protocol().orElse(OtlpExporterProtocolType.DEFAULT);
+            return switch (protocolType) {
+                case HTTP_PROTO -> createHttpProtobufSpanExporter(exporterConfig);
+                case GRPC -> createGrpcSpanExporter(exporterConfig);
+            };
+        }
+
+        static ZipkinSpanExporter createZipkinSpanExporter(Config config) {
+            ZipkinSpanExporterBuilder builder = ZipkinSpanExporter.builder();
+
+            var zipkinConfig = ZipkinExporterConfig.create(config);
+
+            zipkinConfig.compression().map(CompressionType::value).ifPresent(builder::setCompression);
+            zipkinConfig.endpoint().map(URI::toASCIIString).ifPresent(builder::setEndpoint);
+            zipkinConfig.timeout().ifPresent(builder::setReadTimeout);
+            zipkinConfig.sender().ifPresent(builder::setSender);
+            zipkinConfig.localIpAddressSupplier().ifPresent(builder::setLocalIpAddressSupplier);
+            zipkinConfig.meterProvider().ifPresent(builder::setMeterProvider);
+
+            return builder.build();
+        }
+
+        @Prototype.FactoryMethod
+        static RetryPolicy createRetryPolicy(Config config) {
+            return createRetryPolicy(RetryPolicyConfig.create(config));
+        }
+
+        static RetryPolicy createRetryPolicy(RetryPolicyConfig config) {
+            RetryPolicy.RetryPolicyBuilder builder = RetryPolicy.builder();
+
+            config.maxAttempts().ifPresent(builder::setMaxAttempts);
+            config.maxBackoff().ifPresent(builder::setMaxBackoff);
+            config.backoffMultiplier().ifPresent(builder::setBackoffMultiplier);
+            config.initialBackoff().ifPresent(builder::setInitialBackoff);
+
+            return builder.build();
+        }
+
+        static SpanExporter createHttpProtobufSpanExporter(OtlpExporterConfig exporterConfig) {
+            var builder = OtlpHttpSpanExporter.builder();
+            apply(exporterConfig,
                   builder::setEndpoint,
                   builder::setCompression,
                   builder::setTimeout,
@@ -137,14 +122,13 @@ class OtlpExporterConfigSupport {
                   builder::setTrustedCertificates,
                   builder::setSslContext,
                   builder::setMeterProvider);
+
             return builder.build();
         }
 
-        static SpanExporter createHttpProtobufSpanExporter(OtlpExporterConfig.BuilderBase<?, ?> target) {
-
-
-            OtlpHttpSpanExporterBuilder builder = OtlpHttpSpanExporter.builder();
-            apply(target,
+        static SpanExporter createGrpcSpanExporter(OtlpExporterConfig exporterConfig) {
+            var builder = OtlpGrpcSpanExporter.builder();
+            apply(exporterConfig,
                   builder::setEndpoint,
                   builder::setCompression,
                   builder::setTimeout,
@@ -153,10 +137,11 @@ class OtlpExporterConfigSupport {
                   builder::setTrustedCertificates,
                   builder::setSslContext,
                   builder::setMeterProvider);
+
             return builder.build();
         }
 
-        static void apply(OtlpExporterConfig.BuilderBase<?, ?> target,
+        static void apply(OtlpExporterConfig target,
                           Consumer<String> doEndpoint,
                           Consumer<String> doCompression,
                           Consumer<Duration> doTimeout,
@@ -170,18 +155,16 @@ class OtlpExporterConfigSupport {
                     .map(CompressionType::value)
                     .ifPresent(doCompression);
 
-            target.endpoint()
-                    .map(URI::toASCIIString)
-                    .ifPresent(doEndpoint);
+            target.endpoint().map(URI::toASCIIString).ifPresent(doEndpoint);
 
             target.headers().forEach(addHeader);
             target.timeout().ifPresent(doTimeout);
 
 
             target.clientTlsPrivateKeyPem()
-                            .ifPresent(privateKey -> target.clientTlsCertificatePem()
-                                    .ifPresent(certificatePem -> doClientTls.accept(certificatePem.bytes(),
-                                                                                    privateKey.bytes())));
+                    .ifPresent(privateKey -> target.clientTlsCertificatePem()
+                            .ifPresent(certificatePem -> doClientTls.accept(certificatePem.bytes(),
+                                                                            privateKey.bytes())));
 
             target.trustedCertificatesPem()
                     .ifPresent(certs -> doTrustedCertificates.accept(certs.bytes()));
@@ -190,5 +173,90 @@ class OtlpExporterConfigSupport {
                 doSslContext.accept(target.sslContext().orElse(null), target.trustManager().orElse(null));
             }
         }
+    }
+
+
+
+    static class BuilderDecorator implements Prototype.BuilderDecorator<OtlpExporterConfig.BuilderBase<?, ?>> {
+
+        @Override
+        public void decorate(OtlpExporterConfig.BuilderBase<?, ?> target) {
+
+            OtlpExporterProtocolType protocolType = target.protocol().orElse(OtlpExporterProtocolType.DEFAULT);
+
+//            if (target.spanExporter().isEmpty()) {
+//                target.spanExporter(
+//                        switch (protocolType) {
+//                            case HTTP_PROTO -> createHttpProtobufSpanExporter(target);
+//                            case GRPC -> createGrpcSpanExporter(target);
+//                        });
+//            }
+        }
+
+//        static SpanExporter createGrpcSpanExporter(OtlpExporterConfig.BuilderBase<?, ?> target) {
+//
+//            OtlpGrpcSpanExporterBuilder builder = OtlpGrpcSpanExporter.builder();
+//            apply(target,
+//                  builder::setEndpoint,
+//                  builder::setCompression,
+//                  builder::setTimeout,
+//                  builder::addHeader,
+//                  builder::setClientTls,
+//                  builder::setTrustedCertificates,
+//                  builder::setSslContext,
+//                  builder::setMeterProvider);
+//            return builder.build();
+//        }
+//
+//        static SpanExporter createHttpProtobufSpanExporter(OtlpExporterConfig.BuilderBase<?, ?> target) {
+//
+//
+//            OtlpHttpSpanExporterBuilder builder = OtlpHttpSpanExporter.builder();
+//            apply(target,
+//                  builder::setEndpoint,
+//                  builder::setCompression,
+//                  builder::setTimeout,
+//                  builder::addHeader,
+//                  builder::setClientTls,
+//                  builder::setTrustedCertificates,
+//                  builder::setSslContext,
+//                  builder::setMeterProvider);
+//            return builder.build();
+//        }
+//
+//        static void apply(OtlpExporterConfig.BuilderBase<?, ?> target,
+//                          Consumer<String> doEndpoint,
+//                          Consumer<String> doCompression,
+//                          Consumer<Duration> doTimeout,
+//                          BiConsumer<String, String> addHeader,
+//                          BiConsumer<byte[], byte[]> doClientTls,
+//                          Consumer<byte[]> doTrustedCertificates,
+//                          BiConsumer<SSLContext, X509TrustManager> doSslContext,
+//                          Consumer<MeterProvider> doMeterProvider) {
+//
+//            target.compression()
+//                    .map(CompressionType::value)
+//                    .ifPresent(doCompression);
+//
+//            target.endpoint()
+//                    .map(URI::toASCIIString)
+//                    .ifPresent(doEndpoint);
+//
+//            target.headers().forEach(addHeader);
+//            target.timeout().ifPresent(doTimeout);
+//
+//
+//            target.clientTlsPrivateKeyPem()
+//                            .ifPresent(privateKey -> target.clientTlsCertificatePem()
+//                                    .ifPresent(certificatePem -> doClientTls.accept(certificatePem.bytes(),
+//                                                                                    privateKey.bytes())));
+//
+//            target.trustedCertificatesPem()
+//                    .ifPresent(certs -> doTrustedCertificates.accept(certs.bytes()));
+//
+//            if (target.sslContext().isPresent() || target.trustManager().isPresent()) {
+//                doSslContext.accept(target.sslContext().orElse(null), target.trustManager().orElse(null));
+//            }
+//        }
     }
 }

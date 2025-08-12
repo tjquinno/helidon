@@ -25,12 +25,9 @@ import java.util.stream.Stream;
 import io.helidon.builder.api.Prototype;
 import io.helidon.common.config.Config;
 
-import io.opentelemetry.api.GlobalOpenTelemetry;
-import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.context.propagation.ContextPropagators;
 import io.opentelemetry.context.propagation.TextMapPropagator;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
-import io.opentelemetry.sdk.OpenTelemetrySdkBuilder;
 
 class OpenTelemetryConfigSupport {
 
@@ -43,16 +40,16 @@ class OpenTelemetryConfigSupport {
         @Override
         public void decorate(OpenTelemetryConfig.BuilderBase<?, ?> target) {
 
-            OpenTelemetrySdkBuilder openTelemetrySdkBuilder = OpenTelemetrySdk.builder();
+            var builder = OpenTelemetrySdk.builder();
 
             if (!target.propagators().isEmpty()) {
-                openTelemetrySdkBuilder.setPropagators(ContextPropagators.create(
+                builder.setPropagators(ContextPropagators.create(
                         TextMapPropagator.composite(target.propagators())));
             }
 
-            target.signals().forEach(signal -> signal.update(openTelemetrySdkBuilder));
+            target.signals().forEach(signal -> signal.update(builder));
 
-            var sdk = openTelemetrySdkBuilder.build();
+            var sdk = builder.build();
             target.openTelemetrySdk(sdk);
 
 

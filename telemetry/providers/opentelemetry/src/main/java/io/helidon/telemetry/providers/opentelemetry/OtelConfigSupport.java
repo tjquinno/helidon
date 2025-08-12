@@ -37,6 +37,15 @@ class OtelConfigSupport {
     private OtelConfigSupport() {
     }
 
+    /**
+     * Creates an {@link io.opentelemetry.sdk.trace.SpanProcessor}, using either the named exporters of (if no names are
+     * specified) all exporters.
+     *
+     * @param spanProcessorConfig span processor configu
+     * @param spanExporters available span exporters
+     * @param errorsCollector error note collector to report exporter names specified to ber used but not present
+     * @return new {@code SpanProcessor}
+     */
     static SpanProcessor createSpanProcessor(SpanProcessorConfig spanProcessorConfig,
                                              Map<String, SpanExporter> spanExporters,
                                              Errors.Collector errorsCollector) {

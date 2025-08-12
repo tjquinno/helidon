@@ -21,7 +21,9 @@ import io.helidon.common.Errors;
 import io.helidon.common.LazyValue;
 import io.helidon.common.config.Config;
 
+import io.opentelemetry.sdk.trace.SdkTracerProvider;
 import io.opentelemetry.sdk.trace.SpanLimits;
+import io.opentelemetry.sdk.trace.export.SpanExporter;
 import io.opentelemetry.sdk.trace.samplers.Sampler;
 
 class OpenTelemetryTracingConfigSupport {
@@ -39,6 +41,12 @@ class OpenTelemetryTracingConfigSupport {
 
             Errors.Collector errorsCollector = Errors.collector();
 
+            var builder = SdkTracerProvider.builder();
+
+            target.sampler().ifPresent(builder::setSampler);
+            target.spanLimits().ifPresent(builder::setSpanLimits);
+
+
             // Add configured processors to any the app added programmatically.
             target.addProcessors(target.processorConfigs().stream()
                                          .map(processorConfig -> OtelConfigSupport.createSpanProcessor(processorConfig,
@@ -46,16 +54,11 @@ class OpenTelemetryTracingConfigSupport {
                                                                                                        errorsCollector))
                                          .toList());
 
-
-//            OpenTelemetryTracingConfig tracerConfig = OpenTelemetryTracingConfig.create(config);
-            //
-            //            SdkTracerProviderBuilder builder = SdkTracerProvider.builder();
-            //
-            //            tracerConfig.sampler().ifPresent(builder::setSampler);
-            //
-            //            return builder.build();
+            // Exporters are not set on the SDK builder directly; they are used to prepare the processors (above).
 
             errorsCollector.collect().log(LOGGER);
+
+            target.tracerProvider(builder.build());
         }
 
     }
@@ -75,6 +78,11 @@ class OpenTelemetryTracingConfigSupport {
         @Prototype.FactoryMethod
         static SpanLimits createSpanLimits(Config config) {
             return OtelConfigSupport.createSpanLimits(config);
+        }
+
+        @Prototype.FactoryMethod
+        static SpanExporter createExporters(Config config) {
+            return OtlpExporterConfigSupport.CustomMethods.createSpanExporter(config);
         }
 
     }

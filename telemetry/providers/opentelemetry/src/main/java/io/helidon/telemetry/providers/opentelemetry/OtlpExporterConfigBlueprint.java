@@ -41,29 +41,8 @@ import io.opentelemetry.sdk.trace.export.SpanExporter;
  */
 @Prototype.Configured
 @Prototype.Blueprint(decorator = OtlpExporterConfigSupport.BuilderDecorator.class)
+@Prototype.CustomMethods(OtlpExporterConfigSupport.CustomMethods.class)
 interface OtlpExporterConfigBlueprint {
-
-    @Prototype.FactoryMethod
-    static CompressionType createCompression(Config config) {
-        return CompressionType.from(config);
-    }
-
-    @Prototype.FactoryMethod
-    static OtlpExporterProtocolType createProtocol(Config config) {
-        return OtlpExporterProtocolType.from(config);
-    }
-
-    @Prototype.FactoryMethod
-    static RetryPolicy createRetryPolicy(RetryPolicyConfig config) {
-        RetryPolicy.RetryPolicyBuilder builder = RetryPolicy.builder();
-
-        config.maxAttempts().ifPresent(builder::setMaxAttempts);
-        config.maxBackoff().ifPresent(builder::setMaxBackoff);
-        config.backoffMultiplier().ifPresent(builder::setBackoffMultiplier);
-        config.initialBackoff().ifPresent(builder::setInitialBackoff);
-
-        return builder.build();
-    }
 
     /**
      * Exporter timeout.
@@ -102,7 +81,7 @@ interface OtlpExporterConfigBlueprint {
      *
      * @return TLS client key
      */
-    @Option.Configured
+    @Option.Configured("client.key")
     Optional<Resource> clientTlsPrivateKeyPem();
 
     /**
@@ -110,7 +89,7 @@ interface OtlpExporterConfigBlueprint {
      *
      * @return TLS certificate
      */
-    @Option.Configured
+    @Option.Configured("client.certificate")
     Optional<Resource> clientTlsCertificatePem();
 
     /**
@@ -118,7 +97,7 @@ interface OtlpExporterConfigBlueprint {
      *
      * @return trusted certificates
      */
-    @Option.Configured
+    @Option.Configured("certificate")
     Optional<Resource> trustedCertificatesPem();
 
     /**
@@ -138,8 +117,8 @@ interface OtlpExporterConfigBlueprint {
     @Option.DefaultCode("io.helidon.telemetry.providers.opentelemetry.OtlpExporterProtocolType.DEFAULT")
     Optional<OtlpExporterProtocolType> protocol();
 
-    @Option.Configured
-    Optional<SpanExporter> spanExporter();
+//    @Option.Configured
+//    Optional<SpanExporter> spanExporter();
 
     /**
      * SSL context for the exporter.

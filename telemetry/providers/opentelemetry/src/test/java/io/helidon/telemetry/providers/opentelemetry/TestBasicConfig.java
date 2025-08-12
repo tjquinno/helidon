@@ -18,6 +18,7 @@ package io.helidon.telemetry.providers.opentelemetry;
 
 import java.util.Optional;
 
+import io.helidon.common.concurrency.limits.Limit;
 import io.helidon.common.media.type.MediaTypes;
 import io.helidon.common.testing.junit5.OptionalMatcher;
 import io.helidon.config.Config;
@@ -34,6 +35,7 @@ import io.opentelemetry.api.baggage.propagation.W3CBaggagePropagator;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.extension.trace.propagation.JaegerPropagator;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -139,6 +141,7 @@ class TestBasicConfig {
 
     }
 
+//    @Disabled
     @Test
     void testUsingServiceRegistry() {
 
