@@ -18,11 +18,11 @@ package io.helidon.telemetry.providers.opentelemetry.spi;
 
 import io.helidon.common.config.ConfiguredProvider;
 import io.helidon.service.registry.Service;
-import io.helidon.telemetry.providers.opentelemetry.OpenTelemetrySignal;
+import io.helidon.telemetry.providers.opentelemetry.OpenTelemetry;
 
 /**
  * Provider for discovering OpenTelemetry signal implementations (e.g., tracing).
  */
 @Service.Contract
-public interface OpenTelemetrySignalProvider<T> extends ConfiguredProvider<OpenTelemetrySignal<T>> {
+public interface OpenTelemetrySignalProvider<T> extends ConfiguredProvider<OpenTelemetry.Signal<T>> {
 }

@@ -16,14 +16,24 @@
 
 package io.helidon.telemetry.providers.opentelemetry;
 
+import java.util.Optional;
+
 import io.helidon.common.media.type.MediaTypes;
+import io.helidon.common.testing.junit5.OptionalMatcher;
 import io.helidon.config.Config;
 import io.helidon.config.ConfigSources;
+import io.helidon.service.registry.GlobalServiceRegistry;
+import io.helidon.service.registry.ServiceRegistryManager;
+import io.helidon.service.registry.Services;
+import io.helidon.telemetry.api.Telemetry;
+import io.helidon.testing.junit5.Testing;
+import io.helidon.tracing.Tracer;
+import io.helidon.webserver.testing.junit5.ServerTest;
 
 import io.opentelemetry.api.baggage.propagation.W3CBaggagePropagator;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.extension.trace.propagation.JaegerPropagator;
-import io.opentelemetry.sdk.trace.SdkTracerProvider;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -34,7 +44,12 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 
-class TestConfig {
+class TestBasicConfig {
+
+//    @BeforeAll
+//    static void setup() {
+//        ServiceRegistryManager.start();
+//    }
 
     @ParameterizedTest
     @ValueSource(strings = {
@@ -48,7 +63,7 @@ class TestConfig {
                                                                           telemetry:
                                                                             service: "test-otel"
                                                                             enabled: false
-                                                                            global: true
+                                                                            global: false
                                                                             propagators: %s
                                                                           """, propagatorsValue),
                                                     MediaTypes.APPLICATION_YAML));
@@ -64,7 +79,7 @@ class TestConfig {
 
         assertThat("Service name", openTelemetry.prototype().service(), is("test-otel"));
         assertThat("Enabled", openTelemetry.prototype().enabled(), is(false));
-        assertThat("Global", openTelemetry.prototype().global(), is(true));
+        assertThat("Global", openTelemetry.prototype().global(), is(false));
     }
 
     @Test
@@ -93,20 +108,20 @@ class TestConfig {
                 """
                         telemetry:
                           service: "test-otel"
-                          enabled: false
-                          global: true
+                          global: false
                           signals:
                             tracing:
                               sampler:
                                 type: "always_on"
                               exporters:
                                 - type: otlp
-                                  prococol: http/proto
+                                  protocol: http/proto
+                                  name: my-oltp
+                                - type: zipkin
+                              processors:
+                                - max-queue-size: 21
+                                  type: batch
                         """,
-//                              processors:
-//                                batch:
-//                                  max-queue-size: 21
-//                        """,
                 MediaTypes.APPLICATION_YAML));
 
         OpenTelemetry openTelemetry = OpenTelemetry.builder().config(config.get("telemetry")).build();
@@ -118,7 +133,23 @@ class TestConfig {
                             instanceOf(W3CTraceContextPropagator.class)));
 
         assertThat("Service name", openTelemetry.prototype().service(), is("test-otel"));
-        assertThat("Enabled", openTelemetry.prototype().enabled(), is(false));
-        assertThat("Global", openTelemetry.prototype().global(), is(true));
+        assertThat("Enabled", openTelemetry.prototype().enabled(), is(true));
+        assertThat("Global", openTelemetry.prototype().global(), is(false));
+
+
+    }
+
+    @Test
+    void testUsingServiceRegistry() {
+
+        Telemetry telemetry = Services.get(Telemetry.class);
+        assertThat(telemetry, notNullValue());
+
+
+//        Optional<Telemetry.Signal<Tracer>> tracerSignal = openTelemetry.signal(Tracer.class);
+//
+//        assertThat("Tracer from OTel tracer signal",
+//                   tracerSignal.map(signal -> signal.get("test-tracer")),
+//                   OptionalMatcher.optionalValue(instanceOf(Tracer.class)));
     }
 }

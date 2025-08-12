@@ -16,33 +16,32 @@
 
 package io.helidon.telemetry.providers.opentelemetry;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
 import io.helidon.builder.api.Prototype;
 import io.helidon.common.config.Config;
-import io.helidon.common.config.ConfigValue;
-import io.helidon.tracing.Tracer;
 
-import io.opentelemetry.api.trace.TracerProvider;
+import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.context.propagation.ContextPropagators;
 import io.opentelemetry.context.propagation.TextMapPropagator;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.OpenTelemetrySdkBuilder;
-import io.opentelemetry.sdk.trace.SdkTracerProvider;
-import io.opentelemetry.sdk.trace.SdkTracerProviderBuilder;
 
 class OpenTelemetryConfigSupport {
+
+    private static final System.Logger LOGGER = System.getLogger(OpenTelemetryConfigSupport.class.getName());
+
+
 
     static class BuildDecorator implements Prototype.BuilderDecorator<OpenTelemetryConfig.BuilderBase<?, ?>> {
 
         @Override
         public void decorate(OpenTelemetryConfig.BuilderBase<?, ?> target) {
-
 
             OpenTelemetrySdkBuilder openTelemetrySdkBuilder = OpenTelemetrySdk.builder();
 
@@ -53,18 +52,14 @@ class OpenTelemetryConfigSupport {
 
             target.signals().forEach(signal -> signal.update(openTelemetrySdkBuilder));
 
-//            target.tracerProvider()
-//                    .filter(tracerProvider -> tracerProvider instanceof SdkTracerProvider sdkTracerProvider)
-//                    .map(tracerProvider -> (SdkTracerProvider) tracerProvider)
-//                    .ifPresent(openTelemetrySdkBuilder::setTracerProvider);
-
             var sdk = openTelemetrySdkBuilder.build();
+            target.openTelemetrySdk(sdk);
 
-            target.signals().forEach(signal -> signal.processSdk(sdk));
+
+
         }
 
     }
-
 
     static class CustomMethods {
 
@@ -90,29 +85,28 @@ class OpenTelemetryConfigSupport {
                     .toList();
         }
 
-        /**
-         * Creates an OpenTelemetry {@link io.opentelemetry.api.trace.TracerProvider} from the
-         * tracer configuration.
-         *
-         * @param config tracer configuration
-         * @return OTel tracer provider
-         */
-        @Prototype.FactoryMethod
-        static TracerProvider createTracerProvider(Config config) {
-            OpenTelemetryTracingConfig tracerConfig = OpenTelemetryTracingConfig.create(config);
+        //        /**
+        //         * Creates an OpenTelemetry {@link io.opentelemetry.api.trace.TracerProvider} from the
+        //         * tracer configuration.
+        //         *
+        //         * @param config tracer configuration
+        //         * @return OTel tracer provider
+        //         */
+        //        @Prototype.FactoryMethod
+        //        static TracerProvider createTracerProvider(Config config) {
+        //            OpenTelemetryTracingConfig tracerConfig = OpenTelemetryTracingConfig.create(config);
+        //
+        //            SdkTracerProviderBuilder builder = SdkTracerProvider.builder();
+        //
+        //            tracerConfig.sampler().ifPresent(builder::setSampler);
+        //
+        //            return builder.build();
+        //        }
 
-            SdkTracerProviderBuilder builder = SdkTracerProvider.builder();
-
-            tracerConfig.sampler().ifPresent(builder::setSampler);
-
-            return builder.build();
-        }
-
-//        @Prototype.PrototypeMethod
-//        static Tracer tracer(OpenTelemetryConfig prototype) {
-//
-//        }
-
+        //        @Prototype.PrototypeMethod
+        //        static Tracer tracer(OpenTelemetryConfig prototype) {
+        //
+        //        }
 
     }
 

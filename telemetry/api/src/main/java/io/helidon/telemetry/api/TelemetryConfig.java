@@ -17,16 +17,16 @@
 package io.helidon.telemetry.api;
 
 import io.helidon.builder.api.Option;
-import io.helidon.builder.api.Prototype;
 
 /**
  * Common configuration settings for telemetry.
  * <p>
  * Implementations of telemetry define their own additional configuration settings.
  */
-@Prototype.Configured(value = "telemetry")
-@Prototype.Blueprint
-interface TelemetryConfigBlueprint /* extends Prototype.Factory<Telemetry> */ {
+//@Prototype.Configured(value = "telemetry")
+//@Prototype.Blueprint
+//interface TelemetryConfigBlueprint {
+public interface TelemetryConfig {
 
     /**
      * Telemetry service name reported to back ends.

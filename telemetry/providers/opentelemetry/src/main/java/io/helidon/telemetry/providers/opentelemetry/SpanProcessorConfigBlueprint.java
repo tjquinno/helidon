@@ -31,10 +31,10 @@ interface SpanProcessorConfigBlueprint {
 
     /**
      * Name of the span exporter this span processor should use.
+     *
      * @return span exporter name
      */
     @Option.Configured
-    @Option.Default("@default")
     List<String> spanExporters();
 
     /**
@@ -42,7 +42,7 @@ interface SpanProcessorConfigBlueprint {
      * @return span processor type
      */
     @Option.Configured
-    @Option.DefaultCode("SpanProcessorType.DEFAULT")
+    @Option.Required
     SpanProcessorType type();
 
 }

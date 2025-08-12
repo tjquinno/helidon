@@ -27,7 +27,7 @@ public enum ExporterType {
      * OpenTelemetry Protocol {@link io.opentelemetry.exporter.otlp.http.trace.OtlpHttpSpanExporter} and
      * {@link io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporter}.
      */
-    OTLP, // There are different defaults for the two different subtypes of OTLP exporters.
+    OTLP, // There are different defaults for the different subtypes of OTLP exporters.
 
     /**
      * Zipkin {@link io.opentelemetry.exporter.zipkin.ZipkinSpanExporter}.
@@ -73,6 +73,7 @@ public enum ExporterType {
         return defaultPath;
     }
 
+    // This is easier than for some other enums because the OTel-friendly names happen to be just the enum values in lower case.
     static ExporterType from(String value) {
         return ExporterType.valueOf(value.toUpperCase());
     }

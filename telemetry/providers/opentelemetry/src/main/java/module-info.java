@@ -52,4 +52,8 @@ module io.helidon.telemetry.providers.opentelemetry {
 
     provides io.helidon.config.spi.ConfigMapperProvider
             with io.helidon.telemetry.providers.opentelemetry.OtelConfigMapper;
+
+    provides io.helidon.telemetry.spi.TelemetryProvider
+            with io.helidon.telemetry.providers.opentelemetry.OpenTelemetryProvider;
+
 }

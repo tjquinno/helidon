@@ -35,10 +35,11 @@ public class OpenTelemetryTracingProvider implements OpenTelemetrySignalProvider
 
     @Override
     @SuppressWarnings("unchecked,rawtypes")
-    public OpenTelemetrySignal create(Config config, String name) {
+    public OpenTelemetry.Signal create(Config config, String name) {
         return OpenTelemetryTracing.builder()
                 .config(config)
                 .name(name)
                 .build();
     }
+
 }

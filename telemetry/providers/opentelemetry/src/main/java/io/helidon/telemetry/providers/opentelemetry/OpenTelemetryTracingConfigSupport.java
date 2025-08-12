@@ -17,11 +17,16 @@
 package io.helidon.telemetry.providers.opentelemetry;
 
 import io.helidon.builder.api.Prototype;
+import io.helidon.common.Errors;
 import io.helidon.common.LazyValue;
+import io.helidon.common.config.Config;
 
+import io.opentelemetry.sdk.trace.SpanLimits;
 import io.opentelemetry.sdk.trace.samplers.Sampler;
 
 class OpenTelemetryTracingConfigSupport {
+
+    private static final System.Logger LOGGER = System.getLogger(OpenTelemetryTracingConfigSupport.class.getName());
 
     static class BuilderDecorator implements Prototype.BuilderDecorator<OpenTelemetryTracingConfig.BuilderBase<?, ?>> {
 
@@ -30,6 +35,46 @@ class OpenTelemetryTracingConfigSupport {
         @Override
         public void decorate(OpenTelemetryTracingConfig.BuilderBase<?, ?> target) {
 
+            // Associate each processor with either its named exporter(s) or all exporters.
+
+            Errors.Collector errorsCollector = Errors.collector();
+
+            // Add configured processors to any the app added programmatically.
+            target.addProcessors(target.processorConfigs().stream()
+                                         .map(processorConfig -> OtelConfigSupport.createSpanProcessor(processorConfig,
+                                                                                                       target.exporters(),
+                                                                                                       errorsCollector))
+                                         .toList());
+
+
+//            OpenTelemetryTracingConfig tracerConfig = OpenTelemetryTracingConfig.create(config);
+            //
+            //            SdkTracerProviderBuilder builder = SdkTracerProvider.builder();
+            //
+            //            tracerConfig.sampler().ifPresent(builder::setSampler);
+            //
+            //            return builder.build();
+
+            errorsCollector.collect().log(LOGGER);
+        }
+
+    }
+
+    static class CustomMethods {
+
+        @Prototype.FactoryMethod
+        static SpanProcessorConfig createProcessorConfigs(Config config) {
+            return OtelConfigSupport.createProcessorConfig(config);
+        }
+
+        @Prototype.FactoryMethod
+        static Sampler createSampler(Config config) {
+            return OtelConfigSupport.createSampler(config);
+        }
+
+        @Prototype.FactoryMethod
+        static SpanLimits createSpanLimits(Config config) {
+            return OtelConfigSupport.createSpanLimits(config);
         }
 
     }

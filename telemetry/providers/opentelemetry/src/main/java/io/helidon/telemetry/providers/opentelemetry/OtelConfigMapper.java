@@ -44,7 +44,9 @@ public class OtelConfigMapper implements ConfigMapperProvider {
 
     @Override
     public Map<Class<?>, Function<Config, ?>> mappers() {
-        return Map.of(SpanExporter.class, OtelConfigMapper::createSpanExporter);
+        return Map.of(SpanExporter.class, OtelConfigMapper::createSpanExporter
+                      //SpanProcessorConfig.BuilderBase.class, OtelConfigMapper::createSpanProcessorConfigBuilder
+                      );
     }
 
     private static SpanExporter createSpanExporter(Config spanExporterConfig) {
@@ -72,5 +74,8 @@ public class OtelConfigMapper implements ConfigMapperProvider {
 
         return builder.build();
     }
+
+
+
 }
 

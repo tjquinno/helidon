@@ -16,20 +16,14 @@
 
 package io.helidon.telemetry.providers.opentelemetry;
 
-import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 import io.helidon.builder.api.Option;
 import io.helidon.builder.api.Prototype;
-import io.helidon.common.config.Config;
 import io.helidon.telemetry.providers.opentelemetry.spi.OpenTelemetrySignalProvider;
 
-import io.opentelemetry.exporter.logging.LoggingSpanExporter;
-import io.opentelemetry.exporter.logging.otlp.OtlpJsonLoggingSpanExporter;
-import io.opentelemetry.exporter.zipkin.ZipkinSpanExporter;
-import io.opentelemetry.exporter.zipkin.ZipkinSpanExporterBuilder;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
 import io.opentelemetry.sdk.trace.SpanLimits;
 import io.opentelemetry.sdk.trace.SpanProcessor;
@@ -41,81 +35,9 @@ import io.opentelemetry.sdk.trace.samplers.Sampler;
  */
 @Prototype.Configured(value = OpenTelemetryTracing.TYPE, root = false)
 @Prototype.Blueprint(decorator = OpenTelemetryTracingConfigSupport.BuilderDecorator.class)
+@Prototype.CustomMethods(OpenTelemetryTracingConfigSupport.CustomMethods.class)
 @Prototype.Provides(OpenTelemetrySignalProvider.class)
 interface OpenTelemetryTracingConfigBlueprint extends Prototype.Factory<OpenTelemetryTracing> {
-
-    @Prototype.FactoryMethod
-    static Sampler createSampler(SamplerConfig samplerConfig) {
-
-        return switch (samplerConfig.type()) {
-            case SamplerType.ALWAYS_OFF -> Sampler.alwaysOff();
-            case SamplerType.ALWAYS_ON -> Sampler.alwaysOn();
-            case SamplerType.PARENT_BASED_ALWAYS_OFF -> Sampler.parentBased(Sampler.alwaysOff());
-            case SamplerType.PARENT_BASED_ALWAYS_ON -> Sampler.parentBased(Sampler.alwaysOn());
-            case SamplerType.PARENT_BASED_TRACE_ID_RATIO -> Sampler.parentBased(
-                    Sampler.traceIdRatioBased(samplerConfig.param()
-                                                      .map(Number::doubleValue)
-                                                      .orElseThrow()));
-            case SamplerType.TRACE_ID_RATIO -> Sampler.traceIdRatioBased(samplerConfig.param()
-                                                                                 .map(Number::doubleValue)
-                                                                                 .orElseThrow());
-        };
-    }
-
-    @Prototype.FactoryMethod
-    static SpanLimits createSpanLimits(SpanLimitsConfig config) {
-        var builder = SpanLimits.builder();
-
-        config.maxAttributes().ifPresent(builder::setMaxNumberOfAttributes);
-        config.maxAttributeValueLength().ifPresent(builder::setMaxAttributeValueLength);
-        config.maxEvents().ifPresent(builder::setMaxNumberOfEvents);
-        config.maxLinks().ifPresent(builder::setMaxNumberOfLinks);
-        config.maxAttributeValueLength().ifPresent(builder::setMaxAttributeValueLength);
-
-        return builder.build();
-    }
-
-    //    @Prototype.FactoryMethod
-    //    static Map<String, SpanProcessor>  createSpanProcessors(List<SpanProcessorConfig> spanProcessorConfigs) {
-    //        spanProcessorConfigs.stream()
-    //                .map(
-    //    }
-    //
-//        private static SpanProcessor spanProcessor(SpanProcessorConfig spanProcessorConfig) {
-//            return switch (spanProcessorConfig.type()) {
-//                case BATCH -> {
-//                    var builder = BatchSpanProcessor.b
-//                }
-//            }
-//        }
-
-    //    @Prototype.FactoryMethod
-    //    static SpanProcessor createSpanProcessor(Config config) {
-    //
-    //
-    //    }
-
-    //    static SpanExporter exporter(SpanExporterConfig spanExporterConfig) {
-    //        return switch (spanExporterConfig.exporterType()) {
-    //            case ZIPKIN -> {
-    //                var builder = ZipkinSpanExporter.builder();
-    //
-    //            }
-    //        }
-    //    }
-
-//        @Prototype.FactoryMethod
-//        static SpanExporter createSpanExporter(Config config) {
-//
-//            ExporterType exporterType = ExporterType.from(config.get("type").asString().orElseThrow());
-//
-//            return switch (exporterType) {
-//                case ZIPKIN -> createZipkinSpanExporter(config);
-//                case CONSOLE -> LoggingSpanExporter.create();
-//                case LOGGING_OTLP -> OtlpJsonLoggingSpanExporter.create();
-//                case OTLP -> OtlpExporterConfigSupport.createOtlpSpanExporter(config);
-//            };
-//        }
 
     /**
      * Name of this instance.
@@ -141,14 +63,32 @@ interface OpenTelemetryTracingConfigBlueprint extends Prototype.Factory<OpenTele
     @Option.Configured
     Optional<SpanLimits> spanLimits();
 
-    @Option.Configured
-    Map<String, SpanProcessor> processors();
+    /**
+     * Settings for span processors.
+     *
+     * @return span processors
+     */
+    @Option.Access("")
+    @Option.Configured("processors")
+    @Option.Singular
+    List<SpanProcessorConfig> processorConfigs();
 
+    /**
+     * Constructed span processors.
+     *
+     * @return span processors
+     */
+    @Option.Singular
+    List<SpanProcessor> processors();
+
+    /**
+     * Span exporters.
+     *
+     * @return span exporters
+     */
     @Option.Configured
+    @Option.Singular
     Map<String, SpanExporter> exporters();
-
-//    @Option.Configured
-//    Map<String, SpanExporter> exporters();
 
     /**
      * OTel tracer provider prepared using these configuration settings.
@@ -157,21 +97,5 @@ interface OpenTelemetryTracingConfigBlueprint extends Prototype.Factory<OpenTele
      */
     @Option.Access("")
     Optional<SdkTracerProvider> tracerProvider();
-
-//    private static ZipkinSpanExporter createZipkinSpanExporter(Config config) {
-//        ZipkinSpanExporterBuilder builder = ZipkinSpanExporter.builder();
-//
-//        var zipkinConfig = ZipkinExporterConfig.create(config);
-//
-//        zipkinConfig.compression().map(CompressionType::value).ifPresent(builder::setCompression);
-//        zipkinConfig.endpoint().map(URI::toASCIIString).ifPresent(builder::setEndpoint);
-//        zipkinConfig.timeout().ifPresent(builder::setReadTimeout);
-//        zipkinConfig.sender().ifPresent(builder::setSender);
-//        zipkinConfig.localIpAddressSupplier().ifPresent(builder::setLocalIpAddressSupplier);
-//        zipkinConfig.meterProvider().ifPresent(builder::setMeterProvider);
-//
-//        return builder.build();
-//    }
-
 
 }

@@ -16,14 +16,33 @@
 
 package io.helidon.telemetry.providers.opentelemetry;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 import io.helidon.builder.api.RuntimeType;
+import io.helidon.common.config.NamedService;
+import io.helidon.service.registry.Service;
 import io.helidon.telemetry.api.Telemetry;
 
+import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.sdk.OpenTelemetrySdkBuilder;
+
+/**
+ * Implementation of the {@link io.helidon.telemetry.api.Telemetry} interface for OpenTelemetry.
+ */
+//@Service.Singleton
 @RuntimeType.PrototypedBy(OpenTelemetryConfig.class)
 public class OpenTelemetry implements Telemetry, RuntimeType.Api<OpenTelemetryConfig> {
+
+    private static final System.Logger LOGGER = System.getLogger(OpenTelemetry.class.getName());
+    private final OpenTelemetryConfig config;
+
+    OpenTelemetry(OpenTelemetryConfig config) {
+        this.config = config;
+    }
 
     static OpenTelemetryConfig.Builder builder() {
         return OpenTelemetryConfig.builder();
@@ -37,12 +56,30 @@ public class OpenTelemetry implements Telemetry, RuntimeType.Api<OpenTelemetryCo
         return builder().update(consumer).build();
     }
 
-    private final OpenTelemetryConfig config;
+    @Service.PostConstruct
+    void init() {
+        AtomicReference<io.opentelemetry.api.OpenTelemetry> otToUse = new AtomicReference<>(prototype().openTelemetry()
+                                                                                                    .orElse(prototype().openTelemetrySdk()));
 
-    public OpenTelemetry(OpenTelemetryConfig config) {
-        this.config = config;
+        if (prototype().global()) {
+            List<String> otelReasonsForUsingAutoConfig = otelReasonsForUsingAutoConfig();
+            if (!otelReasonsForUsingAutoConfig.isEmpty()) {
+                if (LOGGER.isLoggable(System.Logger.Level.TRACE)) {
+                    LOGGER.log(System.Logger.Level.TRACE,
+                               "Using OTel autoconfigure: " + otelReasonsForUsingAutoConfig);
+                }
+                otToUse.set(GlobalOpenTelemetry.get());
+
+            } else {
+                GlobalOpenTelemetry.set(otToUse.get());
+            }
+
+            // Either there was already an existing global OpenTelemetry or we just set one. In either case,
+            // register the global OpenTelemetry in the Helidon service registry.
+            //                Services.set(OpenTelemetry.class, otToRegister);
+        }
+        prototype().signals().forEach(s -> s.openTelemetry(otToUse.get()));
     }
-
 
     @Override
     public String name() {
@@ -64,11 +101,48 @@ public class OpenTelemetry implements Telemetry, RuntimeType.Api<OpenTelemetryCo
         config.signals().forEach(Telemetry.Signal::close);
     }
 
+    @SuppressWarnings("unchecked")
     @Override
-    public <T> Optional<T> signal(Class<T> signalType) {
+    public <T> Optional<Telemetry.Signal<T>> signal(Class<T> signalType) {
         return config.signals().stream()
-                .filter(signalType::isInstance)
-                .map(signalType::cast)
+                .filter(signal -> signalType.isAssignableFrom(signal.signalType()))
+                .map(signal -> (Telemetry.Signal<T>) signal)
                 .findFirst();
+    }
+
+    static List<String> otelReasonsForUsingAutoConfig() {
+        List<String> reasons = new ArrayList<>();
+        if (Boolean.getBoolean("otel.java.global-autoconfigure.enabled")) {
+            reasons.add("OpenTelemetry global autoconfigure is enabled using otel.java.global-autoconfigure.enabled");
+        }
+        String envvar = System.getenv("OTEL_JAVA_GLOBAL_AUTOCONFIGURE_ENABLED");
+        if (envvar != null && envvar.equals("true")) {
+            reasons.add("OpenTelemetry global autoconfigure is enabled using OTEL_JAVA_GLOBAL_AUTOCONFIGURE_ENABLED");
+        }
+        return reasons;
+    }
+    public interface Signal<S> extends Telemetry.Signal<S>, NamedService {
+
+        /**
+         * Applies the signal information to the provided SDK builder, typically invoking a method to assign a signal provider
+         * such as
+         * {@link io.opentelemetry.sdk.OpenTelemetrySdkBuilder#setTracerProvider(io.opentelemetry.sdk.trace.SdkTracerProvider)}.
+         *
+         * @param sdkBuilder OpenTelemetry SDK builder to apply the signal information to
+         */
+        void update(OpenTelemetrySdkBuilder sdkBuilder);
+
+        /**
+         * Performs any follow-up work needed for this signal using the built (or previoysly-assigned global)
+         * {@link io.opentelemetry.api.OpenTelemetry} object.
+         *
+         * @param openTelemetry the {@code OpenTelemetry} instance the signal should use
+         */
+        void openTelemetry(io.opentelemetry.api.OpenTelemetry openTelemetry);
+
+        /**
+         * Performs any clean-up as part of shutting down telemetry.
+         */
+        void close();
     }
 }

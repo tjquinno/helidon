@@ -21,6 +21,7 @@ import java.util.Optional;
 import io.helidon.common.config.NamedService;
 import io.helidon.service.registry.Service;
 
+
 /**
  * Contract for a telemetry implementation.
  * <p>
@@ -31,13 +32,18 @@ import io.helidon.service.registry.Service;
 public interface Telemetry extends NamedService {
 
     /**
+     * Config key for telemetry settings.
+     */
+    String CONFIG_KEY = "telemetry";
+
+    /**
      * Returns the signal of the requested type, if present.
      *
      * @param signalType type of signal (e.g, {@code Tracing}
      * @return the {@link Telemetry.Signal} of the type
      * @param <T> type of the signal
      */
-    <T> Optional<T> signal(Class<T> signalType);
+    <T> Optional<Signal<T>> signal(Class<T> signalType);
 
     /**
      * Shuts down telemetry.
@@ -49,11 +55,11 @@ public interface Telemetry extends NamedService {
      * <p>>
      * Each telemetry signal technology (for example, tracing) can create one or more manifestations of that signal
      * (for example, a {@code io.helidon.tracing.Tracer}) using the {@code get} methods. Not all signals support versioning so
-     * the for those signals the two {@code get} methods behave exactly the same way.
+     * the for those signals the two {@code get} methods behave the same.
      *
-     * @param <T> type of Helidon signal manifestation (e.g., {@code io.helidon.tracing.Tracer}) exposed by this signal
+     * @param <S> type of Helidon signal manifestation (e.g., {@code io.helidon.tracing.Tracer}) exposed by this signal
      */
-    interface Signal<T> {
+    interface Signal<S> {
 
         /**
          * Returns an instance of the signal's Helidon signal manifestation.
@@ -61,7 +67,7 @@ public interface Telemetry extends NamedService {
          * @param name name to assign to the new signal manifestation
          * @return new signal manifestation
          */
-        T get(String name);
+        S get(String name);
 
         /**
          * Returns an instance of the signal's Helidon signal manifestation.
@@ -70,9 +76,16 @@ public interface Telemetry extends NamedService {
          * @param version version to associate with the new signal manifestation
          * @return new signal manifestation
          */
-        default T get(String name, String version) {
+        default S get(String name, String version) {
             return get(name);
         }
+
+        /**
+         * Reports the type of the signal this instance represents.
+         *
+         * @return signal type
+         */
+        Class<S> signalType();
 
         /**
          * Performs any clean-up related to the telemetry signal.

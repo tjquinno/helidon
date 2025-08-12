@@ -20,10 +20,20 @@ import io.helidon.common.config.Config;
 import io.helidon.telemetry.api.Telemetry;
 import io.helidon.telemetry.spi.TelemetryProvider;
 
+/**
+ * Service provider for {@link io.helidon.telemetry.providers.opentelemetry.OpenTelemetry}.
+ */
 public class OpenTelemetryProvider implements TelemetryProvider {
+
+    /**
+     * Constructor for service loading.
+     */
+    public OpenTelemetryProvider() {
+    }
+
     @Override
     public String configKey() {
-        return "otel";
+        return Telemetry.CONFIG_KEY;
     }
 
     @Override

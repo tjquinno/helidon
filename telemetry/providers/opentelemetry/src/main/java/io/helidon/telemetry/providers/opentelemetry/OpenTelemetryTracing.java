@@ -24,13 +24,12 @@ import io.helidon.tracing.Tracer;
 import io.helidon.tracing.providers.opentelemetry.OpenTelemetryTracerProvider;
 
 import io.opentelemetry.api.trace.TracerProvider;
-import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.OpenTelemetrySdkBuilder;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
 import io.opentelemetry.sdk.trace.SdkTracerProviderBuilder;
 
 @RuntimeType.PrototypedBy(OpenTelemetryTracingConfig.class)
-class OpenTelemetryTracing implements OpenTelemetrySignal<Tracer>, RuntimeType.Api<OpenTelemetryTracingConfig> {
+class OpenTelemetryTracing implements OpenTelemetry.Signal<Tracer>, RuntimeType.Api<OpenTelemetryTracingConfig> {
 
     static final String TYPE = "tracing";
 
@@ -83,6 +82,11 @@ class OpenTelemetryTracing implements OpenTelemetrySignal<Tracer>, RuntimeType.A
     }
 
     @Override
+    public Class<Tracer> signalType() {
+        return Tracer.class;
+    }
+
+    @Override
     public OpenTelemetryTracingConfig prototype() {
         return config;
     }
@@ -93,8 +97,8 @@ class OpenTelemetryTracing implements OpenTelemetrySignal<Tracer>, RuntimeType.A
     }
 
     @Override
-    public void processSdk(OpenTelemetrySdk sdk) {
-        this.otelTracerProvider = sdk.getTracerProvider();
+    public void openTelemetry(io.opentelemetry.api.OpenTelemetry openTelemetry) {
+        this.otelTracerProvider = openTelemetry.getTracerProvider();
     }
 
     @Override

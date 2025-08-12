@@ -17,6 +17,7 @@
 package io.helidon.telemetry.providers.opentelemetry;
 
 import java.util.List;
+import java.util.Optional;
 
 import io.helidon.builder.api.Option;
 import io.helidon.builder.api.Prototype;
@@ -25,6 +26,7 @@ import io.helidon.telemetry.providers.opentelemetry.spi.OpenTelemetrySignalProvi
 import io.helidon.telemetry.spi.TelemetryProvider;
 
 import io.opentelemetry.context.propagation.TextMapPropagator;
+import io.opentelemetry.sdk.OpenTelemetrySdk;
 
 /**
  * OpenTelemetry settings.
@@ -33,25 +35,7 @@ import io.opentelemetry.context.propagation.TextMapPropagator;
 @Prototype.Configured("telemetry")
 @Prototype.CustomMethods(OpenTelemetryConfigSupport.CustomMethods.class)
 @Prototype.Provides(TelemetryProvider.class)
-//@Prototype.RegistrySupport
 interface OpenTelemetryConfigBlueprint extends TelemetryConfig, Prototype.Factory<OpenTelemetry> {
-
-    //    /**
-    //     * Whether OpenTelemetry support is enabled.
-    //     *
-    //     * @return true if OTel is enabled; false otherwise
-    //     */
-    //    @Option.Configured
-    //    @Option.DefaultBoolean(true)
-    //    boolean enabled();
-    //
-    //    /**
-    //     * Name of the telemetry service to use in registering with back ends.
-    //     * @return telemetry service name
-    //     */
-    //    @Option.Configured
-    //    @Option.Required
-    //    String service();
 
     /**
      * Whether the {@link io.opentelemetry.api.OpenTelemetry} instance created from this configuration should be made the
@@ -82,8 +66,21 @@ interface OpenTelemetryConfigBlueprint extends TelemetryConfig, Prototype.Factor
      */
     @SuppressWarnings("rawtypes")
     @Option.Configured
-//    @Option.RegistryService
+    @Option.Singular
     @Option.Provider(value = OpenTelemetrySignalProvider.class)
-    List<OpenTelemetrySignal> signals();
+    List<OpenTelemetry.Signal> signals();
+
+    /**
+     * The {@link io.opentelemetry.api.OpenTelemetry} instance to use for telemetry.
+     * <p>
+     * Typically, this value will be the OpenTelemetry SDK instance created using this configuration, but if some other
+     * code (such as the OpenTelemetry agent) has already set the OTel global instance, this value will be that global instance.
+     *
+     * @return the OpenTelemetry instance
+     */
+    Optional<io.opentelemetry.api.OpenTelemetry> openTelemetry();
+
+    @Option.Access("")
+    OpenTelemetrySdk openTelemetrySdk();
 
 }

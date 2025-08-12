@@ -14,12 +14,17 @@
  * limitations under the License.
  */
 
-package io.helidon.telemetry.providers.opentelemetry;
+package io.helidon.telemetry.api;
 
-class ConfigUtils {
+import io.helidon.service.registry.Service;
+import io.helidon.service.registry.Services;
 
-    private ConfigUtils() {
+@Service.Singleton
+@Service.RunLevel(Service.RunLevel.STARTUP)
+class TelemetryBootstrap {
+
+    @Service.PostConstruct
+    void init() {
+        Services.get(Telemetry.class);
     }
-
-
 }
