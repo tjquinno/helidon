@@ -114,11 +114,8 @@ interface OtlpExporterConfigBlueprint {
      * @return exporter protocol type
      */
     @Option.Configured
-    @Option.DefaultCode("io.helidon.telemetry.providers.opentelemetry.OtlpExporterProtocolType.DEFAULT")
+    @Option.Default("DEFAULT")
     Optional<OtlpExporterProtocolType> protocol();
-
-//    @Option.Configured
-//    Optional<SpanExporter> spanExporter();
 
     /**
      * SSL context for the exporter.

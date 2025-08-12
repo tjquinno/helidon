@@ -65,6 +65,6 @@ interface RetryPolicyConfigBlueprint {
     @Option.Configured
     Optional<Double> backoffMultiplier();
 
-    @Option.Access("")
-    Optional<RetryPolicy> retryPolicy();
+//    @Option.Access("")
+//    Optional<RetryPolicy> retryPolicy();
 }

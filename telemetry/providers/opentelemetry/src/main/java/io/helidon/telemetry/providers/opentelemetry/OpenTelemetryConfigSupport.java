@@ -16,10 +16,8 @@
 
 package io.helidon.telemetry.providers.opentelemetry;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
 import io.helidon.builder.api.Prototype;
@@ -30,10 +28,6 @@ import io.opentelemetry.context.propagation.TextMapPropagator;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 
 class OpenTelemetryConfigSupport {
-
-    private static final System.Logger LOGGER = System.getLogger(OpenTelemetryConfigSupport.class.getName());
-
-
 
     static class BuildDecorator implements Prototype.BuilderDecorator<OpenTelemetryConfig.BuilderBase<?, ?>> {
 
@@ -52,8 +46,6 @@ class OpenTelemetryConfigSupport {
             var sdk = builder.build();
             target.openTelemetrySdk(sdk);
 
-
-
         }
 
     }
@@ -63,8 +55,8 @@ class OpenTelemetryConfigSupport {
         /**
          * Converts a config node for propagators into a list of {@link io.opentelemetry.context.propagation.TextMapPropagator}.
          * <p>
-         * The config node can be either a node list (in which case each node's string value will be used for a propagator name)
-         * or the node can be a single string containing a comma-separated list of propagator names.
+         * As a user convenience, the config node can be either a node list (in which case each node's string value will be
+         * used for a propagator name) or the node can be a single string containing a comma-separated list of propagator names.
          *
          * @param config config node (node list of string nodes or a single node)
          * @return list of selected propagators
@@ -81,29 +73,6 @@ class OpenTelemetryConfigSupport {
                     .map(ContextPropagationType::propagator)
                     .toList();
         }
-
-        //        /**
-        //         * Creates an OpenTelemetry {@link io.opentelemetry.api.trace.TracerProvider} from the
-        //         * tracer configuration.
-        //         *
-        //         * @param config tracer configuration
-        //         * @return OTel tracer provider
-        //         */
-        //        @Prototype.FactoryMethod
-        //        static TracerProvider createTracerProvider(Config config) {
-        //            OpenTelemetryTracingConfig tracerConfig = OpenTelemetryTracingConfig.create(config);
-        //
-        //            SdkTracerProviderBuilder builder = SdkTracerProvider.builder();
-        //
-        //            tracerConfig.sampler().ifPresent(builder::setSampler);
-        //
-        //            return builder.build();
-        //        }
-
-        //        @Prototype.PrototypeMethod
-        //        static Tracer tracer(OpenTelemetryConfig prototype) {
-        //
-        //        }
 
     }
 

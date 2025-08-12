@@ -16,12 +16,19 @@
 
 package io.helidon.telemetry.providers.opentelemetry;
 
+import java.util.Locale;
+
 import io.helidon.builder.api.Prototype;
 import io.helidon.common.LazyValue;
+import io.helidon.common.config.Config;
 
 import io.opentelemetry.exporter.zipkin.ZipkinSpanExporterBuilder;
+import zipkin2.codec.SpanBytesEncoder;
 
 class ZipkinExporterConfigSupport {
+
+    private ZipkinExporterConfigSupport() {
+    }
 
     static class BuilderDecorator implements Prototype.BuilderDecorator<ZipkinExporterConfig.BuilderBase<?, ?>> {
 
@@ -41,5 +48,22 @@ class ZipkinExporterConfigSupport {
 //                target.exporter(builder.get().build());
 //            }
         }
+    }
+
+    static class CustomMethods {
+
+        private CustomMethods() {
+        }
+
+        @Prototype.FactoryMethod
+        static SpanBytesEncoder createSpanBytesEncoder(Config config) {
+            return SpanBytesEncoder.valueOf(config.asString().get().toUpperCase(Locale.ROOT));
+        }
+
+        @Prototype.FactoryMethod
+        static CompressionType createCompressionType(Config config) {
+            return CompressionType.from(config);
+        }
+
     }
 }

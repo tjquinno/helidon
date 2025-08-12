@@ -27,12 +27,8 @@ import io.helidon.common.config.Config;
  */
 @Prototype.Blueprint
 @Prototype.Configured
+@Prototype.CustomMethods(SamplerConfigSupport.CustomMethods.class)
 interface SamplerConfigBlueprint {
-
-    @Prototype.FactoryMethod
-    static SamplerType createType(Config config) {
-        return SamplerType.from(config);
-    }
 
     /**
      * Sampler type.

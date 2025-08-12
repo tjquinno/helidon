@@ -27,6 +27,7 @@ import io.helidon.builder.api.Prototype;
  */
 @Prototype.Blueprint
 @Prototype.Configured
+@Prototype.CustomMethods(SpanProcessorConfigSupport.CustomMethods.class)
 interface SpanProcessorConfigBlueprint {
 
     /**

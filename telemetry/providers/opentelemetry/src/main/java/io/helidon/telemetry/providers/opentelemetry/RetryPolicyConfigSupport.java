@@ -35,9 +35,9 @@ class RetryPolicyConfigSupport {
             target.maxAttempts().ifPresent(v -> retryPolicyBuilder.get().setMaxAttempts(v));
             target.maxBackoff().ifPresent(v -> retryPolicyBuilder.get().setMaxBackoff(v));
 
-            if (retryPolicyBuilder.isLoaded()) {
-                target.retryPolicy(retryPolicyBuilder.get().build());
-            }
+//            if (retryPolicyBuilder.isLoaded()) {
+//                target.retryPolicy(retryPolicyBuilder.get().build());
+//            }
         }
     }
 }

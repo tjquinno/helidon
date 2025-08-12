@@ -16,20 +16,22 @@
 
 package io.helidon.telemetry.providers.opentelemetry;
 
-import io.helidon.builder.api.Option;
 import io.helidon.builder.api.Prototype;
+import io.helidon.common.config.Config;
 
-@Prototype.Configured
-@Prototype.Blueprint
-interface SpanExporterConfigBlueprint {
+class SamplerConfigSupport {
 
-    @Prototype.FactoryMethod
-    static ExporterType createType(String value) {
-        return ExporterType.from(value);
+    private SamplerConfigSupport() {
     }
 
-    @Option.Configured
-    @Option.Default("DEFAULT")
-    ExporterType type();
+    static class CustomMethods {
 
+        private CustomMethods() {
+        }
+
+        @Prototype.FactoryMethod
+        static SamplerType createType(Config config) {
+            return SamplerType.from(config);
+        }
+    }
 }

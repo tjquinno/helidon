@@ -28,7 +28,6 @@ enum OtlpExporterProtocolType {
     private final String protocol;
 
     static final OtlpExporterProtocolType DEFAULT = HTTP_PROTO;
-    static final String DEFAULT_NAME = "http/proto";
 
     OtlpExporterProtocolType(String protocol) {
         this.protocol = protocol;
