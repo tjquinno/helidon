@@ -15,6 +15,7 @@
  */
 package io.helidon.tracing.providers.opentelemetry;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -26,6 +27,8 @@ import io.helidon.common.Weight;
 import io.helidon.common.Weighted;
 import io.helidon.common.context.Context;
 import io.helidon.common.context.Contexts;
+import io.helidon.service.registry.Services;
+import io.helidon.telemetry.api.Telemetry;
 import io.helidon.tracing.Span;
 import io.helidon.tracing.Tracer;
 import io.helidon.tracing.TracerBuilder;
@@ -39,12 +42,23 @@ import io.opentelemetry.api.OpenTelemetry;
  */
 @Weight(Weighted.DEFAULT_WEIGHT - 50)
 public class OpenTelemetryTracerProvider implements TracerProvider {
+
+    // Temporary flag to select legacy behavior (default for now) or new behavior based on Helidon telemetry.
+    private static final boolean USE_HELIDON_TELEMETRY = Boolean.getBoolean("io.helidon.tracing.use-telemetry");
+
     private static final System.Logger LOGGER = System.getLogger(OpenTelemetryTracerProvider.class.getName());
     private static final AtomicReference<Tracer> CONFIGURED_TRACER = new AtomicReference<>();
     private static final AtomicBoolean GLOBAL_SET = new AtomicBoolean();
     private static final LazyValue<Tracer> GLOBAL_TRACER;
+    private static final LazyValue<OpenTelemetry> OT_TO_USE;
 
     static {
+        if (USE_HELIDON_TELEMETRY) {
+            OT_TO_USE = LazyValue.create(() -> Services.get(Telemetry.class).unwrap(OpenTelemetry.class));
+        } else {
+            OT_TO_USE = LazyValue.create(GlobalOpenTelemetry::get);
+        }
+
         GLOBAL_TRACER = LazyValue.create(() -> {
             // try to get from configured global tracer
             Tracer tracer = CONFIGURED_TRACER.get();
@@ -60,7 +74,11 @@ public class OpenTelemetryTracerProvider implements TracerProvider {
                                     + "Tracer.global(HelidonOpenTelemetry.create(ot, tracer). Using global open telemetry");
                         }
 
-                        List<String> otelReasonsForUsingAutoConfig = OpenTelemetryTracerBuilder.otelReasonsForUsingAutoConfig();
+                        if (USE_HELIDON_TELEMETRY) {
+                            return Services.get(Tracer.class);
+                        }
+
+                        List<String> otelReasonsForUsingAutoConfig = otelReasonsForUsingAutoConfig();
                         if (!otelReasonsForUsingAutoConfig.isEmpty()) {
                             if (LOGGER.isLoggable(System.Logger.Level.TRACE)) {
                                 LOGGER.log(System.Logger.Level.TRACE,
@@ -73,11 +91,19 @@ public class OpenTelemetryTracerProvider implements TracerProvider {
                                 .serviceName("helidon-service")
                                 .build();
                     });
+
         });
     }
 
-    public static Tracer tracer(io.opentelemetry.api.trace.Tracer tracer) {
-        return new OpenTelemetryTracer(GlobalOpenTelemetry.get(), tracer, Map.of());
+    /**
+     * Wraps an {@linkplain io.opentelemetry.api.trace.Tracer OpenTelemetry tracer} in a {@linkplain io.helidon.tracing.Tracer
+     * Helidon delegating tracer}.
+     *
+     * @param tracer OpenTelemetry tracer to wrap
+     * @return Helidon tracer
+     */
+    static Tracer tracer(io.opentelemetry.api.trace.Tracer tracer) {
+        return new OpenTelemetryTracer(OT_TO_USE.get(), tracer, Map.of());
     }
 
     /**
@@ -159,6 +185,22 @@ public class OpenTelemetryTracerProvider implements TracerProvider {
     @Override
     public boolean available() {
         return GLOBAL_SET.get();
+    }
+
+    static List<String> otelReasonsForUsingAutoConfig() {
+        List<String> reasons = new ArrayList<>();
+        if (Boolean.getBoolean("otel.java.global-autoconfigure.enabled")) {
+            reasons.add(
+                    "OpenTelemetry global autoconfigure is enabled using the system property otel.java.global-autoconfigure"
+                            + ".enabled");
+        }
+        String envvar = System.getenv("OTEL_JAVA_GLOBAL_AUTOCONFIGURE_ENABLED");
+        if (envvar != null && envvar.equals("true")) {
+            reasons.add(
+                    "OpenTelemetry global autoconfigure is enabled using the environment variable "
+                            + "OTEL_JAVA_GLOBAL_AUTOCONFIGURE_ENABLED");
+        }
+        return reasons;
     }
 
 }

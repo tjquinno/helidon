@@ -17,6 +17,7 @@
 package io.helidon.tracing.providers.opentelemetry;
 
 import java.time.Duration;
+import java.util.Optional;
 
 import io.helidon.builder.api.Option;
 import io.helidon.builder.api.Prototype;
@@ -26,21 +27,21 @@ import io.helidon.builder.api.Prototype;
  */
 @Prototype.Configured
 @Prototype.Blueprint
-interface BatchSpanProcessorConfigBlueprint extends SpanProcessorConfigBlueprint{
+interface BatchSpanProcessorConfigBlueprint extends SpanProcessorConfigBlueprint {
 
     /**
      * Delay between consecutive exports.
      * @return delay between consecutive exports
      */
     @Option.Configured
-    Duration scheduleDelay();
+    Optional<Duration> scheduleDelay();
 
     /**
      * Maximum number of spans retained before discarding excess unexported ones.
      * @return maximum number of spans kept
      */
     @Option.Configured
-    Integer maxQueueSize();
+    Optional<Integer> maxQueueSize();
 
     /**
      * Maximum number of spans batched for export together. OpenTelemetry requires this value to not exceed
@@ -48,12 +49,12 @@ interface BatchSpanProcessorConfigBlueprint extends SpanProcessorConfigBlueprint
      * @return maximum number of spans batched
      */
     @Option.Configured
-    Integer maxExportBatchSize();
+    Optional<Integer> maxExportBatchSize();
 
     /**
      * Maximum time an export can run before being cancelled.
      * @return maximum export time
      */
     @Option.Configured
-    Duration timeout();
+    Optional<Duration> timeout();
 }

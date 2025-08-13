@@ -17,34 +17,21 @@
 package io.helidon.tracing.providers.opentelemetry;
 
 import io.helidon.builder.api.Prototype;
-
-import io.opentelemetry.sdk.trace.samplers.Sampler;
+import io.helidon.common.config.Config;
 
 class SamplerConfigSupport {
 
-    /**
-     * Creates an OpenTelemetry {@link io.opentelemetry.sdk.trace.samplers.Sampler} from the Helidon OpenTelemetry
-     * {@linkplain io.helidon.tracing.providers.opentelemetry.SamplerConfig sampler samplerConfig}.
-     *
-     * @param samplerConfig config for the sampler
-     * @return OpenTelemetry {@code Sampler}
-     */
-    @Prototype.PrototypeMethod
-    static Sampler sampler(SamplerConfig samplerConfig) {
-        return switch (samplerConfig.type()) {
-            case ALWAYS_ON -> Sampler.alwaysOn();
-            case ALWAYS_OFF -> Sampler.alwaysOff();
-            case TRACE_ID_RATIO -> Sampler.traceIdRatioBased(ensureParam(samplerConfig).doubleValue());
-            case PARENT_BASED_ALWAYS_OFF -> Sampler.parentBased(Sampler.alwaysOff());
-            case PARENT_BASED_ALWAYS_ON -> Sampler.parentBased(Sampler.alwaysOn());
-            case PARENT_BASED_TRACE_ID_RATIO -> Sampler.parentBased(Sampler.traceIdRatioBased(ensureParam(samplerConfig).doubleValue()));
-        };
+    private SamplerConfigSupport() {
     }
 
-    private static Number ensureParam(SamplerConfig config) {
-        if (config.param() == null) {
-            throw new IllegalArgumentException("Sampler param is required for sampler type " + config.type());
+    static class CustomMethods {
+
+        private CustomMethods() {
         }
-        return config.param();
+
+        @Prototype.FactoryMethod
+        static SamplerType createType(Config config) {
+            return SamplerType.from(config);
+        }
     }
 }

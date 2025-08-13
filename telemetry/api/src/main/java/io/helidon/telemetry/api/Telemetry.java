@@ -45,6 +45,16 @@ public interface Telemetry /* extends NamedService */ {
     <T> Optional<Signal<T>> signal(Class<T> signalType);
 
     /**
+     * Unwraps the telemetry signal implementation as the specified type.
+     *
+     * @param type to which to convert
+     *
+     * @return the unwrapped value
+     * @param <B> type to which to convert
+     */
+    <B> B unwrap(Class<B> type);
+
+    /**
      * Shuts down telemetry.
      */
     void close();
@@ -90,5 +100,15 @@ public interface Telemetry /* extends NamedService */ {
          * Performs any clean-up related to the telemetry signal.
          */
         void close();
+
+        /**
+         * Unwraps the telemetry signal implementation as the specified type.
+         *
+         * @param type to which to convert
+         *
+         * @return the unwrapped value
+         * @param <B> type to which to convert
+         */
+        <B> B unwrap(Class<B> type);
     }
 }

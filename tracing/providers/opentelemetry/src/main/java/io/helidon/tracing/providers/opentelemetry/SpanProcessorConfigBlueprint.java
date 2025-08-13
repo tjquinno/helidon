@@ -16,6 +16,8 @@
 
 package io.helidon.tracing.providers.opentelemetry;
 
+import java.util.List;
+
 import io.helidon.builder.api.Option;
 import io.helidon.builder.api.Prototype;
 
@@ -25,22 +27,23 @@ import io.helidon.builder.api.Prototype;
  */
 @Prototype.Blueprint
 @Prototype.Configured
+@Prototype.CustomMethods(SpanProcessorConfigSupport.CustomMethods.class)
 interface SpanProcessorConfigBlueprint {
 
     /**
      * Name of the span exporter this span processor should use.
+     *
      * @return span exporter name
      */
     @Option.Configured
-    @Option.Default("@default")
-    String spanExporter();
+    List<String> spanExporters();
 
     /**
      * Span processor type.
      * @return span processor type
      */
     @Option.Configured
-    @Option.Default(SpanProcessorType.DEFAULT_NAME)
+    @Option.Required
     SpanProcessorType type();
 
 }

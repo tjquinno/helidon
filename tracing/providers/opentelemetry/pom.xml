@@ -49,6 +49,10 @@
             <artifactId>helidon-telemetry-api</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.helidon.telemetry.providers</groupId>
+            <artifactId>helidon-telemetry-providers-opentelemetry</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.opentelemetry</groupId>
             <artifactId>opentelemetry-api</artifactId>
         </dependency>
@@ -71,6 +75,11 @@
         <dependency>
             <groupId>io.opentelemetry</groupId>
             <artifactId>opentelemetry-extension-trace-propagators</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.zipkin.zipkin2</groupId>
+            <artifactId>zipkin</artifactId>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>io.helidon.config</groupId>

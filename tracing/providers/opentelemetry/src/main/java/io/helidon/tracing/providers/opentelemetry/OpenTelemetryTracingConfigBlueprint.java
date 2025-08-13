@@ -16,13 +16,86 @@
 
 package io.helidon.tracing.providers.opentelemetry;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+import io.helidon.builder.api.Option;
 import io.helidon.builder.api.Prototype;
+import io.helidon.telemetry.providers.opentelemetry.spi.OpenTelemetrySignalProvider;
+
+import io.opentelemetry.sdk.trace.SdkTracerProvider;
+import io.opentelemetry.sdk.trace.SpanLimits;
+import io.opentelemetry.sdk.trace.SpanProcessor;
+import io.opentelemetry.sdk.trace.export.SpanExporter;
+import io.opentelemetry.sdk.trace.samplers.Sampler;
 
 /**
- * Configuration for OpenTelemetry tracing.
+ * OpenTelemetry tracer settings.
  */
-@Prototype.Blueprint
-@Prototype.Configured(root = false)
-interface OpenTelemetryTracingConfigBlueprint {
+@Prototype.Configured(value = OpenTelemetryTracing.TYPE, root = false)
+@Prototype.Blueprint(decorator = OpenTelemetryTracingConfigSupport.BuilderDecorator.class)
+@Prototype.CustomMethods(OpenTelemetryTracingConfigSupport.CustomMethods.class)
+@Prototype.Provides(OpenTelemetrySignalProvider.class)
+interface OpenTelemetryTracingConfigBlueprint extends Prototype.Factory<OpenTelemetryTracing> {
+
+    /**
+     * Name of this instance.
+     *
+     * @return name of the instance
+     */
+    @Option.Default(OpenTelemetryTracing.TYPE)
+    String name();
+
+    /**
+     * Tracing sampler.
+     *
+     * @return tracing sampler
+     */
+    @Option.Configured()
+    Optional<Sampler> sampler();
+
+    /**
+     * Tracing span limits.
+     *
+     * @return tracing span limits
+     */
+    @Option.Configured
+    Optional<SpanLimits> spanLimits();
+
+    /**
+     * Settings for span processors.
+     *
+     * @return span processors
+     */
+    @Option.Access("")
+    @Option.Configured("processors")
+    @Option.Singular
+    List<SpanProcessorConfig> processorConfigs();
+
+    /**
+     * Constructed span processors.
+     *
+     * @return span processors
+     */
+    @Option.Singular
+    List<SpanProcessor> processors();
+
+    /**
+     * Span exporters.
+     *
+     * @return span exporters
+     */
+    @Option.Configured
+    @Option.Singular
+    Map<String, SpanExporter> exporters();
+
+    /**
+     * OTel tracer provider prepared using these configuration settings.
+     *
+     * @return tracer provider
+     */
+    @Option.Access("")
+    Optional<SdkTracerProvider> tracerProvider();
 
 }

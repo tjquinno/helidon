@@ -19,8 +19,12 @@
  */
 @SuppressWarnings({ "requires-automatic", "requires-transitive-automatic" })
 module io.helidon.tracing.providers.opentelemetry {
+    requires io.helidon.common.configurable;
+    requires io.helidon.common.context;
     requires io.helidon.config;
     requires io.helidon.telemetry.api;
+    requires io.helidon.telemetry.providers.opentelemetry;
+
     requires io.opentelemetry.context;
     requires io.opentelemetry.extension.trace.propagation;
     requires io.opentelemetry.sdk;
@@ -28,17 +32,20 @@ module io.helidon.tracing.providers.opentelemetry {
     requires io.opentelemetry.sdk.trace;
     requires io.opentelemetry.semconv;
 
+    requires zipkin2;
+    requires zipkin2.reporter;
+
     requires static io.helidon.config.metadata;
 
     requires transitive io.helidon.tracing;
     requires transitive io.opentelemetry.api;
-    requires io.helidon.common.configurable;
-    requires io.helidon.common.context;
 
     requires static io.opentelemetry.exporter.otlp;
     requires static io.opentelemetry.exporter.zipkin;
     requires static io.opentelemetry.exporter.logging;
     requires static io.opentelemetry.exporter.logging.otlp;
+    requires io.helidon.service.registry;
+    requires java.logging;
 
     exports io.helidon.tracing.providers.opentelemetry;
 
@@ -50,7 +57,6 @@ module io.helidon.tracing.providers.opentelemetry {
     provides io.helidon.common.context.spi.DataPropagationProvider
             with io.helidon.tracing.providers.opentelemetry.OpenTelemetryDataPropagationProvider;
 
-    provides io.helidon.config.spi.ConfigMapperProvider
-            with io.helidon.tracing.providers.opentelemetry.OtelConfigMapper;
-
+    provides io.helidon.telemetry.providers.opentelemetry.spi.OpenTelemetrySignalProvider
+            with io.helidon.tracing.providers.opentelemetry.OpenTelemetryTracingProvider;
 }

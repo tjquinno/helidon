@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.helidon.telemetry.providers.opentelemetry;
+package io.helidon.tracing.providers.opentelemetry;
 
 import java.util.HashSet;
 import java.util.List;
@@ -71,8 +71,8 @@ class OtelConfigSupport {
                                       : SpanExporter.composite(exportersToUse);
 
         return switch (spanProcessorConfig.type()) {
-            case SIMPLE -> SimpleSpanProcessor.create(exporterToUse);
-            case BATCH -> createBatchSpanProcessor((BatchSpanProcessorConfig) spanProcessorConfig, exporterToUse);
+            case SpanProcessorType.SIMPLE -> SimpleSpanProcessor.create(exporterToUse);
+            case SpanProcessorType.BATCH -> createBatchSpanProcessor((BatchSpanProcessorConfig) spanProcessorConfig, exporterToUse);
         };
     }
 
@@ -129,8 +129,8 @@ class OtelConfigSupport {
 
         // Apply the default.
         return switch (SpanProcessorConfig.create(config).type()) {
-            case BATCH -> BatchSpanProcessorConfig.create(config);
-            case SIMPLE -> SpanProcessorConfig.create(config);
+            case SpanProcessorType.BATCH -> BatchSpanProcessorConfig.create(config);
+            case SpanProcessorType.SIMPLE -> SpanProcessorConfig.create(config);
         };
     }
 

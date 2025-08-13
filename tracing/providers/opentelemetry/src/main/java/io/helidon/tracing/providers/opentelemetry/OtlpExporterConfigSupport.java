@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.helidon.telemetry.providers.opentelemetry;
+package io.helidon.tracing.providers.opentelemetry;
 
 import java.net.URI;
 import java.time.Duration;
@@ -61,10 +61,10 @@ class OtlpExporterConfigSupport {
             SpanExporterConfig exporterConfig = SpanExporterConfig.create(config);
 
             return switch (exporterConfig.type()) {
-                case ZIPKIN -> createZipkinSpanExporter(config);
-                case CONSOLE -> LoggingSpanExporter.create();
-                case LOGGING_OTLP -> OtlpJsonLoggingSpanExporter.create();
-                case OTLP -> createOtlpSpanExporter(config);
+                case ExporterType.ZIPKIN -> createZipkinSpanExporter(config);
+                case ExporterType.CONSOLE -> LoggingSpanExporter.create();
+                case ExporterType.LOGGING_OTLP -> OtlpJsonLoggingSpanExporter.create();
+                case ExporterType.OTLP -> createOtlpSpanExporter(config);
             };
         }
 

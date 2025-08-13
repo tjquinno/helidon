@@ -16,26 +16,13 @@
 
 package io.helidon.telemetry.providers.opentelemetry;
 
-import java.util.Optional;
-
-import io.helidon.common.concurrency.limits.Limit;
 import io.helidon.common.media.type.MediaTypes;
-import io.helidon.common.testing.junit5.OptionalMatcher;
 import io.helidon.config.Config;
 import io.helidon.config.ConfigSources;
-import io.helidon.service.registry.GlobalServiceRegistry;
-import io.helidon.service.registry.ServiceRegistryManager;
-import io.helidon.service.registry.Services;
-import io.helidon.telemetry.api.Telemetry;
-import io.helidon.testing.junit5.Testing;
-import io.helidon.tracing.Tracer;
-import io.helidon.webserver.testing.junit5.ServerTest;
 
 import io.opentelemetry.api.baggage.propagation.W3CBaggagePropagator;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.extension.trace.propagation.JaegerPropagator;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -47,11 +34,6 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 
 class TestBasicConfig {
-
-//    @BeforeAll
-//    static void setup() {
-//        ServiceRegistryManager.start();
-//    }
 
     @ParameterizedTest
     @ValueSource(strings = {
@@ -70,7 +52,7 @@ class TestBasicConfig {
                                                                           """, propagatorsValue),
                                                     MediaTypes.APPLICATION_YAML));
 
-        OpenTelemetry openTelemetry = OpenTelemetry.builder().config(config.get("telemetry")).build();
+        HelidonOpenTelemetry openTelemetry = HelidonOpenTelemetry.builder().config(config.get("telemetry")).build();
 
         assertThat("Helidon OpenTelemetry", openTelemetry, notNullValue());
         assertThat("Propagators",
@@ -89,20 +71,7 @@ class TestBasicConfig {
 
     }
 
-    @Test
-    void testSamplerConfig() {
-        Config config = Config.just(ConfigSources
-                                            .create("""
-                                                            tracer:
-                                                              sampler:
-                                                                type: "always_on"
-                                                            """,
-                                                    MediaTypes.APPLICATION_YAML));
 
-                OpenTelemetryTracing otelTracing = OpenTelemetryTracingConfig.builder()
-                        .config(config.get("tracer"))
-                        .build();
-    }
 
     @Test
     void testTelemetryWithTracer() {
@@ -111,22 +80,10 @@ class TestBasicConfig {
                         telemetry:
                           service: "test-otel"
                           global: false
-                          signals:
-                            tracing:
-                              sampler:
-                                type: "always_on"
-                              exporters:
-                                - type: otlp
-                                  protocol: http/proto
-                                  name: my-oltp
-                                - type: zipkin
-                              processors:
-                                - max-queue-size: 21
-                                  type: batch
                         """,
                 MediaTypes.APPLICATION_YAML));
 
-        OpenTelemetry openTelemetry = OpenTelemetry.builder().config(config.get("telemetry")).build();
+        HelidonOpenTelemetry openTelemetry = HelidonOpenTelemetry.builder().config(config.get("telemetry")).build();
 
         assertThat("Helidon OpenTelemetry", openTelemetry, notNullValue());
         assertThat("Propagators",
@@ -141,39 +98,36 @@ class TestBasicConfig {
 
     }
 
-//    @Disabled
-    @Test
-    void testUsingServiceRegistry() {
-
-        Config config = Config.just(ConfigSources.create(
-                """
-                        telemetry:
-                          service: "test-otel"
-                          global: false
-                          signals:
-                            tracing:
-                              sampler:
-                                type: "always_on"
-                              exporters:
-                                - type: otlp
-                                  protocol: http/proto
-                                  name: my-oltp
-                                - type: zipkin
-                              processors:
-                                - max-queue-size: 21
-                                  type: batch
-                        """,
-                MediaTypes.APPLICATION_YAML));
-
-        Services.set(Config.class, config);
-        Tracer tracer = Services.get(Tracer.class);
-        assertThat("Tracer", tracer, notNullValue());
-
-
-//        Optional<Telemetry.Signal<Tracer>> tracerSignal = openTelemetry.signal(Tracer.class);
+// ----------------------------------
 //
-//        assertThat("Tracer from OTel tracer signal",
-//                   tracerSignal.map(signal -> signal.get("test-tracer")),
-//                   OptionalMatcher.optionalValue(instanceOf(Tracer.class)));
-    }
+//    Move the following tests to integration testing.
+//
+//    @Test
+//    void testUsingServiceRegistry() {
+//
+//        Config config = Config.just(ConfigSources.create(
+//                """
+//                        telemetry:
+//                          service: "test-otel"
+//                          global: false
+//                          signals:
+//                            tracing:
+//                              sampler:
+//                                type: "always_on"
+//                              exporters:
+//                                - type: otlp
+//                                  protocol: http/proto
+//                                  name: my-oltp
+//                                - type: zipkin
+//                              processors:
+//                                - max-queue-size: 21
+//                                  type: batch
+//                        """,
+//                MediaTypes.APPLICATION_YAML));
+//
+//        Services.set(Config.class, config);
+//        Tracer tracer = Services.get(Tracer.class);
+//        assertThat("Tracer", tracer, notNullValue());
+//
+//    }
 }

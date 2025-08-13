@@ -14,14 +14,15 @@
  * limitations under the License.
  */
 
-package io.helidon.telemetry.providers.opentelemetry;
+package io.helidon.tracing.providers.opentelemetry;
 
 import io.helidon.common.config.Config;
+import io.helidon.telemetry.providers.opentelemetry.HelidonOpenTelemetry;
 import io.helidon.telemetry.providers.opentelemetry.spi.OpenTelemetrySignalProvider;
 import io.helidon.tracing.Tracer;
 
 /**
- * Provider for the tracing signal.
+ * Provider for the OpenTelemetry tracing signal.
  */
 public class OpenTelemetryTracingProvider implements OpenTelemetrySignalProvider<Tracer> {
 
@@ -38,7 +39,7 @@ public class OpenTelemetryTracingProvider implements OpenTelemetrySignalProvider
 
     @Override
     @SuppressWarnings("unchecked,rawtypes")
-    public OpenTelemetry.Signal create(Config config, String name) {
+    public HelidonOpenTelemetry.Signal create(Config config, String name) {
         return OpenTelemetryTracing.builder()
                 .config(config)
                 .name(name)

@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-package io.helidon.telemetry.providers.opentelemetry;
+package io.helidon.tracing.providers.opentelemetry;
 
 import java.util.Arrays;
-
-import io.helidon.common.config.Config;
+import java.util.Locale;
 
 /**
  * Sampler types valid for OpenTelemetry tracing.
@@ -62,26 +61,23 @@ public enum SamplerType {
      */
     PARENT_BASED_TRACE_ID_RATIO("parentbased_traceidratio");
 
+    static final String DEFAULT_STRING = "parentbased_always_on";
     static final String DEFAULT_NAME = "PARENT_BASED_ALWAYS_ON";
+    static final SamplerType DEFAULT = from(DEFAULT_STRING);
 
-    private final String name;
+    private final String config;
 
-    SamplerType(String name) {
-        this.name = name;
+    SamplerType(String config) {
+        this.config = config;
     }
 
     static SamplerType from(String value) {
         for (SamplerType samplerType : SamplerType.values()) {
-            if (samplerType.name.equals(value) || samplerType.name().equals(value)) {
+            if (samplerType.config.equals(value) || samplerType.name().equals(value)) {
                 return samplerType;
             }
         }
-        throw new IllegalArgumentException("Unknown sampler type: " + value + "; expected one of "
-                                                   + Arrays.toString(SamplerType.values())
-                                                   + "(or in lower case)");
-    }
-
-    static SamplerType from(Config config) {
-        return config.asString().map(SamplerType::from).orElseThrow();
+        throw new IllegalArgumentException("Unknown sample type: " + value + "; expected one of "
+                                                   + Arrays.toString(SamplerType.values()));
     }
 }

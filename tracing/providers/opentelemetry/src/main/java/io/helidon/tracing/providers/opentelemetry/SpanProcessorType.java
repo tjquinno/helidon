@@ -18,6 +18,8 @@ package io.helidon.tracing.providers.opentelemetry;
 
 import java.util.Arrays;
 
+import io.helidon.common.config.Config;
+
 /**
  * Span Processor type. Batch is default for production.
  */
@@ -32,7 +34,7 @@ public enum SpanProcessorType {
     BATCH("batch");
 
     static final SpanProcessorType DEFAULT = BATCH;
-    static final String DEFAULT_NAME = "BATCH";
+
     private final String processorType;
 
     SpanProcessorType(String processorType) {
@@ -49,4 +51,9 @@ public enum SpanProcessorType {
                                                    + Arrays.toString(SpanProcessorType.values()));
 
     }
+
+    static SpanProcessorType from(Config config) {
+        return from(config.asString().get());
+    }
 }
+

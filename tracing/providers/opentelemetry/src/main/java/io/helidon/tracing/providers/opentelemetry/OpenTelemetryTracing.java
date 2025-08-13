@@ -14,14 +14,15 @@
  * limitations under the License.
  */
 
-package io.helidon.telemetry.providers.opentelemetry;
+package io.helidon.tracing.providers.opentelemetry;
 
+import java.util.Optional;
 import java.util.function.Consumer;
 
 import io.helidon.builder.api.RuntimeType;
 import io.helidon.common.config.Config;
+import io.helidon.telemetry.providers.opentelemetry.HelidonOpenTelemetry;
 import io.helidon.tracing.Tracer;
-import io.helidon.tracing.providers.opentelemetry.OpenTelemetryTracerProvider;
 
 import io.opentelemetry.api.trace.TracerProvider;
 import io.opentelemetry.sdk.OpenTelemetrySdkBuilder;
@@ -29,7 +30,7 @@ import io.opentelemetry.sdk.trace.SdkTracerProvider;
 import io.opentelemetry.sdk.trace.SdkTracerProviderBuilder;
 
 @RuntimeType.PrototypedBy(OpenTelemetryTracingConfig.class)
-class OpenTelemetryTracing implements OpenTelemetry.Signal<Tracer>, RuntimeType.Api<OpenTelemetryTracingConfig> {
+class OpenTelemetryTracing implements HelidonOpenTelemetry.Signal<Tracer>, RuntimeType.Api<OpenTelemetryTracingConfig> {
 
     static final String TYPE = "tracing";
 
@@ -109,5 +110,17 @@ class OpenTelemetryTracing implements OpenTelemetry.Signal<Tracer>, RuntimeType.
     @Override
     public Tracer get(String name) {
         return OpenTelemetryTracerProvider.tracer(otelTracerProvider.get(name));
+    }
+
+    @Override
+    public <B> B unwrap(Class<B> type) {
+        if (type.isInstance(this)) {
+            return type.cast(this);
+        }
+        Optional<SdkTracerProvider> tracerProvider = prototype().tracerProvider();
+        if (tracerProvider.isPresent() && type.isInstance(tracerProvider)) {
+            return type.cast(tracerProvider.get());
+        }
+        throw new IllegalArgumentException("Cannot unwrap this instance to type " + type.getName());
     }
 }

@@ -27,26 +27,26 @@ import io.helidon.common.features.api.HelidonFlavor;
 @Features.Incubating
 module io.helidon.telemetry.providers.opentelemetry {
 
+    requires io.helidon.builder.api;
     requires io.helidon.common.configurable;
     requires io.helidon.config;
+    requires io.helidon.service.registry;
     requires io.helidon.telemetry.api;
-    requires io.helidon.builder.api;
     requires io.helidon.tracing;
 
     requires io.opentelemetry.api;
     requires io.opentelemetry.context;
-    requires io.opentelemetry.extension.trace.propagation;
-    requires io.opentelemetry.sdk.trace;
-    requires io.helidon.service.registry;
-    requires io.opentelemetry.sdk;
-    requires io.opentelemetry.sdk.common;
-    requires io.opentelemetry.exporter.otlp;
-    requires zipkin2;
-    requires zipkin2.reporter;
-    requires io.opentelemetry.exporter.zipkin;
-    requires io.helidon.tracing.providers.opentelemetry;
     requires io.opentelemetry.exporter.logging;
     requires io.opentelemetry.exporter.logging.otlp;
+    requires io.opentelemetry.exporter.otlp;
+    requires io.opentelemetry.exporter.zipkin;
+    requires io.opentelemetry.extension.trace.propagation;
+    requires io.opentelemetry.sdk;
+    requires io.opentelemetry.sdk.common;
+    requires io.opentelemetry.sdk.trace;
+
+    requires zipkin2;
+    requires zipkin2.reporter;
 
     requires static io.helidon.common.features.api;
 
@@ -55,7 +55,6 @@ module io.helidon.telemetry.providers.opentelemetry {
 
     uses io.helidon.telemetry.providers.opentelemetry.spi.OpenTelemetrySignalProvider;
 
-    provides io.helidon.telemetry.providers.opentelemetry.spi.OpenTelemetrySignalProvider
-        with io.helidon.telemetry.providers.opentelemetry.OpenTelemetryTracingProvider;
+
 
 }

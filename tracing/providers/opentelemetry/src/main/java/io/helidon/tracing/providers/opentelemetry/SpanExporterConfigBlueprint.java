@@ -16,87 +16,26 @@
 
 package io.helidon.tracing.providers.opentelemetry;
 
-import java.time.Duration;
-import java.util.Map;
-
 import io.helidon.builder.api.Option;
 import io.helidon.builder.api.Prototype;
-import io.helidon.common.config.Config;
-import io.helidon.common.configurable.Resource;
 
-import io.opentelemetry.sdk.trace.export.SpanExporter;
-
-/**
- * Superset of settings used by the various span exporters. Specific exporters might ignore some or all
- * of the settings.
- */
+@Prototype.Configured
 @Prototype.Blueprint
-@Prototype.Configured("exporters")
-@Prototype.CustomMethods(SpanExporterConfigSupport.class)
+@Prototype.CustomMethods(SpanExporterConfigSupport.CustomMethods.class)
 interface SpanExporterConfigBlueprint {
 
-//    @Prototype.FactoryMethod
-//    static SpanExporterConfig create(Config config) {
-//        int a = 0;
-//        return null;
-//    }
+    @Prototype.FactoryMethod
+    static ExporterType createType(String value) {
+        return ExporterType.from(value);
+    }
 
     /**
-     * Type of span exporter.
+     * Span exporter type.
      *
-     * @return type of span exporter
+     * @return exporter type
      */
-    @Option.Configured("type")
-    @Option.Default(ExporterType.DEFAULT_NAME)
-    ExporterType exporterType();
-
-//    /**
-//     * OTLP exporter protocol.
-//     *
-//     * @return OTLP exporter protocol
-//     */
-//    @Option.Configured(OtlpExporterProtocol.DEFAULT_NAME)
-//    OtlpExporterProtocol exporterProtocol();
-
-//    @Option.Configured
-//    Duration timeout();
-//
-//    @Option.Configured("protocol")
-//    String collectorProtocol();
-//
-//    @Option.Configured("host")
-//    String collectorHost();
-//
-//    @Option.Configured("port")
-//    int collectorPort();
-//
-//    @Option.Configured("path")
-//    String collectorPath();
-//
-//    @Option.Configured
-//    String compression();
-//
-//    @Option.Configured
-//    Duration exporterTimeout();
-
-//    /**
-//     * Headers added to each outbound transmission of span data.
-//     *
-//     * @return headers
-//     */
-//    @Option.Configured
-//    @Option.Singular
-//    Map<String, String> headers();
-//
-//    @Option.Configured
-//    Resource privateKey();
-//
-//    @Option.Configured
-//    Resource clientCertificate();
-//
-//    @Option.Configured
-//    Resource trustedCertificate();
-
-
+    @Option.Configured
+    @Option.Default("DEFAULT")
+    ExporterType type();
 
 }

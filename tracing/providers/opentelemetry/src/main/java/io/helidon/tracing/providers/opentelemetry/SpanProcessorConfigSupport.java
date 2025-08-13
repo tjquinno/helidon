@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package io.helidon.telemetry.providers.opentelemetry;
+package io.helidon.tracing.providers.opentelemetry;
 
 import io.helidon.builder.api.Prototype;
 import io.helidon.common.config.Config;
 
-class SpanExporterConfigSupport {
+class SpanProcessorConfigSupport {
 
-    private SpanExporterConfigSupport() {
+    private SpanProcessorConfigSupport() {
     }
 
     static class CustomMethods {
@@ -30,8 +30,9 @@ class SpanExporterConfigSupport {
         }
 
         @Prototype.FactoryMethod
-        static ExporterType createType(Config config) {
-            return ExporterType.from(config);
+        static SpanProcessorType createType(Config config) {
+            return SpanProcessorType.from(config);
         }
+
     }
 }

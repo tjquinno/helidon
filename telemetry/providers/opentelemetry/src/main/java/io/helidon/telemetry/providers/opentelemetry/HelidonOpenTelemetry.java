@@ -23,20 +23,26 @@ import io.helidon.builder.api.RuntimeType;
 import io.helidon.common.config.NamedService;
 import io.helidon.telemetry.api.Telemetry;
 
+import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.sdk.OpenTelemetrySdkBuilder;
 
 /**
  * Implementation of the {@link io.helidon.telemetry.api.Telemetry} interface for OpenTelemetry.
  */
 @RuntimeType.PrototypedBy(OpenTelemetryConfig.class)
-public class OpenTelemetry implements Telemetry, RuntimeType.Api<OpenTelemetryConfig> {
+public class HelidonOpenTelemetry implements Telemetry, RuntimeType.Api<OpenTelemetryConfig> {
+
+    /*
+    We se the type name HelidonOpenTelemetry instead of OpenTelemetry just to make things clearer for people reading the code, to
+    help distinguish this type from the actual OpenTelemetry "OpenTelemetry" type.
+     */
 
     static final String TYPE = "otel";
 
     private static final System.Logger LOGGER = System.getLogger(OpenTelemetry.class.getName());
     private final OpenTelemetryConfig config;
 
-    OpenTelemetry(OpenTelemetryConfig config) {
+    HelidonOpenTelemetry(OpenTelemetryConfig config) {
         this.config = config;
     }
 
@@ -44,11 +50,11 @@ public class OpenTelemetry implements Telemetry, RuntimeType.Api<OpenTelemetryCo
         return OpenTelemetryConfig.builder();
     }
 
-    static OpenTelemetry create(OpenTelemetryConfig config) {
-        return new OpenTelemetry(config);
+    static HelidonOpenTelemetry create(OpenTelemetryConfig config) {
+        return new HelidonOpenTelemetry(config);
     }
 
-    static OpenTelemetry create(Consumer<OpenTelemetryConfig.Builder> consumer) {
+    static HelidonOpenTelemetry create(Consumer<OpenTelemetryConfig.Builder> consumer) {
         return builder().update(consumer).build();
     }
 
@@ -69,6 +75,18 @@ public class OpenTelemetry implements Telemetry, RuntimeType.Api<OpenTelemetryCo
                 .filter(signal -> signalType.isAssignableFrom(signal.signalType()))
                 .map(signal -> (Telemetry.Signal<T>) signal)
                 .findFirst();
+    }
+
+    @Override
+    public <B> B unwrap(Class<B> type) {
+        if (type.isInstance(this)) {
+            return type.cast(this);
+        }
+        if (type.isInstance(config.openTelemetry())) {
+            return type.cast(config.openTelemetry());
+        }
+        throw new IllegalArgumentException("Cannot unwrap this instance of type " + this.getClass().getName()
+        + " to the requested type " + type.getName());
     }
 
     /**

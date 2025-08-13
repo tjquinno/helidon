@@ -17,7 +17,6 @@
 package io.helidon.telemetry.providers.opentelemetry;
 
 import java.util.List;
-import java.util.Optional;
 
 import io.helidon.builder.api.Option;
 import io.helidon.builder.api.Prototype;
@@ -33,7 +32,7 @@ import io.opentelemetry.sdk.OpenTelemetrySdk;
 @Prototype.Blueprint(decorator = OpenTelemetryConfigSupport.BuildDecorator.class)
 @Prototype.Configured("telemetry")
 @Prototype.CustomMethods(OpenTelemetryConfigSupport.CustomMethods.class)
-interface OpenTelemetryConfigBlueprint extends TelemetryConfig, Prototype.Factory<OpenTelemetry> {
+interface OpenTelemetryConfigBlueprint extends TelemetryConfig, Prototype.Factory<HelidonOpenTelemetry> {
 
     /**
      * Whether the {@link io.opentelemetry.api.OpenTelemetry} instance created from this configuration should be made the
@@ -48,7 +47,7 @@ interface OpenTelemetryConfigBlueprint extends TelemetryConfig, Prototype.Factor
     /**
      * OpenTelemetry {@link io.opentelemetry.context.propagation.TextMapPropagator} instances added explicitly by the app.
      * <p>
-     * Default: {@value ContextPropagationType#DEFAULT_NAMES}.
+     * Default: {@value io.helidon.telemetry.providers.opentelemetry.ContextPropagationType#DEFAULT_NAMES}.
      *
      * @return explicitly-added
      */
@@ -66,7 +65,7 @@ interface OpenTelemetryConfigBlueprint extends TelemetryConfig, Prototype.Factor
     @Option.Configured
     @Option.Singular
     @Option.Provider(value = OpenTelemetrySignalProvider.class)
-    List<OpenTelemetry.Signal> signals();
+    List<HelidonOpenTelemetry.Signal> signals();
 
     /**
      * The {@link io.opentelemetry.api.OpenTelemetry} instance to use for telemetry.
@@ -76,7 +75,7 @@ interface OpenTelemetryConfigBlueprint extends TelemetryConfig, Prototype.Factor
      *
      * @return the OpenTelemetry instance
      */
-    Optional<io.opentelemetry.api.OpenTelemetry> openTelemetry();
+    io.opentelemetry.api.OpenTelemetry openTelemetry();
 
     /**
      * The {@link io.opentelemetry.sdk.OpenTelemetrySdk} to use (restricted visibility).

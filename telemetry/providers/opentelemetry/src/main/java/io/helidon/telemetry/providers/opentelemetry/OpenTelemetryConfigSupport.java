@@ -34,6 +34,14 @@ class OpenTelemetryConfigSupport {
         @Override
         public void decorate(OpenTelemetryConfig.BuilderBase<?, ?> target) {
 
+            /*
+            If the app set the OpenTelemetry instance on the builder explicitly then that overrides what we would
+            derive from the settings.
+             */
+            if (target.openTelemetry().isPresent()) {
+                return;
+            }
+
             var builder = OpenTelemetrySdk.builder();
 
             if (!target.propagators().isEmpty()) {
@@ -45,9 +53,9 @@ class OpenTelemetryConfigSupport {
 
             var sdk = builder.build();
             target.openTelemetrySdk(sdk);
+            target.openTelemetry(sdk);
 
         }
-
     }
 
     static class CustomMethods {

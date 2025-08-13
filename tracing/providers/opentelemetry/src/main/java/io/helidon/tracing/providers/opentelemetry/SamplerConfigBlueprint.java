@@ -16,31 +16,34 @@
 
 package io.helidon.tracing.providers.opentelemetry;
 
+import java.util.Optional;
+
 import io.helidon.builder.api.Option;
 import io.helidon.builder.api.Prototype;
 
 /**
- * Helidon configuration for OpenTelemetry {@link io.opentelemetry.sdk.trace.samplers.Sampler}.
+ * Tracing sampler settings.
  */
 @Prototype.Blueprint
-@Prototype.Configured(value = "sampler", root = false)
-@Prototype.CustomMethods(SamplerConfigSupport.class)
+@Prototype.Configured
+@Prototype.CustomMethods(SamplerConfigSupport.CustomMethods.class)
 interface SamplerConfigBlueprint {
 
     /**
      * Sampler type.
+     *
      * @return sampler type
      */
-    @Option.Configured()
+    @Option.Configured
     @Option.Default(SamplerType.DEFAULT_NAME)
     SamplerType type();
 
     /**
-     * Parameter for the sampler.
+     * Sampler parameter.
      *
      * @return sampler parameter
      */
     @Option.Configured
-    Number param();
+    Optional<Number> param();
 
 }

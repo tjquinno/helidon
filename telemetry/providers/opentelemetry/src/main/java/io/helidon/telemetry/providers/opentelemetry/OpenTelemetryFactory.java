@@ -27,14 +27,19 @@ import io.helidon.telemetry.api.Telemetry;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 
 @Service.Singleton
-class TelemetryFactory implements Supplier<Telemetry> {
+class OpenTelemetryFactory implements Supplier<Telemetry> {
 
-    private static final System.Logger LOGGER = System.getLogger(TelemetryFactory.class.getName());
+    private static final System.Logger LOGGER = System.getLogger(OpenTelemetryFactory.class.getName());
+
+    // Temporary flag to select legacy behavior (default for now) or new behavior based on Helidon telemetry.
+    private static final boolean USE_HELIDON_TELEMETRY = Boolean.getBoolean("io.helidon.tracing.use-telemetry");
 
     private final Telemetry telemetry;
 
     @Service.Inject
-    TelemetryFactory(Config config) {
+    OpenTelemetryFactory(Config config) {
+
+//        telemetry = init(chooseSettings(config).build());
         telemetry = init(OpenTelemetryConfig.create(config.get(Telemetry.CONFIG_KEY)).build());
     }
 
@@ -59,11 +64,11 @@ class TelemetryFactory implements Supplier<Telemetry> {
         return telemetry;
     }
 
-    private static OpenTelemetry init(OpenTelemetry openTelemetry) {
+    private static HelidonOpenTelemetry init(HelidonOpenTelemetry openTelemetry) {
 
         var prototype = openTelemetry.prototype();
 
-        var ot = prototype.openTelemetry().orElse(prototype.openTelemetrySdk());
+        var ot = prototype.openTelemetry();
 
         if (prototype.global()) {
             List<String> otelReasonsForUsingAutoConfig = otelReasonsForUsingAutoConfig();
@@ -84,4 +89,19 @@ class TelemetryFactory implements Supplier<Telemetry> {
 
         return openTelemetry;
     }
+
+//    @Deprecated(since = "4.3.0", forRemoval = true)
+//    private static OpenTelemetryConfig chooseSettings(Config config) {
+//        /*
+//        Even though the app includes this telemetry-centric code, if the user specified top-level "tracing" config we use
+//        that for compatibility unless the user tells us not to.
+//         */
+//
+//        if (config.get("tracing").exists() && !USE_HELIDON_TELEMETRY) {
+//            Services.get()
+//        }
+//        OpenTelemetryConfig.create(config.get(Telemetry.CONFIG_KEY)
+//    }
+
+
 }
