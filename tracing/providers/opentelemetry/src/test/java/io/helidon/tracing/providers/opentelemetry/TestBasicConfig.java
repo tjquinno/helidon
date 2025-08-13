@@ -20,6 +20,7 @@ import io.helidon.common.media.type.MediaTypes;
 import io.helidon.config.Config;
 import io.helidon.config.ConfigSources;
 import io.helidon.service.registry.Services;
+import io.helidon.telemetry.providers.opentelemetry.TracerBuilderConfig;
 import io.helidon.tracing.Tracer;
 
 import io.opentelemetry.exporter.otlp.http.trace.OtlpHttpSpanExporter;
@@ -98,7 +99,12 @@ class TestBasicConfig {
 
         Services.set(Config.class, config);
         Tracer tracer = Services.get(Tracer.class);
-        assertThat("Tracer", tracer, notNullValue());
+        assertThat("Tracer", tracer, allOf(notNullValue(),
+                                           instanceOf(OpenTelemetryTracer.class)));
+
+        OpenTelemetryTracer openTelemetryTracer = (OpenTelemetryTracer) tracer;
+        openTelemetryTracer.unwrap(io.opentelemetry.api.trace.Tracer.class);
+
 
     }
 

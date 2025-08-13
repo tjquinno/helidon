@@ -16,30 +16,20 @@
 
 package io.helidon.telemetry.api;
 
-import io.helidon.builder.api.Option;
+import io.helidon.common.Weight;
+import io.helidon.common.Weighted;
+import io.helidon.service.registry.Service;
+import io.helidon.telemetry.spi.TelemetryProvider;
 
 /**
- * Common configuration settings for telemetry.
- * <p>
- * Implementations of telemetry define their own additional configuration settings.
+ * No-op telemetry provider.
  */
-public interface TelemetryConfig {
+@Weight(Weighted.DEFAULT_WEIGHT - 100)
+@Service.Singleton
+class NoOpTelemetryProvider implements TelemetryProvider {
 
-    /**
-     * Telemetry service name reported to back ends.
-     *
-     * @return service name
-     */
-    @Option.Configured
-    String service();
-
-    /**
-     * Whether telemetry is enabled.
-     *
-     * @return true if telemetry is enabled; false otherwise
-     */
-    @Option.Configured
-    @Option.DefaultBoolean(true)
-    boolean enabled();
-
+    @Override
+    public Telemetry.Builder telemetryBuilder() {
+        return NoOpTelemetry.BUILDER;
+    }
 }

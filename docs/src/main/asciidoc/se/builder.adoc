@@ -45,7 +45,7 @@ Helidon Builder is an API designed for generating immutable objects using the bu
 === Terminology
 
 * *Blueprint*: A package-private interface that serves as the source for code generation.
-* *Prototype*: The generated code extending the blueprint. It is part of the public API and includes the fluent builder implementation and static factory methods.
+* *Blueprint*: The generated code extending the blueprint. It is part of the public API and includes the fluent builder implementation and static factory methods.
 * *Runtime Type*: An optional, user-defined type created using the prototype. It is useful for constructing custom objects beyond the generated prototype.
 
 === High Level Example
@@ -385,7 +385,7 @@ Annotations:
 | `Prototype.CustomMethods`   | No       | reference a class that will contain declarations (all static) of custom methods to be added to the generated code, can add prototype, builder, and factory methods
 | `Prototype.BuilderMethod`   | No       | Annotation to be placed on factory methods that are to be added to builder, first parameter is the `BuilderBase<?, ?>` of the prototype
 | `Prototype.PrototypeMethod` | No       | Annotation to be placed on factory methods that are to be added to prototype, first parameter is the prototype instance
-| `RuntimeType.PrototypedBy`  | Yes      | Annotation on runtime type that is created from a `Prototype`, to map it to the prototype it can be created from, used to trigger annotation processor for validation
+| `RuntimeType.PrototypedBy`  | Yes      | Annotation on runtime type that is created from a `Blueprint`, to map it to the prototype it can be created from, used to trigger annotation processor for validation
 
 |===
 

@@ -61,8 +61,8 @@ class OpenTelemetryTracer implements Tracer {
         this.tags = tags;
     }
 
-    static OpenTelemetryTracerBuilder builder() {
-        return new OpenTelemetryTracerBuilder();
+    static OpenTelemetryTracerBuilderNew builder() {
+        return new OpenTelemetryTracerBuilderNew();
     }
 
     @Override

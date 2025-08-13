@@ -30,7 +30,7 @@ import io.helidon.tracing.TracerBuilder;
 /**
  * Tracer builder based on OpenTelemetry.
  */
-class OpenTelemetryTracerBuilder implements TracerBuilder<OpenTelemetryTracerBuilder> {
+class OpenTelemetryTracerBuilderNew implements TracerBuilder<OpenTelemetryTracerBuilderNew> {
 
     private static final boolean DEFAULT_ENABLED = true;
     private static final boolean DEFAULT_GLOBAL = true;
@@ -53,58 +53,58 @@ class OpenTelemetryTracerBuilder implements TracerBuilder<OpenTelemetryTracerBui
     private boolean global = DEFAULT_GLOBAL;
 
     @Override
-    public OpenTelemetryTracerBuilder serviceName(String name) {
+    public OpenTelemetryTracerBuilderNew serviceName(String name) {
         this.serviceName = name;
         return this;
     }
 
     @Override
-    public OpenTelemetryTracerBuilder collectorProtocol(String protocol) {
+    public OpenTelemetryTracerBuilderNew collectorProtocol(String protocol) {
         return null;
     }
 
     @Override
-    public OpenTelemetryTracerBuilder collectorPort(int port) {
+    public OpenTelemetryTracerBuilderNew collectorPort(int port) {
         return null;
     }
 
     @Override
-    public OpenTelemetryTracerBuilder collectorHost(String host) {
+    public OpenTelemetryTracerBuilderNew collectorHost(String host) {
         return null;
     }
 
     @Override
-    public OpenTelemetryTracerBuilder collectorPath(String path) {
+    public OpenTelemetryTracerBuilderNew collectorPath(String path) {
         return null;
     }
 
     @Override
-    public OpenTelemetryTracerBuilder addTracerTag(String key, String value) {
+    public OpenTelemetryTracerBuilderNew addTracerTag(String key, String value) {
         return null;
     }
 
     @Override
-    public OpenTelemetryTracerBuilder addTracerTag(String key, Number value) {
+    public OpenTelemetryTracerBuilderNew addTracerTag(String key, Number value) {
         return null;
     }
 
     @Override
-    public OpenTelemetryTracerBuilder addTracerTag(String key, boolean value) {
+    public OpenTelemetryTracerBuilderNew addTracerTag(String key, boolean value) {
         return null;
     }
 
     @Override
-    public OpenTelemetryTracerBuilder config(Config config) {
+    public OpenTelemetryTracerBuilderNew config(Config config) {
         return null;
     }
 
     @Override
-    public OpenTelemetryTracerBuilder enabled(boolean enabled) {
+    public OpenTelemetryTracerBuilderNew enabled(boolean enabled) {
         return null;
     }
 
     @Override
-    public OpenTelemetryTracerBuilder registerGlobal(boolean global) {
+    public OpenTelemetryTracerBuilderNew registerGlobal(boolean global) {
         return null;
     }
 

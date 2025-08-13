@@ -35,7 +35,7 @@ class BuilderPropagatorDefaultTest {
     }
 
     @Test
-    void checkDefaultedPropagationFormatIsJaeger() {
+    void checkDefaultedPropagationsFormatIsJaeger() {
         JaegerTracerBuilder builder = JaegerTracerBuilder.create();
         var props = builder.createPropagators();
         assertThat("Propagators with only default", props, contains(instanceOf(JaegerPropagator.class)));

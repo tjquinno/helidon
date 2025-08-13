@@ -26,21 +26,39 @@ import io.helidon.telemetry.api.Telemetry;
 
 import io.opentelemetry.api.GlobalOpenTelemetry;
 
+/**
+ * Supplier of {@link Telemetry} using configuration.
+ * <p>
+ * This factory is typically used when the service registry seeks the telemetry instance.
+ * <p>
+ * Helidon can prepare the telemetry using the top-level {@code telemetry} config node or using
+ * the top-level {@code tracing} config node (for some compatibility with other tracing configurations such as Jaeger and Zipkin).
+ * If the configuration contains both, Helidon prefers {@code telemetry} unless the user specifies
+ * {@value #USE_HELIDON_TRACING_PROPERTY} as {@code true}.
+ */
 @Service.Singleton
 class OpenTelemetryFactory implements Supplier<Telemetry> {
 
     private static final System.Logger LOGGER = System.getLogger(OpenTelemetryFactory.class.getName());
 
+    private static final String USE_HELIDON_TRACING_PROPERTY = "io.helidon.telemetry.use-tracing";
+
     // Temporary flag to select legacy behavior (default for now) or new behavior based on Helidon telemetry.
-    private static final boolean USE_HELIDON_TELEMETRY = Boolean.getBoolean("io.helidon.tracing.use-telemetry");
+    @Deprecated(since = "4.3.0", forRemoval = true)
+    private static final boolean USE_HELIDON_TRACING_DESPITE_TELEMETRY = Boolean.getBoolean(USE_HELIDON_TRACING_PROPERTY);
+
+    private static final Supplier<String> CONFIG_LOG_MESSAGE_FORMAT = () -> String.format(
+            """
+                    Configuration contains both top-level 'telemetry' and top-level 'tracing' settings; \
+                    using '%%s' because property %s is set to '%b'""",
+            USE_HELIDON_TRACING_PROPERTY,
+            USE_HELIDON_TRACING_DESPITE_TELEMETRY);
 
     private final Telemetry telemetry;
 
     @Service.Inject
     OpenTelemetryFactory(Config config) {
-
-//        telemetry = init(chooseSettings(config).build());
-        telemetry = init(OpenTelemetryConfig.create(config.get(Telemetry.CONFIG_KEY)).build());
+        telemetry = init(chooseSettings(config).build());
     }
 
     static List<String> otelReasonsForUsingAutoConfig() {
@@ -90,18 +108,26 @@ class OpenTelemetryFactory implements Supplier<Telemetry> {
         return openTelemetry;
     }
 
-//    @Deprecated(since = "4.3.0", forRemoval = true)
-//    private static OpenTelemetryConfig chooseSettings(Config config) {
-//        /*
-//        Even though the app includes this telemetry-centric code, if the user specified top-level "tracing" config we use
-//        that for compatibility unless the user tells us not to.
-//         */
-//
-//        if (config.get("tracing").exists() && !USE_HELIDON_TELEMETRY) {
-//            Services.get()
-//        }
-//        OpenTelemetryConfig.create(config.get(Telemetry.CONFIG_KEY)
-//    }
+    private static OpenTelemetryConfig chooseSettings(Config config) {
 
+        /*
+        Even though the app includes this telemetry-centric code, if the user specified top-level "tracing" config we use
+        that for compatibility unless the user tells us not to.
+         */
+        Config topLevelTracingConfig = config.get("tracing");
+        Config configToUse;
+        if (topLevelTracingConfig.exists() && !USE_HELIDON_TRACING_DESPITE_TELEMETRY) {
+            configToUse = TracerBuilderConfig.create(topLevelTracingConfig).asConfig();
+            if (config.get(Telemetry.CONFIG_KEY).exists()) {
+                LOGGER.log(System.Logger.Level.WARNING, String.format(CONFIG_LOG_MESSAGE_FORMAT.get(), "tracing"));
+            }
+        } else {
+            configToUse = config.get(Telemetry.CONFIG_KEY);
+            if (config.get("tracing").exists()) {
+                LOGGER.log(System.Logger.Level.WARNING, String.format(CONFIG_LOG_MESSAGE_FORMAT.get(), "telemetry"));
+            }
+        }
+        return OpenTelemetryConfig.create(configToUse);
+    }
 
 }

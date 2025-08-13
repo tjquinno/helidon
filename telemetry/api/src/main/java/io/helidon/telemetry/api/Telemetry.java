@@ -16,10 +16,13 @@
 
 package io.helidon.telemetry.api;
 
+import java.util.List;
 import java.util.Optional;
 
+import io.helidon.builder.api.Option;
 import io.helidon.service.registry.Service;
-
+import io.helidon.service.registry.Services;
+import io.helidon.telemetry.spi.TelemetryProvider;
 
 /**
  * Contract for a telemetry implementation.
@@ -34,6 +37,15 @@ public interface Telemetry /* extends NamedService */ {
      * Config key for telemetry settings.
      */
     String CONFIG_KEY = "telemetry";
+
+    /**
+     * Returns a neutral telemetry builder.
+     *
+     * @return telemetry builder
+     */
+    static Builder builder() {
+        return Services.get(TelemetryProvider.class).telemetryBuilder();
+    }
 
     /**
      * Returns the signal of the requested type, if present.
@@ -110,5 +122,86 @@ public interface Telemetry /* extends NamedService */ {
          * @param <B> type to which to convert
          */
         <B> B unwrap(Class<B> type);
+    }
+
+    /**
+     * Behavior common to all telemetry builder implementations.
+     */
+    interface Builder extends io.helidon.common.Builder<Builder, Telemetry> {
+
+        /**
+         * Sets the service name for the telemetry instance.
+         *
+         * @param service service name
+         * @return updated builder
+         */
+        Builder service(String service);
+
+        /**
+         * Sets whether the telemetry instance should be enabled.
+         *
+         * @param enabled true to enable the telemetry instance; false otherwise
+         * @return updated builder
+         */
+        Builder enabled(boolean enabled);
+
+
+        /**
+         * Sets whether the telemetry instance should be assigned as global.
+         *
+         * @param global true if the instance should be global; false otherwise
+         * @return updated builder
+         */
+        Builder global(boolean global);
+
+        /**
+         * Sets the propagation types the telemetry instance should use.
+         *
+         * @param propagation propagation types to use
+         * @return updated builder
+         */
+        Builder propagations(List<String> propagation);
+
+        /**
+         * Settings for use by telemetry implementations to aid in converting from neutral settings
+         * to implementation-specific ones.
+         */
+        interface Blueprint {
+            /**
+             * Whether the telemetry instance should be set as the global isntance.
+             *
+             * @return true if the instance should be global; false otherwise
+             */
+            @Option.Configured
+            @Option.DefaultBoolean(true)
+            boolean global();
+
+            /**
+             * Whether telemetry should be enabled.
+             *
+             * @return true if enabled; false otherwise
+             */
+            @Option.Configured
+            @Option.DefaultBoolean(true)
+            boolean enabled();
+
+            /**
+             * Service name the telemetry instance should use in exporting data.
+             *
+             * @return service name
+             */
+            @Option.Configured
+            @Option.Required
+            String service();
+
+            /**
+             * The propagation types the telemetry instance should use.
+             *
+             * @return propagation types
+             */
+            @Option.Configured
+            List<String> propagations();
+
+        }
     }
 }

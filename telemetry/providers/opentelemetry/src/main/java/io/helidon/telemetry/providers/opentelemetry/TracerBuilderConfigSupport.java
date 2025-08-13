@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.helidon.tracing.providers.opentelemetry;
+package io.helidon.telemetry.providers.opentelemetry;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -38,7 +38,7 @@ class TracerBuilderConfigSupport {
     }
 
 
-    static class CustomMethods extends OpenTelemetryTracingConfigSupport.CustomMethods {
+    static class CustomMethods  {
 
         @Prototype.PrototypeMethod
         static Config asConfig(TracerBuilderConfig cfg) {
@@ -49,7 +49,7 @@ class TracerBuilderConfigSupport {
                     .tl("global", cfg.global())
                     .tl("propagators", cfg.propagation())
 
-                    // Mow the tracer-related settings.
+                    // Now the tracer-related settings.
                     .tr("protocol", cfg.collectorProtocol())
                     .tr("collector.port", cfg.collectorPort())
                     .tr("collector.path", cfg.collectorPath())

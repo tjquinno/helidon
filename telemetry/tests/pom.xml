@@ -20,27 +20,22 @@
         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>io.helidon</groupId>
-        <artifactId>helidon-project</artifactId>
+        <groupId>io.helidon.telemetry</groupId>
+        <artifactId>helidon-telemetry-project</artifactId>
         <version>4.3.0-SNAPSHOT</version>
     </parent>
     <packaging>pom</packaging>
-    <groupId>io.helidon.telemetry</groupId>
-    <artifactId>helidon-telemetry-project</artifactId>
-    <name>Helidon Telemetry Project</name>
+
+    <groupId>io.helidon.telemetry.tests</groupId>
+    <artifactId>helidon-telemetry-tests-project</artifactId>
+
+    <name>Helidon Telemetry Tests</name>
+
+    <description>
+        Tests for Helidon telemetry
+    </description>
 
     <modules>
-        <module>api</module>
-        <module>providers</module>
+        <module>config</module>
     </modules>
-
-    <profiles>
-        <profile>
-            <id>tests</id>
-            <modules>
-                <module>tests</module>
-            </modules>
-        </profile>
-    </profiles>
-
 </project>

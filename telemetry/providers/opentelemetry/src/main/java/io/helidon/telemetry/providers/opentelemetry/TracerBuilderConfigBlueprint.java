@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.helidon.tracing.providers.opentelemetry;
+package io.helidon.telemetry.providers.opentelemetry;
 
 import java.util.Optional;
 
@@ -25,8 +25,15 @@ import io.helidon.builder.api.Prototype;
  * Tracer settings, largely compatible with the Jaeger and Zipkin tracer-centric configuration formats anchored at the top-level
  * configuration key {@value CONFIG_KEY}.
  * <p>
- * Users employing OpenTelemetry as the tracing implementation are strongly encouraged to use telemetry-centric
+ * Users employing OpenTelemetry as the tracing implementation are strongly encouraged to instead use telemetry-centric
  * configuration anchored at the top-level configuration key {@value io.helidon.telemetry.api.Telemetry#CONFIG_KEY}.
+ * <p>
+ * This blueprint acts as a converter from the tracing-anchored format to the telemetry-anchored format so users can continue
+ * to express settings under {@code tracing} but Helidon prepares the Helidon telemetry runtime accordingly.
+ * Because the code that uses this blueprint should not jave tp know about tracing-specific types, it declares all the config
+ * settings as strings. Further, it exposes the additional method {@link TracerBuilderConfig#asConfig()} which expresses the
+ * settings as a {@link io.helidon.common.config.Config} instance suitable for processing by the Helidon OpenTelemetry-specific
+ * {@code TelemetryFactory}.
  */
 @Prototype.Configured(TracerBuilderConfigBlueprint.CONFIG_KEY)
 @Prototype.Blueprint

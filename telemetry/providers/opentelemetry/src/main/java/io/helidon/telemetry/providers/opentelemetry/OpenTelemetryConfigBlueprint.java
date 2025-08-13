@@ -20,7 +20,7 @@ import java.util.List;
 
 import io.helidon.builder.api.Option;
 import io.helidon.builder.api.Prototype;
-import io.helidon.telemetry.api.TelemetryConfig;
+import io.helidon.telemetry.api.Telemetry;
 import io.helidon.telemetry.providers.opentelemetry.spi.OpenTelemetrySignalProvider;
 
 import io.opentelemetry.context.propagation.TextMapPropagator;
@@ -32,7 +32,7 @@ import io.opentelemetry.sdk.OpenTelemetrySdk;
 @Prototype.Blueprint(decorator = OpenTelemetryConfigSupport.BuildDecorator.class)
 @Prototype.Configured("telemetry")
 @Prototype.CustomMethods(OpenTelemetryConfigSupport.CustomMethods.class)
-interface OpenTelemetryConfigBlueprint extends TelemetryConfig, Prototype.Factory<HelidonOpenTelemetry> {
+interface OpenTelemetryConfigBlueprint extends Telemetry.Builder.Blueprint, Prototype.Factory<HelidonOpenTelemetry> {
 
     /**
      * Whether the {@link io.opentelemetry.api.OpenTelemetry} instance created from this configuration should be made the
