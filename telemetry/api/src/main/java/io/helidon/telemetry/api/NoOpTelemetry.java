@@ -62,7 +62,7 @@ class NoOpTelemetry implements Telemetry {
     public <B> B unwrap(Class<B> type) {
         if (type.isInstance(this)) {
             return type.cast(this);
-        };
+        }
         throw new IllegalArgumentException("Cannot unwrap " + this.getClass().getName() + " as " + type);
     }
 

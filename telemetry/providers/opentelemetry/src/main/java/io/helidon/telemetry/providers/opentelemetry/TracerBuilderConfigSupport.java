@@ -29,15 +29,6 @@ class TracerBuilderConfigSupport {
     private TracerBuilderConfigSupport() {
     }
 
-    private static String tl(String suffix) {
-        return "telemetry." + suffix;
-    }
-
-    private static String tr(String suffix) {
-        return "telemetry.signals.tracing." + suffix;
-    }
-
-
     static class CustomMethods  {
 
         @Prototype.PrototypeMethod

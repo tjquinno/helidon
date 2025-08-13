@@ -17,7 +17,6 @@
 package io.helidon.telemetry.spi;
 
 import io.helidon.service.registry.Service;
-import io.helidon.service.registry.Services;
 import io.helidon.telemetry.api.Telemetry;
 
 /**

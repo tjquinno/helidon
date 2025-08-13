@@ -20,8 +20,12 @@ import io.helidon.service.registry.Service;
 import io.helidon.telemetry.api.Telemetry;
 import io.helidon.telemetry.spi.TelemetryProvider;
 
+/**
+ * Helidon provider of telemetry based on OpenTelemetry.
+ */
 @Service.Singleton
 public class OpenTelemetryProvider implements TelemetryProvider {
+
     @Override
     public Telemetry.Builder telemetryBuilder() {
         return new HelidonOpenTelemetry.Builder();
