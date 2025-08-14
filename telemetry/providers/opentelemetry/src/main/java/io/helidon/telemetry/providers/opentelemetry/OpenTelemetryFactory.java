@@ -88,7 +88,7 @@ class OpenTelemetryFactory implements Supplier<Telemetry> {
 
         var ot = prototype.openTelemetry();
 
-        if (prototype.global()) {
+        if (openTelemetry.prototype().global().orElse(true)) {
             List<String> otelReasonsForUsingAutoConfig = otelReasonsForUsingAutoConfig();
             if (!otelReasonsForUsingAutoConfig.isEmpty()) {
                 if (LOGGER.isLoggable(System.Logger.Level.TRACE)) {

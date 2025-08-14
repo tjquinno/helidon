@@ -63,13 +63,14 @@ class TestNormalConfig {
         assertThat("Tracer", tracer, notNullValue());
         assertThat("Tracer class", tracer.getClass().getName(), containsString("OpenTelemetryTracer"));
 
-        Telemetry t = Telemetry.builder()
-                .service("test-otel")
-                .propagations(List.of("tracecontext"))
-                .build();
-
-        Tracer tr = t.signal(Tracer.class)
-                .get().get("NewOne");
+        // Programmatic construction is not yet ready.
+//        Telemetry t = Telemetry.builder()
+//                .service("test-otel")
+//                .propagations(List.of("tracecontext"))
+//                .build();
+//
+//        Tracer tr = t.signal(Tracer.class)
+//                .get().get("NewOne");
 
 
 

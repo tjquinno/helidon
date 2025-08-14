@@ -17,6 +17,7 @@
 package io.helidon.telemetry.providers.opentelemetry;
 
 import io.helidon.common.media.type.MediaTypes;
+import io.helidon.common.testing.junit5.OptionalMatcher;
 import io.helidon.config.Config;
 import io.helidon.config.ConfigSources;
 
@@ -62,8 +63,8 @@ class TestBasicConfig {
                             instanceOf(JaegerPropagator.class)));
 
         assertThat("Service name", openTelemetry.prototype().service(), is("test-otel"));
-        assertThat("Enabled", openTelemetry.prototype().enabled(), is(false));
-        assertThat("Global", openTelemetry.prototype().global(), is(false));
+        assertThat("Enabled", openTelemetry.prototype().enabled(), OptionalMatcher.optionalValue(is(false)));
+        assertThat("Global", openTelemetry.prototype().global(), OptionalMatcher.optionalValue(is(false)));
     }
 
     @Test
@@ -92,8 +93,8 @@ class TestBasicConfig {
                             instanceOf(W3CTraceContextPropagator.class)));
 
         assertThat("Service name", openTelemetry.prototype().service(), is("test-otel"));
-        assertThat("Enabled", openTelemetry.prototype().enabled(), is(true));
-        assertThat("Global", openTelemetry.prototype().global(), is(false));
+        assertThat("Enabled", openTelemetry.prototype().enabled(), OptionalMatcher.optionalValue(is(true)));
+        assertThat("Global", openTelemetry.prototype().global(), OptionalMatcher.optionalValue(is(false)));
 
 
     }

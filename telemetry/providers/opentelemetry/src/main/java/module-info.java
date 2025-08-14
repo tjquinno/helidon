@@ -32,7 +32,6 @@ module io.helidon.telemetry.providers.opentelemetry {
     requires io.helidon.config;
     requires io.helidon.service.registry;
     requires io.helidon.telemetry.api;
-    requires io.helidon.tracing;
 
     requires io.opentelemetry.api;
     requires io.opentelemetry.context;

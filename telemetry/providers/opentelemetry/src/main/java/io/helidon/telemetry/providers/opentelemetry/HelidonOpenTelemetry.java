@@ -119,26 +119,4 @@ public class HelidonOpenTelemetry implements Telemetry, RuntimeType.Api<OpenTele
         void close();
     }
 
-static class Builder extends OpenTelemetryConfig.BuilderBase<Builder, OpenTelemetryConfig> implements Telemetry.Builder {
-        @Override
-        public OpenTelemetryConfig buildPrototype() {
-            convertNeutralSettings();
-            preBuildPrototype();
-            validatePrototype();
-            return new OpenTelemetryConfigImpl(this);
-        }
-
-        @Override
-        public Telemetry build() {
-            return HelidonOpenTelemetry.create(this.buildPrototype());
-        }
-
-        private void convertNeutralSettings() {
-            builder().propagations().stream()
-                    .map(ContextPropagationType::from)
-                    .map(ContextPropagationType::propagator)
-                    .forEach(prop -> builder().addPropagator(prop));
-        }
-
-    }
 }

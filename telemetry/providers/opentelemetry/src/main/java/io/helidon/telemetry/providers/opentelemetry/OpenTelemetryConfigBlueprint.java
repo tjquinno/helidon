@@ -17,10 +17,10 @@
 package io.helidon.telemetry.providers.opentelemetry;
 
 import java.util.List;
+import java.util.Optional;
 
 import io.helidon.builder.api.Option;
 import io.helidon.builder.api.Prototype;
-import io.helidon.telemetry.api.Blueprints;
 import io.helidon.telemetry.providers.opentelemetry.spi.OpenTelemetrySignalProvider;
 
 import io.opentelemetry.context.propagation.TextMapPropagator;
@@ -32,7 +32,15 @@ import io.opentelemetry.sdk.OpenTelemetrySdk;
 @Prototype.Blueprint(decorator = OpenTelemetryConfigSupport.BuildDecorator.class)
 @Prototype.Configured("telemetry")
 @Prototype.CustomMethods(OpenTelemetryConfigSupport.CustomMethods.class)
-interface OpenTelemetryConfigBlueprint extends Blueprints.Blueprint, Prototype.Factory<HelidonOpenTelemetry> {
+interface OpenTelemetryConfigBlueprint extends Prototype.Factory<HelidonOpenTelemetry> {
+
+    @Option.Configured
+    @Option.Required
+    String service();
+
+    @Option.Configured
+    @Option.DefaultBoolean(true)
+    Optional<Boolean>  enabled();
 
     /**
      * Whether the {@link io.opentelemetry.api.OpenTelemetry} instance created from this configuration should be made the
@@ -42,7 +50,7 @@ interface OpenTelemetryConfigBlueprint extends Blueprints.Blueprint, Prototype.F
      */
     @Option.Configured
     @Option.DefaultBoolean(true)
-    boolean global();
+    Optional<Boolean> global();
 
     /**
      * OpenTelemetry {@link io.opentelemetry.context.propagation.TextMapPropagator} instances added explicitly by the app.
