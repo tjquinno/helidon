@@ -33,7 +33,6 @@ module io.helidon.telemetry.api {
     requires io.helidon.common.config;
     requires io.helidon.service.registry;
     requires jdk.unsupported;
-    requires io.helidon.tracing;
 
     exports io.helidon.telemetry.api;
     exports io.helidon.telemetry.spi;

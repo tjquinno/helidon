@@ -44,7 +44,7 @@ class OtelConfigSupport {
      * @param spanProcessorConfig span processor configu
      * @param spanExporters available span exporters
      * @param errorsCollector error note collector to report exporter names specified to ber used but not present
-     * @return new {@code SpanProcessor}
+     * @return new {@code Processor}
      */
     static SpanProcessor createSpanProcessor(SpanProcessorConfig spanProcessorConfig,
                                              Map<String, SpanExporter> spanExporters,

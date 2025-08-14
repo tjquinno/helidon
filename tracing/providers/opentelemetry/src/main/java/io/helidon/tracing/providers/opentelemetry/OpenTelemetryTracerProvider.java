@@ -29,6 +29,7 @@ import io.helidon.common.context.Context;
 import io.helidon.common.context.Contexts;
 import io.helidon.service.registry.Services;
 import io.helidon.telemetry.api.Telemetry;
+import io.helidon.telemetry.providers.opentelemetry.OpenTelemetryConfig;
 import io.helidon.tracing.Span;
 import io.helidon.tracing.Tracer;
 import io.helidon.tracing.TracerBuilder;
@@ -85,11 +86,11 @@ public class OpenTelemetryTracerProvider implements TracerProvider {
                                            "Using OTel autoconfigure: " + otelReasonsForUsingAutoConfig);
                             }
                             OpenTelemetry ot = GlobalOpenTelemetry.get();
-                            return new OpenTelemetryTracer(ot, ot.getTracer("helidon-service"), Map.of());
+                            //return new OpenTelemetryTracer(ot, ot.getTracer("helidon-service"), Map.of());
                         }
-                        return OpenTelemetryTracer.builder()
-                                .serviceName("helidon-service")
-                                .build();
+                        return new OpenTelemetryTracer(OT_TO_USE.get(),
+                                OT_TO_USE.get().getTracer("helidon-service"),
+                                Map.of());
                     });
 
         });

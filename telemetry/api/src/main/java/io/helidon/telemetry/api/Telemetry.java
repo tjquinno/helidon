@@ -19,7 +19,6 @@ package io.helidon.telemetry.api;
 import java.util.List;
 import java.util.Optional;
 
-import io.helidon.builder.api.Option;
 import io.helidon.service.registry.Service;
 import io.helidon.service.registry.Services;
 import io.helidon.telemetry.spi.TelemetryProvider;
@@ -162,46 +161,5 @@ public interface Telemetry /* extends NamedService */ {
          */
         Builder propagations(List<String> propagation);
 
-        /**
-         * Settings for use by telemetry implementations to aid in converting from neutral settings
-         * to implementation-specific ones.
-         */
-        interface Blueprint {
-            /**
-             * Whether the telemetry instance should be set as the global isntance.
-             *
-             * @return true if the instance should be global; false otherwise
-             */
-            @Option.Configured
-            @Option.DefaultBoolean(true)
-            boolean global();
-
-            /**
-             * Whether telemetry should be enabled.
-             *
-             * @return true if enabled; false otherwise
-             */
-            @Option.Configured
-            @Option.DefaultBoolean(true)
-            boolean enabled();
-
-            /**
-             * Service name the telemetry instance should use in exporting data.
-             *
-             * @return service name
-             */
-            @Option.Configured
-            @Option.Required
-            String service();
-
-            /**
-             * The propagation types the telemetry instance should use.
-             *
-             * @return propagation types
-             */
-            @Option.Configured
-            List<String> propagations();
-
-        }
     }
 }

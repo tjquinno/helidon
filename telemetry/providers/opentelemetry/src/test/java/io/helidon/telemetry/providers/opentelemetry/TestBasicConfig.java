@@ -97,37 +97,4 @@ class TestBasicConfig {
 
 
     }
-
-// ----------------------------------
-//
-//    Move the following tests to integration testing.
-//
-//    @Test
-//    void testUsingServiceRegistry() {
-//
-//        Config config = Config.just(ConfigSources.create(
-//                """
-//                        telemetry:
-//                          service: "test-otel"
-//                          global: false
-//                          signals:
-//                            tracing:
-//                              sampler:
-//                                type: "always_on"
-//                              exporters:
-//                                - type: otlp
-//                                  protocol: http/proto
-//                                  name: my-oltp
-//                                - type: zipkin
-//                              processors:
-//                                - max-queue-size: 21
-//                                  type: batch
-//                        """,
-//                MediaTypes.APPLICATION_YAML));
-//
-//        Services.set(Config.class, config);
-//        Tracer tracer = Services.get(Tracer.class);
-//        assertThat("Tracer", tracer, notNullValue());
-//
-//    }
 }

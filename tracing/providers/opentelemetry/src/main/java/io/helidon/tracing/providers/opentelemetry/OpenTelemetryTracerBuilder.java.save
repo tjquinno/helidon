@@ -123,10 +123,10 @@ import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
  * or environment variables for configuration settings.
  */
 @Configured(prefix = "tracing", root = true, description = "OpenTelemetry tracer configuration.")
-public class OpenTelemetryTracerBuilderObsolete implements TracerBuilder<OpenTelemetryTracerBuilderObsolete> {
+public class OpenTelemetryTracerBuilder implements TracerBuilder<OpenTelemetryTracerBuilder> {
 
     static final boolean DEFAULT_ENABLED = true;
-    private static final System.Logger LOGGER = System.getLogger(OpenTelemetryTracerBuilderObsolete.class.getName());
+    private static final System.Logger LOGGER = System.getLogger(OpenTelemetryTracerBuilder.class.getName());
 
     private final Map<String, SpanExporterConfiguration> spanExporterConfigs = new HashMap<>();
     private final Map<String, SpanExporter> spanExporters = new HashMap<>();
@@ -267,13 +267,13 @@ public class OpenTelemetryTracerBuilderObsolete implements TracerBuilder<OpenTel
      * @param ot the {@code OpenTelemetry} instance to use
      * @return updated builder
      */
-    public OpenTelemetryTracerBuilderObsolete openTelemetry(OpenTelemetry ot) {
+    public OpenTelemetryTracerBuilder openTelemetry(OpenTelemetry ot) {
         this.ot = ot;
         return this;
     }
 
     @Override
-    public OpenTelemetryTracerBuilderObsolete serviceName(String name) {
+    public OpenTelemetryTracerBuilder serviceName(String name) {
         this.serviceName = name;
         return this;
     }
@@ -285,7 +285,7 @@ public class OpenTelemetryTracerBuilderObsolete implements TracerBuilder<OpenTel
      * @return updated builder
      */
     @ConfiguredOption(kind = ConfiguredOption.Kind.MAP)
-    public OpenTelemetryTracerBuilderObsolete spanExporters(Map<String, SpanExporterConfiguration> spanExporters) {
+    public OpenTelemetryTracerBuilder spanExporters(Map<String, SpanExporterConfiguration> spanExporters) {
         this.spanExporterConfigs.clear();
         this.spanExporterConfigs.putAll(spanExporters);
         return this;
@@ -298,7 +298,7 @@ public class OpenTelemetryTracerBuilderObsolete implements TracerBuilder<OpenTel
      * @param spanExporter span exported to record
      * @return updated builder
      */
-    public OpenTelemetryTracerBuilderObsolete addSpanExporter(String exporterName, SpanExporter spanExporter) {
+    public OpenTelemetryTracerBuilder addSpanExporter(String exporterName, SpanExporter spanExporter) {
         verifyUniqueSpanExporterName(exporterName);
         spanExporters.put(exporterName, spanExporter);
         return this;
@@ -311,7 +311,7 @@ public class OpenTelemetryTracerBuilderObsolete implements TracerBuilder<OpenTel
      * @param spanExporterConfig the span exporter
      * @return updated builder
      */
-    public OpenTelemetryTracerBuilderObsolete addSpanExporter(String exporterName, SpanExporterConfiguration spanExporterConfig) {
+    public OpenTelemetryTracerBuilder addSpanExporter(String exporterName, SpanExporterConfiguration spanExporterConfig) {
         verifyUniqueSpanExporterName(exporterName);
         spanExporterConfigs.put(exporterName, spanExporterConfig);
         return this;
@@ -324,7 +324,7 @@ public class OpenTelemetryTracerBuilderObsolete implements TracerBuilder<OpenTel
      * @return updated builder
      */
     @ConfiguredOption
-    public OpenTelemetryTracerBuilderObsolete spanProcessors(List<SpanProcessorConfiguration> spanProcessorConfigs) {
+    public OpenTelemetryTracerBuilder spanProcessors(List<SpanProcessorConfiguration> spanProcessorConfigs) {
         this.spanProcessorConfigs.clear();
         this.spanProcessorConfigs.addAll(spanProcessorConfigs);
         return this;
@@ -336,7 +336,7 @@ public class OpenTelemetryTracerBuilderObsolete implements TracerBuilder<OpenTel
      * @param spanProcessor span processor to add
      * @return updated builder
      */
-    public OpenTelemetryTracerBuilderObsolete addSpanProcessor(SpanProcessor spanProcessor) {
+    public OpenTelemetryTracerBuilder addSpanProcessor(SpanProcessor spanProcessor) {
         spanProcessors.add(spanProcessor);
         return this;
     }
@@ -347,13 +347,13 @@ public class OpenTelemetryTracerBuilderObsolete implements TracerBuilder<OpenTel
      * @param spanProcessorConfig span processor builder to add
      * @return updated builder
      */
-    public OpenTelemetryTracerBuilderObsolete addSpanProcessor(SpanProcessorConfiguration spanProcessorConfig) {
+    public OpenTelemetryTracerBuilder addSpanProcessor(SpanProcessorConfiguration spanProcessorConfig) {
         spanProcessorConfigs.add(spanProcessorConfig);
         return this;
     }
 
     @Override
-    public OpenTelemetryTracerBuilderObsolete collectorProtocol(String protocol) {
+    public OpenTelemetryTracerBuilder collectorProtocol(String protocol) {
         this.collectorProtocol = protocol;
         return this;
     }
@@ -365,49 +365,49 @@ public class OpenTelemetryTracerBuilderObsolete implements TracerBuilder<OpenTel
      * @return updated builder
      * @see #collectorProtocol(String) for specifying http/https in the connection URL
      */
-    public OpenTelemetryTracerBuilderObsolete exporterProtocol(OtlpExporterProtocol otlpExporterProtocol) {
+    public OpenTelemetryTracerBuilder exporterProtocol(OtlpExporterProtocol otlpExporterProtocol) {
         this.otlpExporterProtocol = otlpExporterProtocol;
         return this;
     }
 
     @Override
-    public OpenTelemetryTracerBuilderObsolete collectorPort(int port) {
+    public OpenTelemetryTracerBuilder collectorPort(int port) {
         exporterPort = port;
         return this;
     }
 
     @Override
-    public OpenTelemetryTracerBuilderObsolete collectorHost(String host) {
+    public OpenTelemetryTracerBuilder collectorHost(String host) {
         exporterHost = host;
         return this;
     }
 
     @Override
-    public OpenTelemetryTracerBuilderObsolete collectorPath(String path) {
+    public OpenTelemetryTracerBuilder collectorPath(String path) {
         exporterPath = path;
         return this;
     }
 
     @Override
-    public OpenTelemetryTracerBuilderObsolete addTracerTag(String key, String value) {
+    public OpenTelemetryTracerBuilder addTracerTag(String key, String value) {
         tags.put(key, value);
         return this;
     }
 
     @Override
-    public OpenTelemetryTracerBuilderObsolete addTracerTag(String key, Number value) {
+    public OpenTelemetryTracerBuilder addTracerTag(String key, Number value) {
         tags.put(key, String.valueOf(value));
         return this;
     }
 
     @Override
-    public OpenTelemetryTracerBuilderObsolete addTracerTag(String key, boolean value) {
+    public OpenTelemetryTracerBuilder addTracerTag(String key, boolean value) {
         tags.put(key, String.valueOf(value));
         return this;
     }
 
     @Override
-    public OpenTelemetryTracerBuilderObsolete config(Config tracingConfig) {
+    public OpenTelemetryTracerBuilder config(Config tracingConfig) {
         this.tracingConfig = tracingConfig;
 
         // Related to OpenTelemetry in general (not just tracing).
@@ -477,13 +477,13 @@ public class OpenTelemetryTracerBuilderObsolete implements TracerBuilder<OpenTel
     }
 
     @Override
-    public OpenTelemetryTracerBuilderObsolete enabled(boolean enabled) {
+    public OpenTelemetryTracerBuilder enabled(boolean enabled) {
         this.enabled = enabled;
         return this;
     }
 
     @Override
-    public OpenTelemetryTracerBuilderObsolete registerGlobal(boolean global) {
+    public OpenTelemetryTracerBuilder registerGlobal(boolean global) {
         this.global = global;
         return this;
     }
@@ -498,7 +498,7 @@ public class OpenTelemetryTracerBuilderObsolete implements TracerBuilder<OpenTel
                       kind = ConfiguredOption.Kind.LIST,
                       type = ContextPropagation.class,
                       value = ContextPropagation.DEFAULT_STRING)
-    public OpenTelemetryTracerBuilderObsolete addPropagation(ContextPropagation format) {
+    public OpenTelemetryTracerBuilder addPropagation(ContextPropagation format) {
         Objects.requireNonNull(format);
         if (isPropagationFormatsDefaulted) {
             isPropagationFormatsDefaulted = false;
@@ -515,7 +515,7 @@ public class OpenTelemetryTracerBuilderObsolete implements TracerBuilder<OpenTel
      * @return updated builder
      */
     @ConfiguredOption
-    public OpenTelemetryTracerBuilderObsolete spanExporterType(ExporterType exporterType) {
+    public OpenTelemetryTracerBuilder spanExporterType(ExporterType exporterType) {
         Objects.requireNonNull(exporterType, "span-exporter-type");
         this.topLevelExporterType = exporterType;
         return this;
@@ -528,7 +528,7 @@ public class OpenTelemetryTracerBuilderObsolete implements TracerBuilder<OpenTel
      * @return updated builder
      */
     @ConfiguredOption
-    public OpenTelemetryTracerBuilderObsolete exporterTimeout(Duration timeout) {
+    public OpenTelemetryTracerBuilder exporterTimeout(Duration timeout) {
         this.exporterTimeout = timeout;
         return this;
     }
@@ -540,7 +540,7 @@ public class OpenTelemetryTracerBuilderObsolete implements TracerBuilder<OpenTel
      * @return updated builder
      */
     @ConfiguredOption
-    public OpenTelemetryTracerBuilderObsolete compression(String compression) {
+    public OpenTelemetryTracerBuilder compression(String compression) {
         this.compression = compression;
         return this;
     }
@@ -552,7 +552,7 @@ public class OpenTelemetryTracerBuilderObsolete implements TracerBuilder<OpenTel
      * @return updated builder
      */
     @ConfiguredOption
-    public OpenTelemetryTracerBuilderObsolete headers(Map<String, String> headers) {
+    public OpenTelemetryTracerBuilder headers(Map<String, String> headers) {
         this.headers.clear();
         this.headers.putAll(headers);
         return this;
@@ -565,7 +565,7 @@ public class OpenTelemetryTracerBuilderObsolete implements TracerBuilder<OpenTel
      * @param value header value
      * @return updated builder
      */
-    public OpenTelemetryTracerBuilderObsolete addHeader(String name, String value) {
+    public OpenTelemetryTracerBuilder addHeader(String name, String value) {
         headers.put(name, value);
         return this;
     }
@@ -577,7 +577,7 @@ public class OpenTelemetryTracerBuilderObsolete implements TracerBuilder<OpenTel
      * @return updated builder
      */
     @ConfiguredOption(SamplerType.DEFAULT_STRING)
-    public OpenTelemetryTracerBuilderObsolete samplerType(SamplerType samplerType) {
+    public OpenTelemetryTracerBuilder samplerType(SamplerType samplerType) {
         this.samplerType = samplerType;
         return this;
     }
@@ -589,7 +589,7 @@ public class OpenTelemetryTracerBuilderObsolete implements TracerBuilder<OpenTel
      * @return updated builder
      */
     @ConfiguredOption
-    public OpenTelemetryTracerBuilderObsolete samplerParam(Number samplerParam) {
+    public OpenTelemetryTracerBuilder samplerParam(Number samplerParam) {
         this.samplerParam = samplerParam;
         return this;
     }
@@ -601,7 +601,7 @@ public class OpenTelemetryTracerBuilderObsolete implements TracerBuilder<OpenTel
      * @return updated builder
      */
     @ConfiguredOption
-    public OpenTelemetryTracerBuilderObsolete scheduleDelay(Duration scheduleDelay) {
+    public OpenTelemetryTracerBuilder scheduleDelay(Duration scheduleDelay) {
         this.scheduleDelay = scheduleDelay;
         return this;
     }
@@ -613,7 +613,7 @@ public class OpenTelemetryTracerBuilderObsolete implements TracerBuilder<OpenTel
      * @return updated builder
      */
     @ConfiguredOption
-    public OpenTelemetryTracerBuilderObsolete maxQueueSize(int maxQueueSize) {
+    public OpenTelemetryTracerBuilder maxQueueSize(int maxQueueSize) {
         this.maxQueueSize = maxQueueSize;
         return this;
     }
@@ -625,7 +625,7 @@ public class OpenTelemetryTracerBuilderObsolete implements TracerBuilder<OpenTel
      * @return updated builder
      */
     @ConfiguredOption
-    public OpenTelemetryTracerBuilderObsolete maxExportBatchSize(int maxExportBatchSize) {
+    public OpenTelemetryTracerBuilder maxExportBatchSize(int maxExportBatchSize) {
         this.maxExportBatchSize = maxExportBatchSize;
         return this;
     }
@@ -637,7 +637,7 @@ public class OpenTelemetryTracerBuilderObsolete implements TracerBuilder<OpenTel
      * @return updated builder
      */
     @ConfiguredOption(key = "private-key-pem")
-    public OpenTelemetryTracerBuilderObsolete privateKey(io.helidon.common.configurable.Resource resource) {
+    public OpenTelemetryTracerBuilder privateKey(io.helidon.common.configurable.Resource resource) {
         this.privateKey = resource.bytes();
         return this;
     }
@@ -649,7 +649,7 @@ public class OpenTelemetryTracerBuilderObsolete implements TracerBuilder<OpenTel
      * @return updated builder
      */
     @ConfiguredOption(key = "client-cert-pem")
-    public OpenTelemetryTracerBuilderObsolete clientCertificate(io.helidon.common.configurable.Resource resource) {
+    public OpenTelemetryTracerBuilder clientCertificate(io.helidon.common.configurable.Resource resource) {
         this.certificate = resource.bytes();
         return this;
     }
@@ -661,7 +661,7 @@ public class OpenTelemetryTracerBuilderObsolete implements TracerBuilder<OpenTel
      * @return updated builder
      */
     @ConfiguredOption(key = "trusted-cert-pem")
-    public OpenTelemetryTracerBuilderObsolete trustedCertificates(io.helidon.common.configurable.Resource resource) {
+    public OpenTelemetryTracerBuilder trustedCertificates(io.helidon.common.configurable.Resource resource) {
         this.trustedCertificate = resource.bytes();
         return this;
     }
@@ -674,7 +674,7 @@ public class OpenTelemetryTracerBuilderObsolete implements TracerBuilder<OpenTel
      * @return updated builder
      */
     @ConfiguredOption(SpanProcessorType.DEFAULT_NAME)
-    public OpenTelemetryTracerBuilderObsolete spanProcessorType(SpanProcessorType spanProcessorType) {
+    public OpenTelemetryTracerBuilder spanProcessorType(SpanProcessorType spanProcessorType) {
         this.topLevelSpanProcessorType = spanProcessorType;
         return this;
     }

@@ -33,7 +33,10 @@ module io.helidon.tracing {
     requires static io.helidon.config.metadata;
 
     requires transitive io.helidon.common.config;
+    requires transitive io.helidon.telemetry.api;
+
     requires io.helidon.logging.common;
+    requires io.helidon.common.configurable;
 
     exports io.helidon.tracing;
     exports io.helidon.tracing.spi;

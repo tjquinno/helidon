@@ -16,10 +16,13 @@
 
 package io.helidon.telemetry.tests.config;
 
+import java.util.List;
+
 import io.helidon.common.media.type.MediaTypes;
 import io.helidon.config.Config;
 import io.helidon.config.ConfigSources;
 import io.helidon.service.registry.Services;
+import io.helidon.telemetry.api.Telemetry;
 import io.helidon.tracing.Tracer;
 
 import org.junit.jupiter.api.Test;
@@ -59,6 +62,16 @@ class TestNormalConfig {
         Tracer tracer = Services.get(Tracer.class);
         assertThat("Tracer", tracer, notNullValue());
         assertThat("Tracer class", tracer.getClass().getName(), containsString("OpenTelemetryTracer"));
+
+        Telemetry t = Telemetry.builder()
+                .service("test-otel")
+                .propagations(List.of("tracecontext"))
+                .build();
+
+        Tracer tr = t.signal(Tracer.class)
+                .get().get("NewOne");
+
+
 
     }
 
