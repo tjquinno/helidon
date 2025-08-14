@@ -41,7 +41,7 @@ class OtelConfigSupport {
      * Creates an {@link io.opentelemetry.sdk.trace.SpanProcessor}, using either the named exporters of (if no names are
      * specified) all exporters.
      *
-     * @param spanProcessorConfig span processor configu
+     * @param spanProcessorConfig span processor config
      * @param spanExporters available span exporters
      * @param errorsCollector error note collector to report exporter names specified to ber used but not present
      * @return new {@code Processor}
@@ -67,12 +67,13 @@ class OtelConfigSupport {
         SpanExporter exporterToUse = exportersToUse.isEmpty()
                 ? OtlpHttpSpanExporter.getDefault() // The factory method below requires an exporter so use OTel's default.
                 : (exportersToUse.size() == 1)
-                                      ? exportersToUse.getFirst()
-                                      : SpanExporter.composite(exportersToUse);
+                        ? exportersToUse.getFirst()
+                        : SpanExporter.composite(exportersToUse);
 
         return switch (spanProcessorConfig.type()) {
             case SpanProcessorType.SIMPLE -> SimpleSpanProcessor.create(exporterToUse);
-            case SpanProcessorType.BATCH -> createBatchSpanProcessor((BatchSpanProcessorConfig) spanProcessorConfig, exporterToUse);
+            case SpanProcessorType.BATCH ->
+                    createBatchSpanProcessor((BatchSpanProcessorConfig) spanProcessorConfig, exporterToUse);
         };
     }
 

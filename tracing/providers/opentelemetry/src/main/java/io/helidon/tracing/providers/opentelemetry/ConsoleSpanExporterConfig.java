@@ -19,17 +19,22 @@ import io.opentelemetry.exporter.logging.LoggingSpanExporter;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
 
 /**
- * Builder for an OpenTelemetry {@link io.opentelemetry.exporter.logging.LoggingSpanExporter}
+ * Builder for an OpenTelemetry {@link io.opentelemetry.exporter.logging.LoggingSpanExporter}.
  */
 public class ConsoleSpanExporterConfig extends SpanExporterConfiguration {
 
     private final LoggingSpanExporter loggingExporter = LoggingSpanExporter.create();
 
+    /**
+     * Creates a new console span exporter config builder.
+     *
+     * @return new builder
+     */
     public static Builder builder() {
         return new Builder();
     }
 
-    ConsoleSpanExporterConfig(Builder builder) {
+    private ConsoleSpanExporterConfig(Builder builder) {
         super(builder);
     }
 
@@ -38,6 +43,9 @@ public class ConsoleSpanExporterConfig extends SpanExporterConfiguration {
         return loggingExporter;
     }
 
+    /**
+     * Builder for span exporter configuration.
+     */
     public static class Builder extends SpanExporterConfiguration.Builder<Builder, ConsoleSpanExporterConfig> {
         @Override
         public ConsoleSpanExporterConfig build() {

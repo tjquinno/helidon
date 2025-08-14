@@ -33,10 +33,6 @@ public abstract class SpanProcessorConfiguration {
         exporterName = builder.exporterName;
     }
 
-    String exporterName() {
-        return exporterName;
-    }
-
     static SpanProcessorConfiguration create(Config spanProcessorConfig) {
         return builder(spanProcessorConfig).build();
     }
@@ -50,15 +46,20 @@ public abstract class SpanProcessorConfiguration {
 
     static Builder<?, ?> builder(Config spanProcessorConfig) {
         return builder(spanProcessorConfig.get("processor-type")
-                .as(SpanProcessorType.class)
-                .orElse(SpanProcessorType.DEFAULT))
+                               .as(SpanProcessorType.class)
+                               .orElse(SpanProcessorType.DEFAULT))
                 .config(spanProcessorConfig);
+    }
+
+    String exporterName() {
+        return exporterName;
     }
 
     abstract SpanProcessor spanProcessor(SpanExporter spanExporter);
 
     @Configured
-    static abstract class Builder<B extends Builder<B, T>, T extends SpanProcessorConfiguration> implements io.helidon.common.Builder<B, T> {
+    abstract static class Builder<B extends Builder<B, T>, T extends SpanProcessorConfiguration>
+            implements io.helidon.common.Builder<B, T> {
 
         private String exporterName = "@default";
 

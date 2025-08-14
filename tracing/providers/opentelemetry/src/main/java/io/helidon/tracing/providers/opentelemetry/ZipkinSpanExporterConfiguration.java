@@ -35,7 +35,12 @@ public class ZipkinSpanExporterConfiguration extends SpanExporterConfiguration.B
         spanExporter = exporterBuilder.build();
     }
 
-    static public Builder builder() {
+    /**
+     * Creates a new configuration builder.
+     *
+     * @return new builder
+     */
+    public static Builder builder() {
         return new Builder();
     }
 
@@ -55,6 +60,9 @@ public class ZipkinSpanExporterConfiguration extends SpanExporterConfiguration.B
         return spanExporter;
     }
 
+    /**
+     * Builder for a Zipkin span exporter config.
+     */
     @Configured
     public static class Builder extends SpanExporterConfiguration.Basic.Builder<Builder, ZipkinSpanExporterConfiguration> {
 

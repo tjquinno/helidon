@@ -63,6 +63,7 @@ public enum SamplerType {
     PARENT_BASED_TRACE_ID_RATIO("parentbased_traceidratio");
 
     static final String DEFAULT_NAME = "PARENT_BASED_ALWAYS_ON";
+    static final SamplerType DEFAULT = PARENT_BASED_ALWAYS_ON;
 
     private final String name;
 

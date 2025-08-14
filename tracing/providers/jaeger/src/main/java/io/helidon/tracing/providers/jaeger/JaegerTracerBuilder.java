@@ -270,6 +270,10 @@ public class JaegerTracerBuilder implements TracerBuilder<JaegerTracerBuilder> {
     public JaegerTracerBuilder config(Config config) {
         config.get("enabled").asBoolean().ifPresent(this::enabled);
         config.get("service").asString().ifPresent(this::serviceName);
+        config.get("protocol").asString().ifPresent(this::collectorProtocol);
+        config.get("host").asString().ifPresent(this::collectorHost);
+        config.get("port").asInt().ifPresent(this::collectorPort);
+        config.get("path").asString().ifPresent(this::collectorPath);
         config.get("sampler-type").asString().as(SamplerType::create).ifPresent(this::samplerType);
         config.get("sampler-param").asDouble().ifPresent(this::samplerParam);config.get("private-key-pem").map(io.helidon.common.configurable.Resource::create).ifPresent(this::privateKey);
         config.get("propagation").asList(String.class)

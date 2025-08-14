@@ -27,7 +27,7 @@ import io.helidon.common.configurable.Resource;
 /**
  * Builder blueprints for tracing-related types.
  */
-public interface Blueprints {
+interface Blueprints {
 
     interface TracerConfigBlueprint {
 

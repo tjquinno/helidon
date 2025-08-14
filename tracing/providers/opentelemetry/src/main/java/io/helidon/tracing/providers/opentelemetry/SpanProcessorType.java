@@ -34,6 +34,7 @@ public enum SpanProcessorType {
     BATCH("batch");
 
     static final SpanProcessorType DEFAULT = BATCH;
+    static final String DEFAULT_NAME = "BATCH";
 
     private final String processorType;
 

@@ -48,7 +48,7 @@ public enum ContextPropagation {
     /**
      * Shorthand for both W3C propagators ({@code tracecontext} and {@code baggage}).
      */
-    W3C("w3c", List.of( W3CTraceContextPropagator::getInstance, W3CBaggagePropagator::getInstance)),
+    W3C("w3c", List.of(W3CTraceContextPropagator::getInstance, W3CBaggagePropagator::getInstance)),
 
     /**
      * Zipkin B3 trace context propagation using a single header.

@@ -56,7 +56,8 @@ public class OtlpGrpcSpanExporterConfig extends OtlpSpanExporterConfiguration {
      * Builder for an OTLP span exporter config using the grpc protocol.
      */
     public static class Builder extends OtlpSpanExporterConfiguration.Builder<Builder, OtlpGrpcSpanExporterConfig> {
-        public Builder() {
+
+        Builder() {
             super("grpc",
                   "localhost",
                   4317,

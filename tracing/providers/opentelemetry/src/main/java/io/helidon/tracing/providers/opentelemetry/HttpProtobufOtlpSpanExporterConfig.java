@@ -58,7 +58,7 @@ public class HttpProtobufOtlpSpanExporterConfig extends OtlpSpanExporterConfigur
      */
     public static class Builder extends OtlpSpanExporterConfiguration.Builder<Builder, HttpProtobufOtlpSpanExporterConfig> {
 
-        public Builder() {
+        Builder() {
             super("http",
                   "localhost",
                   4318,

@@ -21,7 +21,7 @@ import java.util.Optional;
  * Tracer abstraction.
  * Tracer is the central point that collects tracing spans, and (probably) pushes them to backend.
  */
-public interface Tracer extends Blueprints.TracerConfigBlueprint {
+public interface Tracer /* extends Blueprints.TracerConfigBlueprint */ {
     /**
      * Create a no-op tracer. All spans created from this tracer are not doing anything.
      *
@@ -52,6 +52,14 @@ public interface Tracer extends Blueprints.TracerConfigBlueprint {
 //    static Tracer.Builder builder() {
 //        return
 //    }
+
+    /**
+     * Whether this tracer is enabled or not.
+     * A no op tracer is disabled.
+     *
+     * @return {@code true} if this tracer is enabled
+     */
+    boolean enabled();
 
     /**
      * A new span builder to construct {@link io.helidon.tracing.Span}.
@@ -116,6 +124,9 @@ public interface Tracer extends Blueprints.TracerConfigBlueprint {
         return this;
     }
 
+    /**
+     * Builder for a new Tracer.
+     */
     interface Builder extends io.helidon.common.Builder<Builder, Tracer> {
 
         /**

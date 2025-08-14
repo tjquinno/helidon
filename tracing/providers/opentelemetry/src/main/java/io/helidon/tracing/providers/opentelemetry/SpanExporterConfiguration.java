@@ -37,6 +37,7 @@ public abstract class SpanExporterConfiguration {
     /**
      * Creates a span exporter config builder for the specified exporter type.
      *
+     * @param type exporter type
      * @return new builder
      */
     public static Builder<?, ?> builder(ExporterType type) {
@@ -91,14 +92,14 @@ public abstract class SpanExporterConfiguration {
     /**
      * Configuration common to span exporters which transmit tracing data to another process and support compression and timeouts.
      */
-    static abstract class Basic extends SpanExporterConfiguration {
+    abstract static class Basic extends SpanExporterConfiguration {
 
         protected Basic(Builder<?, ?> builder) {
             super(builder);
         }
 
         @Configured(description = "Settings for a span exporter which transmits data to another process")
-        static abstract class Builder<B extends Builder<B, T>, T extends Basic> extends SpanExporterConfiguration.Builder<B, T> {
+        abstract static class Builder<B extends Builder<B, T>, T extends Basic> extends SpanExporterConfiguration.Builder<B, T> {
 
             private String protocol;
             private String host;
@@ -216,8 +217,14 @@ public abstract class SpanExporterConfiguration {
         }
     }
 
+    /**
+     * Builder for a span exporter configuration.
+     *
+     * @param <B> builder type
+     * @param <T> config type
+     */
     @Configured(description = "Span exporter settings")
-    public static abstract class Builder<B extends Builder<B, T>, T extends SpanExporterConfiguration>
+    public abstract static class Builder<B extends Builder<B, T>, T extends SpanExporterConfiguration>
             implements io.helidon.common.Builder<B, T> {
 
         private ExporterType exporterType;

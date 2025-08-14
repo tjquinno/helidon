@@ -35,8 +35,15 @@ public abstract class OtlpSpanExporterConfiguration extends SpanExporterConfigur
         super(builder);
     }
 
+    /**
+     * Builder for a new config instance.
+     *
+     * @param <B> builder type
+     * @param <T> config type
+     */
     @Configured
-    public static abstract class Builder<B extends Builder<B, T>, T extends OtlpSpanExporterConfiguration> extends SpanExporterConfiguration.Basic.Builder<B, T> {
+    public abstract static class Builder<B extends Builder<B, T>, T extends OtlpSpanExporterConfiguration>
+            extends SpanExporterConfiguration.Basic.Builder<B, T> {
         private final Map<String, String> headers = new HashMap<>();
         // Collector protocol (scheme)
         private String collectorProtocol = "http";
@@ -50,7 +57,7 @@ public abstract class OtlpSpanExporterConfiguration extends SpanExporterConfigur
         private byte[] certificate;
         private byte[] trustedCertificates;
 
-        public Builder(String defaultProtocol,
+        Builder(String defaultProtocol,
                        String defaultHost,
                        Integer defaultPort,
                        String defaultPath,

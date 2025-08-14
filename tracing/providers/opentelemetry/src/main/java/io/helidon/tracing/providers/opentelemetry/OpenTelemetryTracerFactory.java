@@ -14,20 +14,28 @@
  * limitations under the License.
  */
 
-package io.helidon.telemetry.providers.opentelemetry;
+package io.helidon.tracing.providers.opentelemetry;
+
+import java.util.function.Supplier;
 
 import io.helidon.service.registry.Service;
 import io.helidon.telemetry.api.Telemetry;
-import io.helidon.telemetry.spi.TelemetryProvider;
+import io.helidon.tracing.Tracer;
 
-/**
- * Helidon provider of telemetry based on OpenTelemetry.
- */
 @Service.Singleton
-public class OpenTelemetryProvider implements TelemetryProvider {
+class OpenTelemetryTracerFactory implements Supplier<Tracer> {
+
+    private final Telemetry telemetry;
+
+    @Service.Inject
+    OpenTelemetryTracerFactory(Telemetry telemetry)  {
+        this.telemetry = telemetry;
+    }
 
     @Override
-    public Telemetry.Builder telemetryBuilder() {
-        return new HelidonOpenTelemetry.Builder();
+    public Tracer get() {
+        return telemetry.signal(Tracer.class)
+                .map(s -> s.get("helidon-service"))
+                .orElseThrow();
     }
 }
