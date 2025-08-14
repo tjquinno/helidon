@@ -30,8 +30,7 @@
     <name>Helidon Telemetry Project</name>
 
     <modules>
-        <module>api</module>
-        <module>providers</module>
+        <module>opentelemetry-config</module>
     </modules>
 
     <profiles>
