@@ -1,0 +1,83 @@
+package io.helidon.tracing;
+
+import io.helidon.common.configurable.Resource;
+import io.helidon.config.Config;
+
+public class AbstractExtendedTracerBuilder<B extends AbstractExtendedTracerBuilder<B, T>, T extends Tracer>
+        implements TracerBuilder<B> {
+
+    @Override
+    public B serviceName(String name) {
+        return null;
+    }
+
+    @Override
+    public B collectorProtocol(String protocol) {
+        return null;
+    }
+
+    @Override
+    public B collectorPort(int port) {
+        return null;
+    }
+
+    @Override
+    public B collectorHost(String host) {
+        return null;
+    }
+
+    @Override
+    public B collectorPath(String path) {
+        return null;
+    }
+
+    @Override
+    public B addTracerTag(String key, String value) {
+        return null;
+    }
+
+    @Override
+    public B addTracerTag(String key, Number value) {
+        return null;
+    }
+
+    @Override
+    public B addTracerTag(String key, boolean value) {
+        return null;
+    }
+
+    @Override
+    public B config(io.helidon.common.config.Config config) {
+        return null;
+    }
+
+    @Override
+    public B config(Config config) {
+        return null;
+    }
+
+    @Override
+    public B enabled(boolean enabled) {
+        return null;
+    }
+
+    @Override
+    public B registerGlobal(boolean global) {
+        return null;
+    }
+
+    public B privateKey(Resource privateKey) {
+//        this.privateKey = privateKey;
+        return identity();
+    }
+
+    @Override
+    public <B1> B1 unwrap(Class<B1> builderClass) {
+        return null;
+    }
+
+    @Override
+    public Tracer build() {
+        return null;
+    }
+}

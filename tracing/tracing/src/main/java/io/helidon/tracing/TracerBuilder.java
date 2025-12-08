@@ -247,6 +247,17 @@ public interface TracerBuilder<T extends TracerBuilder<T>> extends Builder<T, Tr
     T config(Config config);
 
     /**
+     * Load configuration of tracer from configuration of the application.
+     * The configuration keys are specific for each tracer integration and documented
+     * in these integration projects.
+     *
+     * @param config configuration node of the tracer configuration
+     * @return updated builder instance
+     */
+    default T config(io.helidon.config.Config config) {
+        return config((Config) config);
+    }
+    /**
      * When enabled, tracing will be sent. If enabled is false, tracing should
      * use a no-op tracer.
      *

@@ -80,7 +80,11 @@ public class OpenTelemetryTracerProvider implements TracerProvider {
                                     + "Tracer.global(HelidonOpenTelemetry.create(ot, tracer). Using global open telemetry");
                         }
                         OpenTelemetry ot = GlobalOpenTelemetry.get();
-                        return new OpenTelemetryTracer(ot, ot.getTracer("helidon-service"), Map.of());
+                        return OpenTelemetryTracer.builder()
+                                .openTelemetry(ot)
+                                .delegate(ot.getTracer("helidon-service"))
+                                .tags(Map.of())
+                                .build();
                     });
         });
     }
@@ -138,7 +142,7 @@ public class OpenTelemetryTracerProvider implements TracerProvider {
 
     @Override
     public TracerBuilder<?> createBuilder() {
-        return OpenTelemetryTracer.builder();
+        return OpenTelemetryTracerBuilder.create();
     }
 
     @Override
