@@ -23,6 +23,7 @@ import io.helidon.common.Weight;
 import io.helidon.common.Weighted;
 import io.helidon.config.Config;
 import io.helidon.service.registry.Service;
+import io.helidon.tracing.Tracer;
 
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
@@ -42,17 +43,37 @@ class HelidonTracingBasedOpenTelemetryServiceFactory implements Supplier<OpenTel
     @Override
     public OpenTelemetry get() {
         OpenTelemetry result;
-        var otelTracerConfig = OpenTelemetryTracerImpl.create(config);
-        try {
-            result = otelTracerConfig.openTelemetry();
-        } catch (Exception e) {
+        if (config.get("tracing").exists()) {
             /*
-            The configuration set global to "true" and so OpenTelemetryTracerImpl tried to tell OTel to use the
-            OpenTelemetry instance created from the tracing config as the global one. The exception probably is because
-            the OTel global instance was already set. In that case, register the current global instance in our
-            service registry so code that retrieves it from there uses the actual OTel global instance.
+            Creating the impl also initializes the global tracer.
              */
+            var otelTracerConfig = OpenTelemetryTracerImpl.create(config.get("tracing"));
+
+            try {
+                result = otelTracerConfig.openTelemetry();
+            } catch (Exception e) {
+                /*
+                The configuration set global to "true" and so OpenTelemetryTracerImpl tried to tell OTel to use the
+                OpenTelemetry instance created from the tracing config as the global one. The exception probably is because
+                the OTel global instance was already set. In that case, register the current global instance in our
+                service registry so code that retrieves it from there uses the actual OTel global instance.
+                 */
+                result = GlobalOpenTelemetry.get();
+            }
+        } else {
+            /*
+            For backward compatibility with unconfigured OpenTelemetry tracing support, if the tracing config node is absent
+            let OpenTelemetry decide (probably either the no-op implementation or one using the OpenTelemetry auto-configure
+            feature.)
+             */
+
             result = GlobalOpenTelemetry.get();
+            var oTelTracerConfig = OpenTelemetryTracerBuilder.create()
+                    .serviceName("helidon-service")
+                    .openTelemetry(result)
+                    .delegate(result.getTracer("helidon-service"))
+                            .build();
+            Tracer.global(oTelTracerConfig);
         }
 
         return result;

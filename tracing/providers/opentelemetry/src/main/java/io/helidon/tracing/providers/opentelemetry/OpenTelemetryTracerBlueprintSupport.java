@@ -57,6 +57,11 @@ class OpenTelemetryTracerBlueprintSupport {
 
     static final String PROPAGATORS_DEFAULT = "new java.util.ArrayList<>(io.helidon.tracing.providers.opentelemetry"
             + ".ContextPropagationType.DEFAULT_PROPAGATORS)";
+
+    private static final String DEFAULT_EXPORTER_SCHEME = "http";
+    private static final String DEFAULT_EXPORTER_HOST = "localhost";
+    private static final int DEFAULT_EXPORTER_PORT = 4317;
+
     private static final System.Logger LOGGER = System.getLogger(OpenTelemetryTracerBlueprintSupport.class.getName());
 
     private static final TextMapGetter GETTER = new Getter();
@@ -73,9 +78,112 @@ class OpenTelemetryTracerBlueprintSupport {
              */
 
             addTypedTagsToTagMap(target);
+
+            if (target.propagator().isEmpty()) {
+                target.propagator(TextMapPropagator.composite(target.propagators()));
+            }
+
+            /*
+            This method is invoked before the builder's values are validated. We need the service name so check it
+            explicitly here.
+             */
+            String serviceName = target.serviceName()
+                    .orElseThrow(() -> new IllegalStateException("Property \"service\" must not be null, but not set"));
+
+            /*
+            Set the openTelemetry and delegate if they were not explicitly assigned.
+             */
+            if (target.openTelemetry().isEmpty()) {
+                target.openTelemetry(openTelemetryFromSettings(target));
+            }
+            if (target.delegate().isEmpty()) {
+                target.delegate(target.openTelemetry().get().getTracer(serviceName));
+            }
+
         }
 
-        private void addTypedTagsToTagMap(OpenTelemetryTracer.BuilderBase<?, ?>target) {
+        private static OpenTelemetry openTelemetryFromSettings(OpenTelemetryTracer.BuilderBase<?, ?> builder) {
+            if (!builder.enabled()) {
+                return OpenTelemetry.noop();
+            }
+
+            if (builder.openTelemetry().isPresent()) {
+                return builder.openTelemetry().get();
+            }
+
+            var openTelemetrySdkBuilder = OpenTelemetrySdk.builder();
+
+            var sdkTracerProviderBuilder = SdkTracerProvider.builder();
+
+            var propagator = builder.propagator().orElse(TextMapPropagator.composite(builder.propagators()));
+            openTelemetrySdkBuilder.setPropagators(ContextPropagators.create(propagator));
+
+            spanProcessor(builder).ifPresent(sdkTracerProviderBuilder::addSpanProcessor);
+
+            var attributesBuilder = Attributes.builder();
+            attributesBuilder.put(ResourceAttributes.SERVICE_NAME, builder.serviceName().get());
+
+            var resource = Resource.getDefault().merge(Resource.create(attributesBuilder.build()));
+            sdkTracerProviderBuilder.setResource(resource);
+
+            sampler(builder).ifPresent(sdkTracerProviderBuilder::setSampler);
+
+            openTelemetrySdkBuilder.setTracerProvider(sdkTracerProviderBuilder.build());
+            return openTelemetrySdkBuilder.build();
+        }
+
+        private static Optional<SpanProcessor> spanProcessor(OpenTelemetryTracer.BuilderBase<?, ?> builder) {
+
+            var spanExporter = spanExporter(builder);
+            return builder.spanProcessorType().map(spt -> switch (spt) {
+                case SpanProcessorType.BATCH -> batchProcessor(builder, spanExporter);
+                case SpanProcessorType.SIMPLE -> SimpleSpanProcessor.create(spanExporter);
+            });
+        }
+
+        private static SpanExporter spanExporter(OpenTelemetryTracer.BuilderBase<?, ?> builder) {
+            // The extended tracer settings do not expose an exporter type. Use OTLP via grpc.
+            var spanExporterBuilder = OtlpGrpcSpanExporter.builder();
+            StringBuilder exporterUrlBuilder = new StringBuilder();
+
+            String scheme = builder.collectorPath().orElse(DEFAULT_EXPORTER_SCHEME);
+            exporterUrlBuilder.append(scheme).append(scheme.endsWith(":") ? "" : ":").append("//");
+
+            String host = builder.collectorHost().orElse(DEFAULT_EXPORTER_HOST);
+            exporterUrlBuilder.append(host);
+
+            int port = builder.collectorPort().orElse(DEFAULT_EXPORTER_PORT);
+            exporterUrlBuilder.append(":").append(port);
+
+            builder.collectorPath().ifPresent(path -> exporterUrlBuilder.append(path.startsWith("/") ? "" : "/").append(path));
+
+            spanExporterBuilder.setEndpoint(exporterUrlBuilder.toString());
+            if (builder.privateKey().isPresent() && builder.clientCertificate().isPresent()) {
+                spanExporterBuilder.setClientTls(builder.privateKey().get().bytes(), builder.clientCertificate().get().bytes());
+            }
+            builder.trustedCertificate().ifPresent(certs -> spanExporterBuilder.setTrustedCertificates(certs.bytes()));
+
+            return spanExporterBuilder.build();
+
+        }
+
+        private static SpanProcessor batchProcessor(OpenTelemetryTracer.BuilderBase<?, ?> builder, SpanExporter spanExporter) {
+            var processorBuilder = BatchSpanProcessor.builder(spanExporter);
+            builder.maxExportBatchSize().ifPresent(processorBuilder::setMaxExportBatchSize);
+            builder.exportTimeout().ifPresent(processorBuilder::setExporterTimeout);
+            builder.scheduleDelay().ifPresent(processorBuilder::setScheduleDelay);
+            builder.maxQueueSize().ifPresent(processorBuilder::setMaxQueueSize);
+            return processorBuilder.build();
+        }
+
+        private static Optional<Sampler> sampler(OpenTelemetryTracer.BuilderBase<?, ?> builder) {
+            return builder.samplerType().map(st -> switch (st) {
+                case SamplerType.CONSTANT -> Sampler.alwaysOn();
+                case SamplerType.RATIO -> Sampler.traceIdRatioBased(builder.samplerParam().orElse(1.0d));
+            });
+        }
+
+        private void addTypedTagsToTagMap(OpenTelemetryTracer.BuilderBase<?, ?> target) {
             target.tracerTags().forEach(target.tags()::put);
             target.intTracerTags().forEach((key, intValue) -> target.tags().put(key, intValue.toString()));
             target.booleanTracerTags().forEach((key, booleanValue) -> target.tags().put(key, booleanValue.toString()));
@@ -84,6 +192,11 @@ class OpenTelemetryTracerBlueprintSupport {
     }
 
     static class CustomMethods {
+
+        @Prototype.FactoryMethod
+        static OpenTelemetryTracer.BuilderBase<?, ?> builder() {
+            return OpenTelemetryTracerBuilder.create();
+        }
 
         @Prototype.BuilderMethod
         static void addTracerTag(OpenTelemetryTracer.BuilderBase<?, ?> builder, String name, String value) {

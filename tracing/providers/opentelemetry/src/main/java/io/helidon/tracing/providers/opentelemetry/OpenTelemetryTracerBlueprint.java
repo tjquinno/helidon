@@ -32,7 +32,7 @@ import io.opentelemetry.context.propagation.TextMapPropagator;
 /**
  * Settings for OpenTelemetry tracer configuration under the {@code tracing} config key.
  */
-@Prototype.Configured
+@Prototype.Configured("tracing")
 @Prototype.Blueprint(decorator = OpenTelemetryTracerBlueprintSupport.Decorator.class)
 @Prototype.Implement("io.helidon.tracing.Tracer")
 @Prototype.CustomMethods(OpenTelemetryTracerBlueprintSupport.CustomMethods.class)
@@ -62,6 +62,7 @@ interface OpenTelemetryTracerBlueprint extends ExtendedTracer {
      *
      * @return {@code OpenTelemetry} instance
      */
+    @Option.Access("")
     OpenTelemetry openTelemetry();
 
     /**
