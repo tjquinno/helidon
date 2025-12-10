@@ -70,35 +70,10 @@ public final class HelidonOpenTelemetry {
      * @param tracer    tracer
      * @param tags      tracer tags
      * @return Helidon {@link io.helidon.tracing.Tracer}
-     * @deprecated Use
-     * {@link #create(io.opentelemetry.api.OpenTelemetry, io.opentelemetry.api.trace.Tracer, java.util.Map, String)}
      */
-    @Deprecated(since = "4.4.0", forRemoval = true)
-    public static OpenTelemetryTracer create(OpenTelemetry telemetry, Tracer tracer, Map<String, String> tags) {
+    public static io.helidon.tracing.Tracer create(OpenTelemetry telemetry, Tracer tracer, Map<String, String> tags) {
         return OpenTelemetryTracerBuilder.create()
                 .serviceName("helidon-service")
-                .openTelemetry(telemetry)
-                .delegate(tracer)
-                .tags(tags)
-                .build();
-    }
-
-    /**
-     * Wrap an open telemetry tracer.
-     *
-     * @param telemetry open telemetry instance
-     * @param tracer    tracer
-     * @param tags      tracer tags
-     * @param serviceName service name for the Helidon tracer
-     *
-     * @return {@link io.helidon.tracing.Tracer}
-     */
-    public static OpenTelemetryTracer create(OpenTelemetry telemetry,
-                                             Tracer tracer,
-                                             Map<String, String> tags,
-                                             String serviceName) {
-        return OpenTelemetryTracerBuilder.create()
-                .serviceName(serviceName)
                 .openTelemetry(telemetry)
                 .delegate(tracer)
                 .tags(tags)

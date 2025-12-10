@@ -42,14 +42,16 @@ class HelidonTracingBasedOpenTelemetryServiceFactory implements Supplier<OpenTel
     @Override
     public OpenTelemetry get() {
         OpenTelemetry result;
-        if (config.get(OpenTelemetryTracerBlueprint.TRACING_CONFIG_KEY).exists()) {
+        if (config.get(OpenTelemetryTracerConfigBlueprint.TRACING_CONFIG_KEY).exists()) {
             /*
-            Creating the impl also initializes the global tracer.
+            Creating the impl also initializes the global tracer if the config specifies global = true.
              */
-            var otelTracerConfig = OpenTelemetryTracerImpl.create(config.get(OpenTelemetryTracerBlueprint.TRACING_CONFIG_KEY));
+            var helidonOtelTracer = OpenTelemetryTracerBuilder.create()
+                    .config(config.get(OpenTelemetryTracerConfigBlueprint.TRACING_CONFIG_KEY))
+                    .build();
 
             try {
-                result = otelTracerConfig.openTelemetry();
+                result = helidonOtelTracer.prototype().openTelemetry();
             } catch (Exception e) {
                 /*
                 The configuration set global to "true" and so OpenTelemetryTracerImpl tried to tell OTel to use the

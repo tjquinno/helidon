@@ -16,25 +16,48 @@
 
 package io.helidon.tracing.providers.opentelemetry;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.ServiceLoader;
 
 import io.helidon.common.HelidonServiceLoader;
 import io.helidon.config.Config;
+import io.helidon.tracing.HeaderConsumer;
+import io.helidon.tracing.HeaderProvider;
+import io.helidon.tracing.Span;
+import io.helidon.tracing.SpanContext;
 import io.helidon.tracing.SpanListener;
 import io.helidon.tracing.Tracer;
 
 import io.opentelemetry.api.GlobalOpenTelemetry;
 
-class OpenTelemetryTracerImpl extends OpenTelemetryTracer.BuilderBase.OpenTelemetryTracerImpl implements Tracer {
+class OpenTelemetryTracerImpl extends OpenTelemetryTracerConfig.BuilderBase.OpenTelemetryTracerConfigImpl implements Tracer {
 
     private static final System.Logger LOGGER = System.getLogger(OpenTelemetryTracerImpl.class.getName());
 
     private final List<SpanListener> spanListeners = new ArrayList<>();
+
+    @Override
+    public void inject(SpanContext spanContext, HeaderProvider inboundHeadersProvider, HeaderConsumer outboundHeadersConsumer) {
+//        super.inject(spanContext, inboundHeadersProvider, outboundHeadersConsumer);
+    }
+
+    @Override
+    public Optional<SpanContext> extract(HeaderProvider headersProvider) {
+//        return super.extract(headersProvider);
+        return Optional.empty();
+    }
+
+    @Override
+    public Span.Builder<?> spanBuilder(String name) {
+//        return super.spanBuilder(name);
+        return null;
+    }
 
     /**
      * Create an instance providing a builder.
@@ -61,11 +84,11 @@ class OpenTelemetryTracerImpl extends OpenTelemetryTracer.BuilderBase.OpenTeleme
 
     }
 
-    static OpenTelemetryTracerImpl create(Config config) {
-        return OpenTelemetryTracerBuilder.create()
-                .config(config)
-                .build();
-    }
+//    static OpenTelemetryTracerImpl create(Config config) {
+//        return OpenTelemetryTracerBuilder.create()
+//                .config(config)
+//                .build();
+//    }
 
     @Override
     public Tracer register(SpanListener spanListener) {
@@ -83,7 +106,7 @@ class OpenTelemetryTracerImpl extends OpenTelemetryTracer.BuilderBase.OpenTeleme
         if (tracerClass.isInstance(delegate())) {
             return tracerClass.cast(delegate());
         }
-        return super.unwrap(tracerClass);
+        return tracerClass.cast(this); //super.unwrap(tracerClass);
     }
 
     @Override

@@ -68,10 +68,10 @@ class OpenTelemetryTracerBlueprintSupport {
     private OpenTelemetryTracerBlueprintSupport() {
     }
 
-    static class Decorator implements Prototype.BuilderDecorator<OpenTelemetryTracer.BuilderBase<?, ?>> {
+    static class Decorator implements Prototype.BuilderDecorator<OpenTelemetryTracerConfig.BuilderBase<?, ?>> {
 
         @Override
-        public void decorate(OpenTelemetryTracer.BuilderBase<?, ?> target) {
+        public void decorate(OpenTelemetryTracerConfig.BuilderBase<?, ?> target) {
             /*
             See the constructor of the manually-written (not generated) OpenTelemetryTracerImpl for some further
             initialization. It is done there because we want to wait for validation to run first before doing that work,
@@ -103,7 +103,7 @@ class OpenTelemetryTracerBlueprintSupport {
 
         }
 
-        private static OpenTelemetry openTelemetryFromSettings(OpenTelemetryTracer.BuilderBase<?, ?> builder) {
+        private static OpenTelemetry openTelemetryFromSettings(OpenTelemetryTracerConfig.BuilderBase<?, ?> builder) {
             if (!builder.enabled()) {
                 return OpenTelemetry.noop();
             }
@@ -119,30 +119,29 @@ class OpenTelemetryTracerBlueprintSupport {
             var propagator = builder.propagator().orElse(TextMapPropagator.composite(builder.propagators()));
             openTelemetrySdkBuilder.setPropagators(ContextPropagators.create(propagator));
 
-            spanProcessor(builder).ifPresent(sdkTracerProviderBuilder::addSpanProcessor);
-
             var attributesBuilder = Attributes.builder();
             attributesBuilder.put(ResourceAttributes.SERVICE_NAME, builder.serviceName().get());
 
             var resource = Resource.getDefault().merge(Resource.create(attributesBuilder.build()));
-            sdkTracerProviderBuilder.setResource(resource);
 
-            sampler(builder).ifPresent(sdkTracerProviderBuilder::setSampler);
+            sdkTracerProviderBuilder.addSpanProcessor(spanProcessor(builder))
+                    .setResource(resource)
+                    .setSampler(sampler(builder));
 
             openTelemetrySdkBuilder.setTracerProvider(sdkTracerProviderBuilder.build());
             return openTelemetrySdkBuilder.build();
         }
 
-        private static Optional<SpanProcessor> spanProcessor(OpenTelemetryTracer.BuilderBase<?, ?> builder) {
+        private static SpanProcessor spanProcessor(OpenTelemetryTracerConfig.BuilderBase<?, ?> builder) {
 
             var spanExporter = spanExporter(builder);
-            return builder.spanProcessorType().map(spt -> switch (spt) {
+            return switch (builder.spanProcessorType()) {
                 case SpanProcessorType.BATCH -> batchProcessor(builder, spanExporter);
                 case SpanProcessorType.SIMPLE -> SimpleSpanProcessor.create(spanExporter);
-            });
+            };
         }
 
-        private static SpanExporter spanExporter(OpenTelemetryTracer.BuilderBase<?, ?> builder) {
+        private static SpanExporter spanExporter(OpenTelemetryTracerConfig.BuilderBase<?, ?> builder) {
             // The extended tracer settings do not expose an exporter type. Use OTLP via grpc.
             var spanExporterBuilder = OtlpGrpcSpanExporter.builder();
             StringBuilder exporterUrlBuilder = new StringBuilder();
@@ -168,23 +167,23 @@ class OpenTelemetryTracerBlueprintSupport {
 
         }
 
-        private static SpanProcessor batchProcessor(OpenTelemetryTracer.BuilderBase<?, ?> builder, SpanExporter spanExporter) {
-            var processorBuilder = BatchSpanProcessor.builder(spanExporter);
-            builder.maxExportBatchSize().ifPresent(processorBuilder::setMaxExportBatchSize);
-            builder.exportTimeout().ifPresent(processorBuilder::setExporterTimeout);
-            builder.scheduleDelay().ifPresent(processorBuilder::setScheduleDelay);
-            builder.maxQueueSize().ifPresent(processorBuilder::setMaxQueueSize);
-            return processorBuilder.build();
+        private static SpanProcessor batchProcessor(OpenTelemetryTracerConfig.BuilderBase<?, ?> builder, SpanExporter spanExporter) {
+            return BatchSpanProcessor.builder(spanExporter)
+                    .setMaxExportBatchSize(builder.maxExportBatchSize())
+                    .setExporterTimeout(builder.exportTimeout())
+                    .setScheduleDelay(builder.scheduleDelay())
+                            .setMaxQueueSize(builder.maxQueueSize())
+                    .build();
         }
 
-        private static Optional<Sampler> sampler(OpenTelemetryTracer.BuilderBase<?, ?> builder) {
-            return builder.samplerType().map(st -> switch (st) {
+        private static Sampler sampler(OpenTelemetryTracerConfig.BuilderBase<?, ?> builder) {
+            return switch (builder.samplerType()) {
                 case SamplerType.CONSTANT -> Sampler.alwaysOn();
-                case SamplerType.RATIO -> Sampler.traceIdRatioBased(builder.samplerParam().orElse(1.0d));
-            });
+                case SamplerType.RATIO -> Sampler.traceIdRatioBased(builder.samplerParam());
+            };
         }
 
-        private void addTypedTagsToTagMap(OpenTelemetryTracer.BuilderBase<?, ?> target) {
+        private void addTypedTagsToTagMap(OpenTelemetryTracerConfig.BuilderBase<?, ?> target) {
             target.tracerTags().forEach(target.tags()::put);
             target.intTracerTags().forEach((key, intValue) -> target.tags().put(key, intValue.toString()));
             target.booleanTracerTags().forEach((key, booleanValue) -> target.tags().put(key, booleanValue.toString()));
@@ -202,7 +201,7 @@ class OpenTelemetryTracerBlueprintSupport {
          * @param value tag value
          */
         @Prototype.BuilderMethod
-        static void addTracerTag(OpenTelemetryTracer.BuilderBase<?, ?> builder, String name, String value) {
+        static void addTracerTag(OpenTelemetryTracerConfig.BuilderBase<?, ?> builder, String name, String value) {
             builder.putTracerTag(name, value);
         }
 
@@ -214,7 +213,7 @@ class OpenTelemetryTracerBlueprintSupport {
          * @param value tag value
          */
         @Prototype.BuilderMethod
-        static void addTracerTag(OpenTelemetryTracer.BuilderBase<?, ?> builder, String name, Number value) {
+        static void addTracerTag(OpenTelemetryTracerConfig.BuilderBase<?, ?> builder, String name, Number value) {
             int intValue = value.intValue();
             if (value.doubleValue() % 1 != 0) {
                 LOGGER.log(System.Logger.Level.WARNING, "Value for tag $0 of $1 should be an integer; converting to $2",
@@ -232,7 +231,7 @@ class OpenTelemetryTracerBlueprintSupport {
          * @param value tag value
          */
         @Prototype.BuilderMethod
-        static void addTracerTag(OpenTelemetryTracer.BuilderBase<?, ?> builder, String name, boolean value) {
+        static void addTracerTag(OpenTelemetryTracerConfig.BuilderBase<?, ?> builder, String name, boolean value) {
             builder.putBooleanTracerTag(name, value);
         }
 
@@ -244,72 +243,8 @@ class OpenTelemetryTracerBlueprintSupport {
          * @param spanListener {@code SpanListener} to add to the {@code Tracer} built from the builder
          */
         @Prototype.BuilderMethod
-        static void register(OpenTelemetryTracer.BuilderBase<?, ?> builder, SpanListener spanListener) {
+        static void register(OpenTelemetryTracerConfig.BuilderBase<?, ?> builder, SpanListener spanListener) {
             builder.spanListeners().add(spanListener);
-        }
-
-        /**
-         * Registers a {@link io.helidon.tracing.SpanListener} with the tracer.
-         *
-         * @param openTelemetryTracer tracer with which to register the listener
-         * @param spanListener the {@code SpanListener} to register
-         * @return updated tracer
-         */
-        @Prototype.PrototypeMethod
-        static Tracer register(OpenTelemetryTracer openTelemetryTracer, SpanListener spanListener) {
-            openTelemetryTracer.spanListeners().add(spanListener);
-            return openTelemetryTracer;
-        }
-
-        /**
-         * Extract a {@link io.helidon.tracing.SpanContext} using headers and the propagator already associated with the
-         * {@link io.helidon.tracing.Tracer}.
-         *
-         * @param openTelemetryTracer the {@code Tracer}
-         * @param headersProvider     provider of headers (typically from an incoming request)
-         * @return {@code SpanContext} if one is indicated; {@code Optional#empty} otherwise
-         */
-        @Prototype.PrototypeMethod
-        public static Optional<SpanContext> extract(OpenTelemetryTracer openTelemetryTracer, HeaderProvider headersProvider) {
-            Context context = openTelemetryTracer.propagator().extract(Context.current(), headersProvider, GETTER);
-
-            return Optional.ofNullable(context)
-                    .map(OpenTelemetrySpanContext::new);
-        }
-
-        /**
-         * Inject the specified {@link io.helidon.tracing.SpanContext} into headers, using the propagator already associated
-         * with the {@link io.helidon.tracing.Tracer}.
-         *
-         * @param openTelemetryTracer     the {@code Tracer}
-         * @param spanContext             the {@code SpanContext} to inject
-         * @param inboundHeadersProvider  provider of inbound headers (required by the signature but not used here)
-         * @param outboundHeadersConsumer how the headers can be set to reflect the span context
-         */
-        @Prototype.PrototypeMethod
-        public static void inject(OpenTelemetryTracer openTelemetryTracer,
-                                  SpanContext spanContext,
-                                  HeaderProvider inboundHeadersProvider,
-                                  HeaderConsumer outboundHeadersConsumer) {
-            openTelemetryTracer.propagator()
-                    .inject(((OpenTelemetrySpanContext) spanContext).openTelemetry(), outboundHeadersConsumer, SETTER);
-        }
-
-        /**
-         * Creates a {@link Span.Builder} for constructing a new {@link io.helidon.tracing.Span} from the specified {@link
-         * io.helidon.tracing.Tracer} and assigning the name to be given to the span once built.
-         *
-         * @param openTelemetryTracer the {@code Tracer} from which to create the span builder
-         * @param name span name to assign to the span once created
-         * @return {@code Span.Builder}
-         */
-        @Prototype.PrototypeMethod
-        public static Span.Builder<?> spanBuilder(OpenTelemetryTracer openTelemetryTracer, String name) {
-            OpenTelemetrySpanBuilder builder = new OpenTelemetrySpanBuilder(openTelemetryTracer.delegate().spanBuilder(name),
-                                                                            openTelemetryTracer.spanListeners());
-            Span.current().map(Span::context).ifPresent(builder::parent);
-            openTelemetryTracer.tags().forEach(builder::tag);
-            return builder;
         }
 
         /**
@@ -321,7 +256,7 @@ class OpenTelemetryTracerBlueprintSupport {
          * @param config config node (node list of string nodes or a single node)
          * @return list of selected propagators
          */
-        @Prototype.FactoryMethod
+        @Prototype.ConfigFactoryMethod
         static List<TextMapPropagator> createPropagators(Config config) {
 
             Stream<String> propagatorNames = config.isList()

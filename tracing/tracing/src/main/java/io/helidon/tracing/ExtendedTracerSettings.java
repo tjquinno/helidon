@@ -26,7 +26,7 @@ import io.helidon.common.configurable.Resource;
 /**
  * Common settings for tracers including settings for span processors and secure client connections.
  */
-public interface ExtendedTracer extends Tracer {
+public interface ExtendedTracerSettings {
 
     /**
      * Service name of the traced service.
@@ -152,7 +152,7 @@ public interface ExtendedTracer extends Tracer {
      */
     @Option.Configured
     @Option.Default("BATCH")
-    Optional<SpanProcessorType> spanProcessorType();
+    SpanProcessorType spanProcessorType();
 
     /**
      * Delay between consecutive transmissions to the tracing collector (batch processing).
@@ -161,7 +161,7 @@ public interface ExtendedTracer extends Tracer {
      */
     @Option.Configured
     @Option.Default("PT5S")
-    Optional<Duration> scheduleDelay();
+    Duration scheduleDelay();
 
     /**
      * Maximum number of spans retained before discarding any not sent to the tracing collector (batch processing).
@@ -170,7 +170,7 @@ public interface ExtendedTracer extends Tracer {
      */
     @Option.Configured
     @Option.DefaultInt(2048)
-    Optional<Integer> maxQueueSize();
+    int maxQueueSize();
 
     /**
      * Maximum number of spans grouped for transmission together; typically does not exceed {@link #maxQueueSize()}
@@ -180,7 +180,7 @@ public interface ExtendedTracer extends Tracer {
      */
     @Option.Configured
     @Option.DefaultInt(512)
-    Optional<Integer> maxExportBatchSize();
+    int maxExportBatchSize();
 
     /**
      * Maximum time a transmission can be in progress before being cancelled.
@@ -189,7 +189,7 @@ public interface ExtendedTracer extends Tracer {
      */
     @Option.Configured
     @Option.Default("PT10S")
-    Optional<Duration> exportTimeout();
+    Duration exportTimeout();
 
     /**
      * Type of sampler for collecting spans.
@@ -197,8 +197,8 @@ public interface ExtendedTracer extends Tracer {
      * @return sampler type
      */
     @Option.Configured
-    @Option.DefaultCode("io.helidon.tracing.SamplerType.CONSTANT")
-    Optional<SamplerType> samplerType();
+    @Option.Default("CONSTANT")
+    SamplerType samplerType();
 
     /**
      * Parameter value used by the selected sampler; interpretation depends on the sampler type..
@@ -207,6 +207,6 @@ public interface ExtendedTracer extends Tracer {
      */
     @Option.Configured
     @Option.DefaultDouble(1.0d)
-    Optional<Double> samplerParam();
+    Double samplerParam();
 
 }

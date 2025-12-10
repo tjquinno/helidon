@@ -18,7 +18,7 @@ package io.helidon.tracing.providers.opentelemetry;
 
 import io.helidon.tracing.TracerBuilder;
 
-class OpenTelemetryTracerBuilder extends OpenTelemetryTracer.BuilderBase<OpenTelemetryTracerBuilder, OpenTelemetryTracer>
+class OpenTelemetryTracerBuilder extends OpenTelemetryTracerConfig.BuilderBase<OpenTelemetryTracerBuilder, OpenTelemetryTracerConfig>
         implements TracerBuilder<OpenTelemetryTracerBuilder> {
 
     static OpenTelemetryTracerBuilder create() {
@@ -26,16 +26,15 @@ class OpenTelemetryTracerBuilder extends OpenTelemetryTracer.BuilderBase<OpenTel
     }
 
     @Override
-    public io.helidon.tracing.providers.opentelemetry.OpenTelemetryTracerImpl buildPrototype() {
+    public OpenTelemetryTracerConfig buildPrototype() {
         preBuildPrototype();
         validatePrototype();
-
-        return new io.helidon.tracing.providers.opentelemetry.OpenTelemetryTracerImpl(this);
+        return new OpenTelemetryTracerConfigImpl(this);
     }
 
     @Override
-    public io.helidon.tracing.providers.opentelemetry.OpenTelemetryTracerImpl build() {
-        return buildPrototype();
+    public OpenTelemetryTracer build() {
+        return OpenTelemetryTracer.create(buildPrototype());
     }
 
     @Override
