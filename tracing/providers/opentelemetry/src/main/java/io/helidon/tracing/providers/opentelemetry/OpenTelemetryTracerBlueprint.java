@@ -18,7 +18,6 @@ package io.helidon.tracing.providers.opentelemetry;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import io.helidon.builder.api.Option;
 import io.helidon.builder.api.Prototype;
@@ -32,11 +31,16 @@ import io.opentelemetry.context.propagation.TextMapPropagator;
 /**
  * Settings for OpenTelemetry tracer configuration under the {@code tracing} config key.
  */
-@Prototype.Configured("tracing")
+@Prototype.Configured(OpenTelemetryTracerBlueprint.TRACING_CONFIG_KEY)
 @Prototype.Blueprint(decorator = OpenTelemetryTracerBlueprintSupport.Decorator.class)
 @Prototype.Implement("io.helidon.tracing.Tracer")
 @Prototype.CustomMethods(OpenTelemetryTracerBlueprintSupport.CustomMethods.class)
 interface OpenTelemetryTracerBlueprint extends ExtendedTracer {
+
+    /**
+     * Config key for tracing settings.
+     */
+    String TRACING_CONFIG_KEY = "tracing";
 
     /**
      * Context propagators.

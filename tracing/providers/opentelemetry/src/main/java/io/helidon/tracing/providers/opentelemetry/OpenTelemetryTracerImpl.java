@@ -20,43 +20,21 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
+import java.util.Objects;
 import java.util.ServiceLoader;
 
 import io.helidon.common.HelidonServiceLoader;
 import io.helidon.config.Config;
-import io.helidon.tracing.SamplerType;
 import io.helidon.tracing.SpanListener;
-import io.helidon.tracing.SpanProcessorType;
 import io.helidon.tracing.Tracer;
 
 import io.opentelemetry.api.GlobalOpenTelemetry;
-import io.opentelemetry.api.OpenTelemetry;
-import io.opentelemetry.api.common.Attributes;
-import io.opentelemetry.context.propagation.ContextPropagators;
-import io.opentelemetry.context.propagation.TextMapPropagator;
-import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporter;
-import io.opentelemetry.sdk.OpenTelemetrySdk;
-import io.opentelemetry.sdk.resources.Resource;
-import io.opentelemetry.sdk.trace.SdkTracerProvider;
-import io.opentelemetry.sdk.trace.SpanProcessor;
-import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
-import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
-import io.opentelemetry.sdk.trace.export.SpanExporter;
-import io.opentelemetry.sdk.trace.samplers.Sampler;
-import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
 
 class OpenTelemetryTracerImpl extends OpenTelemetryTracer.BuilderBase.OpenTelemetryTracerImpl implements Tracer {
 
     private static final System.Logger LOGGER = System.getLogger(OpenTelemetryTracerImpl.class.getName());
 
     private final List<SpanListener> spanListeners = new ArrayList<>();
-
-    static OpenTelemetryTracerImpl create(Config config) {
-        return OpenTelemetryTracerBuilder.create()
-                .config(config)
-                .build();
-    }
 
     /**
      * Create an instance providing a builder.
@@ -83,6 +61,12 @@ class OpenTelemetryTracerImpl extends OpenTelemetryTracer.BuilderBase.OpenTeleme
 
     }
 
+    static OpenTelemetryTracerImpl create(Config config) {
+        return OpenTelemetryTracerBuilder.create()
+                .config(config)
+                .build();
+    }
+
     @Override
     public Tracer register(SpanListener spanListener) {
         spanListeners.add(spanListener);
@@ -100,5 +84,29 @@ class OpenTelemetryTracerImpl extends OpenTelemetryTracer.BuilderBase.OpenTeleme
             return tracerClass.cast(delegate());
         }
         return super.unwrap(tracerClass);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof OpenTelemetryTracerImpl that)) {
+            return false;
+        }
+        if (!super.equals(o)) {
+            return false;
+        }
+        return Objects.equals(spanListeners, that.spanListeners);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), spanListeners);
+    }
+
+    @Override
+    public String toString() {
+        return "OpenTelemetryTracerImpl{"
+                + super.toString()
+                + "spanListeners=" + spanListeners
+                + '}';
     }
 }

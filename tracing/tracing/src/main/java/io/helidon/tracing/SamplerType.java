@@ -17,27 +17,18 @@
 package io.helidon.tracing;
 
 /**
- * Sampler types.
+ * Sampler types (abbreviated list).
  */
 public enum SamplerType {
 
+    /**
+     * Sampling of every span.
+     */
+    CONSTANT,
 
-    CONSTANT("const"),
+    /**
+     * Sampling of a proportion [0.0, 1.0] of spans.
+     */
+    RATIO;
 
-    RATIO("ratio");
-
-    private final String name;
-
-    SamplerType(String name) {
-        this.name = name;
-    }
-
-    public static SamplerType create(String value) {
-        for (SamplerType type : SamplerType.values()) {
-            if (type.name.equalsIgnoreCase(value)) {
-                return type;
-            }
-        }
-        throw new IllegalArgumentException("Unknown sampler type: " + value);
-    }
 }

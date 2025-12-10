@@ -19,12 +19,10 @@ package io.helidon.tracing.providers.opentelemetry;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.ServiceLoader;
 import java.util.StringJoiner;
 import java.util.stream.Stream;
 
 import io.helidon.builder.api.Prototype;
-import io.helidon.common.HelidonServiceLoader;
 import io.helidon.config.Config;
 import io.helidon.tracing.HeaderConsumer;
 import io.helidon.tracing.HeaderProvider;
@@ -66,6 +64,9 @@ class OpenTelemetryTracerBlueprintSupport {
 
     private static final TextMapGetter GETTER = new Getter();
     private static final TextMapSetter SETTER = new Setter();
+
+    private OpenTelemetryTracerBlueprintSupport() {
+    }
 
     static class Decorator implements Prototype.BuilderDecorator<OpenTelemetryTracer.BuilderBase<?, ?>> {
 
@@ -193,16 +194,25 @@ class OpenTelemetryTracerBlueprintSupport {
 
     static class CustomMethods {
 
-        @Prototype.FactoryMethod
-        static OpenTelemetryTracer.BuilderBase<?, ?> builder() {
-            return OpenTelemetryTracerBuilder.create();
-        }
-
+        /**
+         * Adds a string-valued tag.
+         *
+         * @param builder builder
+         * @param name tag name
+         * @param value tag value
+         */
         @Prototype.BuilderMethod
         static void addTracerTag(OpenTelemetryTracer.BuilderBase<?, ?> builder, String name, String value) {
             builder.putTracerTag(name, value);
         }
 
+        /**
+         * Adds a numeric-valued tag.
+         *
+         * @param builder builder
+         * @param name tag name
+         * @param value tag value
+         */
         @Prototype.BuilderMethod
         static void addTracerTag(OpenTelemetryTracer.BuilderBase<?, ?> builder, String name, Number value) {
             int intValue = value.intValue();
@@ -214,22 +224,51 @@ class OpenTelemetryTracerBlueprintSupport {
             builder.putIntTracerTag(name, intValue);
         }
 
+        /**
+         * Adds a boolean-valued tag.
+         *
+         * @param builder builder
+         * @param name tag name
+         * @param value tag value
+         */
         @Prototype.BuilderMethod
         static void addTracerTag(OpenTelemetryTracer.BuilderBase<?, ?> builder, String name, boolean value) {
             builder.putBooleanTracerTag(name, value);
         }
 
+        /**
+         * Adds a {@link io.helidon.tracing.SpanListener} to the builder for later registration with the resulting
+         * {@link io.helidon.tracing.Tracer}.
+         *
+         * @param builder {@code Builder} to add the listener to
+         * @param spanListener {@code SpanListener} to add to the {@code Tracer} built from the builder
+         */
         @Prototype.BuilderMethod
         static void register(OpenTelemetryTracer.BuilderBase<?, ?> builder, SpanListener spanListener) {
             builder.spanListeners().add(spanListener);
         }
 
+        /**
+         * Registers a {@link io.helidon.tracing.SpanListener} with the tracer.
+         *
+         * @param openTelemetryTracer tracer with which to register the listener
+         * @param spanListener the {@code SpanListener} to register
+         * @return updated tracer
+         */
         @Prototype.PrototypeMethod
         static Tracer register(OpenTelemetryTracer openTelemetryTracer, SpanListener spanListener) {
             openTelemetryTracer.spanListeners().add(spanListener);
             return openTelemetryTracer;
         }
 
+        /**
+         * Extract a {@link io.helidon.tracing.SpanContext} using headers and the propagator already associated with the
+         * {@link io.helidon.tracing.Tracer}.
+         *
+         * @param openTelemetryTracer the {@code Tracer}
+         * @param headersProvider     provider of headers (typically from an incoming request)
+         * @return {@code SpanContext} if one is indicated; {@code Optional#empty} otherwise
+         */
         @Prototype.PrototypeMethod
         public static Optional<SpanContext> extract(OpenTelemetryTracer openTelemetryTracer, HeaderProvider headersProvider) {
             Context context = openTelemetryTracer.propagator().extract(Context.current(), headersProvider, GETTER);
@@ -238,6 +277,15 @@ class OpenTelemetryTracerBlueprintSupport {
                     .map(OpenTelemetrySpanContext::new);
         }
 
+        /**
+         * Inject the specified {@link io.helidon.tracing.SpanContext} into headers, using the propagator already associated
+         * with the {@link io.helidon.tracing.Tracer}.
+         *
+         * @param openTelemetryTracer     the {@code Tracer}
+         * @param spanContext             the {@code SpanContext} to inject
+         * @param inboundHeadersProvider  provider of inbound headers (required by the signature but not used here)
+         * @param outboundHeadersConsumer how the headers can be set to reflect the span context
+         */
         @Prototype.PrototypeMethod
         public static void inject(OpenTelemetryTracer openTelemetryTracer,
                                   SpanContext spanContext,
@@ -247,6 +295,14 @@ class OpenTelemetryTracerBlueprintSupport {
                     .inject(((OpenTelemetrySpanContext) spanContext).openTelemetry(), outboundHeadersConsumer, SETTER);
         }
 
+        /**
+         * Creates a {@link Span.Builder} for constructing a new {@link io.helidon.tracing.Span} from the specified {@link
+         * io.helidon.tracing.Tracer} and assigning the name to be given to the span once built.
+         *
+         * @param openTelemetryTracer the {@code Tracer} from which to create the span builder
+         * @param name span name to assign to the span once created
+         * @return {@code Span.Builder}
+         */
         @Prototype.PrototypeMethod
         public static Span.Builder<?> spanBuilder(OpenTelemetryTracer openTelemetryTracer, String name) {
             OpenTelemetrySpanBuilder builder = new OpenTelemetrySpanBuilder(openTelemetryTracer.delegate().spanBuilder(name),

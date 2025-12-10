@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023 Oracle and/or its affiliates.
+ * Copyright (c) 2018, 2025 Oracle and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -243,7 +243,9 @@ public interface TracerBuilder<T extends TracerBuilder<T>> extends Builder<T, Tr
      *
      * @param config configuration node of the tracer configuration
      * @return updated builder instance
+     * @deprecated Use {@link #config(io.helidon.config.Config)} instead.
      */
+    @Deprecated(since = "4.4.0", forRemoval = true)
     T config(Config config);
 
     /**

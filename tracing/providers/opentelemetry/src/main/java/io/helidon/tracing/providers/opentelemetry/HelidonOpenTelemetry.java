@@ -93,7 +93,10 @@ public final class HelidonOpenTelemetry {
      *
      * @return {@link io.helidon.tracing.Tracer}
      */
-    public static OpenTelemetryTracer create(OpenTelemetry telemetry, Tracer tracer, Map<String, String> tags, String serviceName) {
+    public static OpenTelemetryTracer create(OpenTelemetry telemetry,
+                                             Tracer tracer,
+                                             Map<String, String> tags,
+                                             String serviceName) {
         return OpenTelemetryTracerBuilder.create()
                 .serviceName(serviceName)
                 .openTelemetry(telemetry)

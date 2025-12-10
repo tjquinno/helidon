@@ -16,7 +16,6 @@
 
 package io.helidon.tracing.providers.opentelemetry;
 
-import java.util.Map;
 import java.util.function.Supplier;
 
 import io.helidon.common.Weight;
@@ -43,11 +42,11 @@ class HelidonTracingBasedOpenTelemetryServiceFactory implements Supplier<OpenTel
     @Override
     public OpenTelemetry get() {
         OpenTelemetry result;
-        if (config.get("tracing").exists()) {
+        if (config.get(OpenTelemetryTracerBlueprint.TRACING_CONFIG_KEY).exists()) {
             /*
             Creating the impl also initializes the global tracer.
              */
-            var otelTracerConfig = OpenTelemetryTracerImpl.create(config.get("tracing"));
+            var otelTracerConfig = OpenTelemetryTracerImpl.create(config.get(OpenTelemetryTracerBlueprint.TRACING_CONFIG_KEY));
 
             try {
                 result = otelTracerConfig.openTelemetry();
@@ -72,7 +71,7 @@ class HelidonTracingBasedOpenTelemetryServiceFactory implements Supplier<OpenTel
                     .serviceName("helidon-service")
                     .openTelemetry(result)
                     .delegate(result.getTracer("helidon-service"))
-                            .build();
+                    .build();
             Tracer.global(oTelTracerConfig);
         }
 
