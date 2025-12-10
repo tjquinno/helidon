@@ -42,8 +42,8 @@ import io.opentelemetry.context.propagation.TextMapSetter;
 class OpenTelemetryTracer implements RuntimeType.Api<OpenTelemetryTracerConfig>, Tracer {
 
     private static final System.Logger LOGGER = System.getLogger(OpenTelemetryTracer.class.getName());
-    private static final TextMapGetter GETTER = new Getter();
-    private static final TextMapSetter SETTER = new Setter();
+    private static final TextMapGetter<HeaderProvider> GETTER = new Getter();
+    private static final TextMapSetter<HeaderConsumer> SETTER = new Setter();
 
     private static final LazyValue<List<SpanListener>> AUTO_LOADED_SPAN_LISTENERS =
             LazyValue.create(() -> HelidonServiceLoader.create(ServiceLoader.load(SpanListener.class)).asList());
