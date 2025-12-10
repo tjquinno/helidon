@@ -18,7 +18,8 @@ package io.helidon.tracing.providers.opentelemetry;
 
 import io.helidon.tracing.TracerBuilder;
 
-class OpenTelemetryTracerBuilder extends OpenTelemetryTracerConfig.BuilderBase<OpenTelemetryTracerBuilder, OpenTelemetryTracerConfig>
+class OpenTelemetryTracerBuilder
+        extends OpenTelemetryTracerConfig.BuilderBase<OpenTelemetryTracerBuilder, OpenTelemetryTracerConfig>
         implements TracerBuilder<OpenTelemetryTracerBuilder> {
 
     static OpenTelemetryTracerBuilder create() {

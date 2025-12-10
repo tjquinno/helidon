@@ -18,7 +18,6 @@ package io.helidon.tracing.providers.opentelemetry;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.stream.Stream;
 
@@ -27,15 +26,11 @@ import io.helidon.config.Config;
 import io.helidon.tracing.HeaderConsumer;
 import io.helidon.tracing.HeaderProvider;
 import io.helidon.tracing.SamplerType;
-import io.helidon.tracing.Span;
-import io.helidon.tracing.SpanContext;
 import io.helidon.tracing.SpanListener;
 import io.helidon.tracing.SpanProcessorType;
-import io.helidon.tracing.Tracer;
 
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.Attributes;
-import io.opentelemetry.context.Context;
 import io.opentelemetry.context.propagation.ContextPropagators;
 import io.opentelemetry.context.propagation.TextMapGetter;
 import io.opentelemetry.context.propagation.TextMapPropagator;
@@ -167,12 +162,13 @@ class OpenTelemetryTracerBlueprintSupport {
 
         }
 
-        private static SpanProcessor batchProcessor(OpenTelemetryTracerConfig.BuilderBase<?, ?> builder, SpanExporter spanExporter) {
+        private static SpanProcessor batchProcessor(OpenTelemetryTracerConfig.BuilderBase<?, ?> builder,
+                                                    SpanExporter spanExporter) {
             return BatchSpanProcessor.builder(spanExporter)
                     .setMaxExportBatchSize(builder.maxExportBatchSize())
                     .setExporterTimeout(builder.exportTimeout())
                     .setScheduleDelay(builder.scheduleDelay())
-                            .setMaxQueueSize(builder.maxQueueSize())
+                    .setMaxQueueSize(builder.maxQueueSize())
                     .build();
         }
 
@@ -197,8 +193,8 @@ class OpenTelemetryTracerBlueprintSupport {
          * Adds a string-valued tag.
          *
          * @param builder builder
-         * @param name tag name
-         * @param value tag value
+         * @param name    tag name
+         * @param value   tag value
          */
         @Prototype.BuilderMethod
         static void addTracerTag(OpenTelemetryTracerConfig.BuilderBase<?, ?> builder, String name, String value) {
@@ -209,8 +205,8 @@ class OpenTelemetryTracerBlueprintSupport {
          * Adds a numeric-valued tag.
          *
          * @param builder builder
-         * @param name tag name
-         * @param value tag value
+         * @param name    tag name
+         * @param value   tag value
          */
         @Prototype.BuilderMethod
         static void addTracerTag(OpenTelemetryTracerConfig.BuilderBase<?, ?> builder, String name, Number value) {
@@ -227,8 +223,8 @@ class OpenTelemetryTracerBlueprintSupport {
          * Adds a boolean-valued tag.
          *
          * @param builder builder
-         * @param name tag name
-         * @param value tag value
+         * @param name    tag name
+         * @param value   tag value
          */
         @Prototype.BuilderMethod
         static void addTracerTag(OpenTelemetryTracerConfig.BuilderBase<?, ?> builder, String name, boolean value) {
@@ -239,7 +235,7 @@ class OpenTelemetryTracerBlueprintSupport {
          * Adds a {@link io.helidon.tracing.SpanListener} to the builder for later registration with the resulting
          * {@link io.helidon.tracing.Tracer}.
          *
-         * @param builder {@code Builder} to add the listener to
+         * @param builder      {@code Builder} to add the listener to
          * @param spanListener {@code SpanListener} to add to the {@code Tracer} built from the builder
          */
         @Prototype.BuilderMethod

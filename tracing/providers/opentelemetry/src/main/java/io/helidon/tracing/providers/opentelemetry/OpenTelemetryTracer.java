@@ -51,18 +51,6 @@ class OpenTelemetryTracer implements RuntimeType.Api<OpenTelemetryTracerConfig>,
     private final List<SpanListener> spanListeners = new ArrayList<>();
     private final OpenTelemetryTracerConfig config;
 
-    static OpenTelemetryTracer create(OpenTelemetryTracerConfig config) {
-        return new OpenTelemetryTracer(config);
-    }
-
-    static OpenTelemetryTracerConfig.Builder builder() {
-        return OpenTelemetryTracerConfig.builder();
-    }
-
-    static OpenTelemetryTracer create(java.util.function.Consumer<io.helidon.tracing.providers.opentelemetry.OpenTelemetryTracerConfig.Builder> consumer) {
-        return builder().update(consumer).build();
-    }
-
     OpenTelemetryTracer(OpenTelemetryTracerConfig config) {
         this.config = config;
         spanListeners.addAll(AUTO_LOADED_SPAN_LISTENERS.get());
@@ -76,6 +64,18 @@ class OpenTelemetryTracer implements RuntimeType.Api<OpenTelemetryTracerConfig>,
                 LOGGER.log(System.Logger.Level.WARNING, "Failed to set global OpenTelemetry as requested by tracing settings", e);
             }
         }
+    }
+
+    static OpenTelemetryTracer create(OpenTelemetryTracerConfig config) {
+        return new OpenTelemetryTracer(config);
+    }
+
+    static OpenTelemetryTracerConfig.Builder builder() {
+        return OpenTelemetryTracerConfig.builder();
+    }
+
+    static OpenTelemetryTracer create(java.util.function.Consumer<OpenTelemetryTracerConfig.Builder> consumer) {
+        return builder().update(consumer).build();
     }
 
     @Override
@@ -147,7 +147,6 @@ class OpenTelemetryTracer implements RuntimeType.Api<OpenTelemetryTracerConfig>,
     io.opentelemetry.api.trace.Tracer delegate() {
         return config.delegate();
     }
-
 
     private static class Getter implements TextMapGetter<HeaderProvider> {
         @Override
