@@ -36,7 +36,6 @@ import io.helidon.tracing.Tracer;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.propagation.TextMapGetter;
-import io.opentelemetry.context.propagation.TextMapPropagator;
 import io.opentelemetry.context.propagation.TextMapSetter;
 
 class OpenTelemetryTracer implements RuntimeType.Api<OpenTelemetryTracerConfig>, Tracer {
@@ -138,10 +137,6 @@ class OpenTelemetryTracer implements RuntimeType.Api<OpenTelemetryTracerConfig>,
 
     List<SpanListener> spanListeners() {
         return Collections.unmodifiableList(spanListeners);
-    }
-
-    TextMapPropagator propagator() {
-        return config.propagator();
     }
 
     io.opentelemetry.api.trace.Tracer delegate() {
