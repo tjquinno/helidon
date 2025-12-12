@@ -68,12 +68,9 @@ class OpenTelemetryTracerBlueprintSupport {
         @Override
         public void decorate(OpenTelemetryTracerConfig.BuilderBase<?, ?> target) {
             /*
-            See the constructor of the manually-written (not generated) OpenTelemetryTracerImpl for some further
-            initialization. It is done there because we want to wait for validation to run first before doing that work,
-            and this decorator is invoked before validation.
+            See the constructor of OpenTelemetryTracer for some further initialization. It is done there because we want to
+            wait for validation to run first before doing that work, and this decorator is invoked before validation.
              */
-
-            addTypedTagsToTagMap(target);
 
             if (target.propagator().isEmpty()) {
                 target.propagator(TextMapPropagator.composite(target.propagators()));
@@ -123,6 +120,8 @@ class OpenTelemetryTracerBlueprintSupport {
                     .setResource(resource)
                     .setSampler(sampler(builder));
 
+            builder.spanProcessors().forEach(sdkTracerProviderBuilder::addSpanProcessor);
+
             openTelemetrySdkBuilder.setTracerProvider(sdkTracerProviderBuilder.build());
             return openTelemetrySdkBuilder.build();
         }
@@ -141,7 +140,7 @@ class OpenTelemetryTracerBlueprintSupport {
             var spanExporterBuilder = OtlpGrpcSpanExporter.builder();
             StringBuilder exporterUrlBuilder = new StringBuilder();
 
-            String scheme = builder.collectorPath().orElse(DEFAULT_EXPORTER_SCHEME);
+            String scheme = builder.collectorProtocol().orElse(DEFAULT_EXPORTER_SCHEME);
             exporterUrlBuilder.append(scheme).append(scheme.endsWith(":") ? "" : ":").append("//");
 
             String host = builder.collectorHost().orElse(DEFAULT_EXPORTER_HOST);
@@ -178,13 +177,6 @@ class OpenTelemetryTracerBlueprintSupport {
                 case SamplerType.RATIO -> Sampler.traceIdRatioBased(builder.samplerParam());
             };
         }
-
-        private void addTypedTagsToTagMap(OpenTelemetryTracerConfig.BuilderBase<?, ?> target) {
-            target.tracerTags().forEach(target.tags()::put);
-            target.intTracerTags().forEach((key, intValue) -> target.tags().put(key, intValue.toString()));
-            target.booleanTracerTags().forEach((key, booleanValue) -> target.tags().put(key, booleanValue.toString()));
-        }
-
     }
 
     static class CustomMethods {

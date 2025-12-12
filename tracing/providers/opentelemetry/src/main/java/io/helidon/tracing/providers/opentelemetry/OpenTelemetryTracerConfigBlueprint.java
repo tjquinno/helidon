@@ -17,7 +17,6 @@
 package io.helidon.tracing.providers.opentelemetry;
 
 import java.util.List;
-import java.util.Map;
 
 import io.helidon.builder.api.Option;
 import io.helidon.builder.api.Prototype;
@@ -27,6 +26,7 @@ import io.helidon.tracing.SpanListener;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.propagation.TextMapPropagator;
+import io.opentelemetry.sdk.trace.SpanProcessor;
 
 /**
  * Settings for OpenTelemetry tracer configuration under the {@code tracing} config key.
@@ -85,11 +85,14 @@ interface OpenTelemetryTracerConfigBlueprint extends ExtendedTracerSettings, Pro
     TextMapPropagator propagator();
 
     /**
-     * {@linkplain java.util.Map Map} of tag name/value pairs to apply to all spans.
+     * Span processors added to the implicit one automatically created.
+     * <p>
+     * Primarily for testing to enroll a span processor with an in-memory span exporter.
      *
-     * @return tags applied to all spans
+     * @return span processors
      */
     @Option.Access("")
-    Map<String, String> tags();
+    @Option.Singular
+    List<SpanProcessor> spanProcessors();
 
 }

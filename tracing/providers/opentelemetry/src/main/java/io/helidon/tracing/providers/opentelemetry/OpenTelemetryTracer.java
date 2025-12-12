@@ -98,7 +98,7 @@ class OpenTelemetryTracer implements RuntimeType.Api<OpenTelemetryTracerConfig>,
 
         config.intTracerTags().forEach(builder::tag);
         config.booleanTracerTags().forEach(builder::tag);
-        config.tags().forEach(builder::tag);
+        config.tracerTags().forEach(builder::tag);
 
         return builder;
     }

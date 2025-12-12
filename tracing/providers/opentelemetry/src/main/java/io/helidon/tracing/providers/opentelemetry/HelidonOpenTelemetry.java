@@ -76,7 +76,7 @@ public final class HelidonOpenTelemetry {
                 .serviceName("helidon-service")
                 .openTelemetry(telemetry)
                 .delegate(tracer)
-                .tags(tags)
+                .tracerTags(tags)
                 .build();
     }
 
@@ -154,7 +154,6 @@ public final class HelidonOpenTelemetry {
                                            .serviceName("callback-enabled-otel-tracer")
                                            .openTelemetry(GlobalOpenTelemetry.get())
                                            .delegate(otelTracer)
-                                           .tags(Map.of())
                                            .build());
     }
 
