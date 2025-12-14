@@ -44,7 +44,7 @@ import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
 import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
 import io.opentelemetry.sdk.trace.samplers.Sampler;
-import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
+import io.opentelemetry.semconv.ServiceAttributes;
 
 class OpenTelemetryTracerBlueprintSupport {
 
@@ -57,8 +57,8 @@ class OpenTelemetryTracerBlueprintSupport {
 
     private static final System.Logger LOGGER = System.getLogger(OpenTelemetryTracerBlueprintSupport.class.getName());
 
-    private static final TextMapGetter GETTER = new Getter();
-    private static final TextMapSetter SETTER = new Setter();
+    private static final TextMapGetter<?> GETTER = new Getter();
+    private static final TextMapSetter<?> SETTER = new Setter();
 
     private OpenTelemetryTracerBlueprintSupport() {
     }
@@ -112,7 +112,7 @@ class OpenTelemetryTracerBlueprintSupport {
             openTelemetrySdkBuilder.setPropagators(ContextPropagators.create(propagator));
 
             var attributesBuilder = Attributes.builder();
-            attributesBuilder.put(ResourceAttributes.SERVICE_NAME, builder.serviceName().get());
+            attributesBuilder.put(ServiceAttributes.SERVICE_NAME, builder.serviceName().get());
 
             var resource = Resource.getDefault().merge(Resource.create(attributesBuilder.build()));
 

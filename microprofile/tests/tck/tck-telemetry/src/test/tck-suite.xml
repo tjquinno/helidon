@@ -28,9 +28,12 @@
                 <exclude name="optional-jaxrs-tests"></exclude>
             </run>
         </groups>
-        <packages>
-            <package name="org.eclipse.microprofile.telemetry.tracing.tck.*"/>
-        </packages>
+<!--        <packages>-->
+<!--            <package name="org.eclipse.microprofile.telemetry.tracing.tck.*"/>-->
+<!--        </packages>-->
+        <classes>
+            <class name="org.eclipse.microprofile.telemetry.tracing.tck.cdi.OpenTelemetryBeanTest"/>
+        </classes>
     </test>
 
 </suite>

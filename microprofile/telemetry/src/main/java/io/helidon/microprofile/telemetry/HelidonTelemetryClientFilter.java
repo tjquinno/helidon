@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2024 Oracle and/or its affiliates.
+ * Copyright (c) 2023, 2025 Oracle and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,8 +42,8 @@ import jakarta.ws.rs.ext.Provider;
 import static io.helidon.microprofile.telemetry.HelidonTelemetryConstants.HTTP_METHOD;
 import static io.helidon.microprofile.telemetry.HelidonTelemetryConstants.HTTP_SCHEME;
 import static io.helidon.microprofile.telemetry.HelidonTelemetryConstants.HTTP_STATUS_CODE;
-import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.NET_PEER_NAME;
-import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.NET_PEER_PORT;
+import static io.opentelemetry.semconv.ServerAttributes.SERVER_ADDRESS;
+import static io.opentelemetry.semconv.ServerAttributes.SERVER_PORT;
 
 /**
  * Filter to process Client request and Client response. Starts a new {@link io.opentelemetry.api.trace.Span} on request and
@@ -96,8 +96,8 @@ class HelidonTelemetryClientFilter implements ClientRequestFilter, ClientRespons
                 .tag(HTTP_METHOD, clientRequestContext.getMethod())
                 .tag(HTTP_SCHEME, clientRequestContext.getUri().getScheme())
                 .tag(HTTP_URL, clientRequestContext.getUri().toString())
-                .tag(NET_PEER_NAME.getKey(), clientRequestContext.getUri().getHost())
-                .tag(NET_PEER_PORT.getKey(), clientRequestContext.getUri().getPort())
+                .tag(SERVER_ADDRESS.getKey(), clientRequestContext.getUri().getHost())
+                .tag(SERVER_PORT.getKey(), clientRequestContext.getUri().getPort())
                 .update(builder -> Span.current()
                         .map(Span::context)
                         .ifPresent(builder::parent))

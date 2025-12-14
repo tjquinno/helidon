@@ -34,15 +34,14 @@ import io.helidon.tracing.TracerBuilder;
 import io.helidon.tracing.providers.opentelemetry.HelidonOpenTelemetry;
 import io.helidon.tracing.providers.opentelemetry.OpenTelemetryTracerProvider;
 
-import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.baggage.propagation.W3CBaggagePropagator;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.common.AttributesBuilder;
 import io.opentelemetry.context.propagation.ContextPropagators;
 import io.opentelemetry.context.propagation.TextMapPropagator;
-import io.opentelemetry.exporter.jaeger.JaegerGrpcSpanExporter;
-import io.opentelemetry.exporter.jaeger.JaegerGrpcSpanExporterBuilder;
+import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporter;
+import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporterBuilder;
 import io.opentelemetry.extension.trace.propagation.B3Propagator;
 import io.opentelemetry.extension.trace.propagation.JaegerPropagator;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
@@ -54,7 +53,7 @@ import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
 import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
 import io.opentelemetry.sdk.trace.samplers.Sampler;
-import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
+import io.opentelemetry.semconv.ServiceAttributes;
 
 /**
  * The JaegerTracerBuilder is a convenience builder for {@link io.helidon.tracing.Tracer} to use with Jaeger.
@@ -495,7 +494,7 @@ public class JaegerTracerBuilder implements TracerBuilder<JaegerTracerBuilder> {
                         "Configuration must at least contain the 'service' key ('tracing.service` in MP) with service name");
             }
 
-            JaegerGrpcSpanExporterBuilder spanExporterBuilder = JaegerGrpcSpanExporter.builder()
+            OtlpGrpcSpanExporterBuilder spanExporterBuilder = OtlpGrpcSpanExporter.builder()
                     .setEndpoint(protocol + "://" + host + ":" + port + (path == null ? "" : path))
                     .setTimeout(exporterTimeout);
 
@@ -517,7 +516,7 @@ public class JaegerTracerBuilder implements TracerBuilder<JaegerTracerBuilder> {
             };
 
             AttributesBuilder attributesBuilder = Attributes.builder()
-                    .put(ResourceAttributes.SERVICE_NAME, serviceName);
+                    .put(ServiceAttributes.SERVICE_NAME, serviceName);
             tags.forEach(attributesBuilder::put);
             Resource otelResource = Resource.create(attributesBuilder.build());
 
@@ -535,10 +534,6 @@ public class JaegerTracerBuilder implements TracerBuilder<JaegerTracerBuilder> {
                     .build();
 
             result = HelidonOpenTelemetry.create(ot, ot.getTracer(this.serviceName), Map.of());
-
-            if (global) {
-                GlobalOpenTelemetry.set(ot);
-            }
 
             LOGGER.log(Level.INFO, () -> "Creating Jaeger tracer for '" + this.serviceName + "' configured with " + protocol
                     + "://" + host + ":" + port);

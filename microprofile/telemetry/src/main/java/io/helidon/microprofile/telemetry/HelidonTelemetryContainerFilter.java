@@ -32,7 +32,7 @@ import io.helidon.tracing.providers.opentelemetry.HelidonOpenTelemetry;
 import io.opentelemetry.api.baggage.Baggage;
 import io.opentelemetry.api.baggage.BaggageEntryMetadata;
 import io.opentelemetry.context.Context;
-import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
+import io.opentelemetry.semconv.ServerAttributes;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.ApplicationPath;
@@ -147,8 +147,8 @@ class HelidonTelemetryContainerFilter implements ContainerRequestFilter, Contain
                 .tag(HTTP_SCHEME, requestContext.getUriInfo().getRequestUri().getScheme())
                 .tag(HTTP_TARGET, resolveTarget(requestContext))
                 .tag(HTTP_ROUTE, route)
-                .tag(SemanticAttributes.NET_HOST_NAME.getKey(), requestContext.getUriInfo().getBaseUri().getHost())
-                .tag(SemanticAttributes.NET_HOST_PORT.getKey(), requestContext.getUriInfo().getBaseUri().getPort())
+                .tag(ServerAttributes.SERVER_ADDRESS.getKey(), requestContext.getUriInfo().getBaseUri().getHost())
+                .tag(ServerAttributes.SERVER_PORT.getKey(), requestContext.getUriInfo().getBaseUri().getPort())
                 .update(builder -> parentSpanContext.ifPresent(builder::parent))
                 .start();
 
