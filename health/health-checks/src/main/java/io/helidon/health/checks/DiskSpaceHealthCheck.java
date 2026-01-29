@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023 Oracle and/or its affiliates.
+ * Copyright (c) 2018, 2026 Oracle and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ import java.nio.file.Paths;
 import java.util.Formatter;
 import java.util.Locale;
 
-import io.helidon.common.config.Config;
+import io.helidon.config.Config;
 import io.helidon.health.HealthCheck;
 import io.helidon.health.HealthCheckException;
 import io.helidon.health.HealthCheckResponse;
@@ -280,6 +280,41 @@ public class DiskSpaceHealthCheck implements HealthCheck {
                     .ifPresent(this::thresholdPercent);
 
             return this;
+        }
+
+        /**
+         * Set up the disk space health check via config keys, if present.
+         *
+         * Configuration options:
+         * <table class="config">
+         * <caption>Disk space health check configuration</caption>
+         * <tr>
+         *     <th>Key</th>
+         *     <th>Default Value</th>
+         *     <th>Description</th>
+         *     <th>Builder method</th>
+         * </tr>
+         * <tr>
+         *     <td>{@value CONFIG_KEY_PATH_SUFFIX}</td>
+         *     <td>{@value DEFAULT_PATH}</td>
+         *     <td>Path for the device for which this health checks available space</td>
+         *     <td>{@link #path(Path)} or {@link #path(String)}</td>
+         * </tr>
+         * <tr>
+         *     <td>{@value CONFIG_KEY_THRESHOLD_PERCENT_SUFFIX}</td>
+         *     <td>{@value DEFAULT_THRESHOLD}</td>
+         *     <td>Minimum percent of disk space consumed for this health check to fail</td>
+         *     <td>{@link #thresholdPercent(double)}</td>
+         * </tr>
+         * </table>
+         *
+         * @param config {@code Config} node for disk space
+         * @return updated builder instance
+         * @deprecated Use {@link #config(io.helidon.config.Config)}.
+         */
+        @Deprecated(since = "4.4.0", forRemoval = true)
+        public Builder config(io.helidon.common.config.Config config) {
+            return config((Config) config);
         }
     }
 }
