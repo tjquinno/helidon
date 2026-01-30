@@ -33,7 +33,9 @@ public interface HealthCheckProvider {
      * @deprecated Use {@link #healthChecks(io.helidon.config.Config)}.
      */
     @Deprecated(since = "4.4.0", forRemoval = true)
-    List<HealthCheck> healthChecks(io.helidon.common.config.Config config);
+    default List<HealthCheck> healthChecks(io.helidon.common.config.Config config) {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * Health checks provided by this provider.
@@ -41,7 +43,13 @@ public interface HealthCheckProvider {
      * @param config configuration instance located on root node of this application
      * @return list of health checks
      */
+//    default List<HealthCheck> healthChecks(Config config) {
+//        return healthChecks((io.helidon.common.config.Config) config);
+//    }
     default List<HealthCheck> healthChecks(Config config) {
-        return healthChecks((io.helidon.common.config.Config) config);
+        if (config instanceof io.helidon.common.config.Config c) {
+            return healthChecks(c);
+        }
+        throw new UnsupportedOperationException();
     }
 }
