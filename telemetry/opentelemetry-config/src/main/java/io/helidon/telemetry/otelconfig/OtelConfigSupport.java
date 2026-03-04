@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import io.helidon.builder.api.Prototype;
 import io.helidon.common.Errors;
 import io.helidon.config.Config;
 

@@ -26,6 +26,7 @@ import io.opentelemetry.sdk.logs.LogLimits;
 import io.opentelemetry.sdk.logs.SdkLoggerProvider;
 import io.opentelemetry.sdk.logs.export.LogRecordExporter;
 import io.opentelemetry.sdk.logs.internal.LoggerConfig;
+import io.opentelemetry.sdk.resources.Resource;
 
 class OpenTelemetryLoggingConfigSupport {
 
