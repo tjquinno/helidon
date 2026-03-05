@@ -31,6 +31,7 @@
 
     <modules>
         <module>opentelemetry-config</module>
+        <module>opentelemetry-logging-jul-appender</module>
         <module>testing</module>
     </modules>
 
