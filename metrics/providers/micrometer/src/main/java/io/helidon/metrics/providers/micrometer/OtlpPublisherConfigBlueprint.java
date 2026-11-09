@@ -91,6 +91,18 @@ interface OtlpPublisherConfigBlueprint extends MetricsPublisherConfig, Prototype
     Optional<AggregationTemporality> aggregationTemporality();
 
     /**
+     * Whether to export a separate gauge with the {@code .max} suffix for each histogram-based meter.
+     * The default preserves the metric set exported before Micrometer 1.17.
+     *
+     * @return whether to export separate maximum gauges
+     * @deprecated Provided for backward compatibility only; enable this setting to adopt Micrometer's maximum gauges.
+     */
+    @Deprecated(since = "4.5.7", forRemoval = true)
+    @Option.Configured
+    @Option.DefaultBoolean(false)
+    boolean publishMaxGaugeForHistograms();
+
+    /**
      * Number of measurements to send in a single request to the backend.
      *
      * @return transmission batch size

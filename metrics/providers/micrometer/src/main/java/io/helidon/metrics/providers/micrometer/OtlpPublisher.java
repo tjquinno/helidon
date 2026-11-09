@@ -167,6 +167,12 @@ public class OtlpPublisher implements MicrometerMetricsPublisher,
             }
 
             @Override
+            @SuppressWarnings("removal")
+            public boolean publishMaxGaugeForHistograms() {
+                return config.publishMaxGaugeForHistograms();
+            }
+
+            @Override
             public String get(String key) {
                 return null;
             }

@@ -190,6 +190,34 @@ Settings for an OTLP publisher
 </table>
 
 
+### Deprecated Options
+
+
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>publish-<wbr>max-<wbr>gauge-<wbr>for-<wbr>histograms</code>
+</td>
+<td>
+<code>Boolean</code>
+</td>
+<td>
+<code>false</code>
+</td>
+<td>Whether to export a separate gauge with the <code>.max</code> suffix for each histogram-based meter</td>
+</tr>
+</tbody>
+</table>
+
 
 ## Usages
 

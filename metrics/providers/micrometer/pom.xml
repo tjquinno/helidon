@@ -99,6 +99,19 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>default-testCompile</id>
+                        <configuration>
+                            <compilerArgs>
+                                <arg>--add-modules</arg>
+                                <arg>jdk.httpserver</arg>
+                                <arg>--add-reads</arg>
+                                <arg>io.helidon.metrics.providers.micrometer=jdk.httpserver</arg>
+                            </compilerArgs>
+                        </configuration>
+                    </execution>
+                </executions>
                 <configuration>
                     <annotationProcessorPaths>
                         <path>
